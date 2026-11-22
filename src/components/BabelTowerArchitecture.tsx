@@ -67,10 +67,29 @@ function ArchitectureModel({ tier }: { tier: ArchitectureTier }) {
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: "#39404b", metalness: 0.68, roughness: 0.38, emissive: accent, emissiveIntensity: 0.12 }), [accent]);
   const stairGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 0.14, 0.7), []);
   const stairMatrices = useMemo(() => {
-    const count = dims.floors.length * 24, radius = dims.baseRadius + 0.78;
+    // Keep one continuous stair path. Each floor gains a small angular offset,
+    // so successive landings do not stack directly above the base starting point.
+    const stepsPerFloor = 36;
+    const floorCount = dims.floors.length;
+    const count = floorCount * stepsPerFloor + 1;
+    const landingOffset = Math.PI / 6; // 30 degrees beyond one full turn per floor
+
     return Array.from({ length: count }, (_, i) => {
-      const t = i / count, theta = t * Math.PI * 2 * dims.floors.length;
-      const p = new THREE.Vector3(radius * Math.cos(theta), t * dims.bodyHeight, radius * Math.sin(theta));
+      const progress = (i / (count - 1)) * floorCount;
+      const floorIndex = Math.min(Math.floor(progress), floorCount - 1);
+      const localProgress = progress - floorIndex;
+      const currentFloor = dims.floors[floorIndex];
+      const nextFloor = dims.floors[Math.min(floorIndex + 1, floorCount - 1)];
+
+      // Follow the tower's taper instead of keeping the staircase at the base radius.
+      const radius = THREE.MathUtils.lerp(
+        currentFloor.radius + 0.78,
+        nextFloor.radius + 0.78,
+        localProgress
+      );
+      const theta = progress * (Math.PI * 2 + landingOffset);
+      const y = THREE.MathUtils.lerp(0.12, dims.bodyHeight - 0.12, progress / floorCount);
+      const p = new THREE.Vector3(radius * Math.cos(theta), y, radius * Math.sin(theta));
       const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -theta, 0));
       return new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1));
     });
