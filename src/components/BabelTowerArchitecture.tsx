@@ -65,25 +65,18 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // Her halkanın orta sırası yarım yuva adımı kadar kaydırılır.
-        const slotOffset = row === 1 ? 0.5 : 0;
+        // Sıralar çevre boyunca slot genişliği kadar kademeli başlar:
+        // 1. sıra x, 2. sıra 2x, 3. sıra 3x.
+        // Her sıranın ilk slotu kendi başlangıç yüksekliğinde sabittir;
+        // sonraki slotlar her adımda poster yüksekliğinin 1/4'ü kadar yükselir.
+        const rowArcOffset = (row + 1) * posterWidth;
+        const rowAngleOffset = rowArcOffset / ring.radius;
         for (let slot = 0; slot < ring.units; slot++) {
-          // Her halkanın ilk sırası aynı spiral adımıyla yükselir.
-          // Her halkada slot 0 sabit başlangıçtır; sonraki slotlar
-          // poster yüksekliğinin dörtte biri kadar kademeli yükselir.
-          const spiralRise = row === 0
-            ? slot * (posterHeight / 4)
-            : 0;
+          const spiralRise = slot * (posterHeight / 4);
           const y = rowY + spiralRise;
-          const theta = ((slot + slotOffset) / ring.units) * Math.PI * 2;
-          // Halkalar ve aynı halkanın üç sırası ayrı çaplara alınır.
-          // Böylece spiral yükselirken dikey olarak kesişebilecek
-          // poster yuvaları farklı radyal düzlemlerde kalır.
-          const ringRadiusOffset = ring.index * posterWidth * 0.5;
-          const rowRadiusOffset = ring.index === 0
-            ? 0
-            : (1 - row) * posterWidth * 0.25;
-          const rowRadius = ring.radius + ringRadiusOffset + rowRadiusOffset;
+          const theta = (slot / ring.units) * Math.PI * 2 + rowAngleOffset;
+          // Tüm sıralar aynı halka çapını kullanır.
+          const rowRadius = ring.radius;
           const position = new THREE.Vector3(
             rowRadius * Math.cos(theta),
             y,
