@@ -52,17 +52,19 @@ export function calculateBabelTower(
     isBlueprint: index >= totalUserItems
   });
 
+  const flareRad = 0.06; // ~3.4 deg outward Ziggurat flare
+
   floorCapacities.forEach((capacity, floorIdx) => {
     const radius = (capacity * unitArcLength) / (2 * Math.PI);
     const floorAngleOffset = (floorIdx * Math.PI) / tier.segments;
     for (let slot = 0; slot < capacity && currentIndex < tier.targetTotal; slot++) {
       const progressInFloor = slot / capacity;
       const theta = progressInFloor * Math.PI * 2 + floorAngleOffset;
-      const y = (floorIdx + progressInFloor) * floorHeight + metrics.posterHeight / 2;
+      const y = floorIdx * floorHeight + metrics.posterHeight / 2 + 0.14;
       nodes.push(makeNode(
         currentIndex,
         [radius * Math.cos(theta), y, radius * Math.sin(theta)],
-        [0, -theta + Math.PI / 2, 0],
+        [flareRad, -theta + Math.PI / 2, 0],
         floorIdx,
         false
       ));
