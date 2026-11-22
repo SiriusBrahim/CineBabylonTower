@@ -49,13 +49,14 @@ function createTowerLayout() {
   segmentsByFloor.forEach((segments, floorIndex) => {
     const radius = floorRadii[floorIndex];
     const floorBaseY = floorIndex * floorHeight;
-    const rowPitch = floorHeight / rowsPerFloor;
+    const rowGap = (floorHeight - rowsPerFloor * posterHeight) / (rowsPerFloor - 1);
+    const rowPitch = posterHeight + rowGap;
 
     for (let row = 0; row < rowsPerFloor; row++) {
       // Her katta üç yatay sıra bulunur. Sıralar açısal olarak kaydırılarak
       // kat içinde hafif spiral/örgü etkisi oluşturulur.
       const rowPhase = (row * (2 * Math.PI / segments)) / rowsPerFloor;
-      const y = floorBaseY + rowPitch * (row + 0.5);
+      const y = floorBaseY + posterHeight / 2 + row * rowPitch;
 
       for (let segment = 0; segment < segments; segment++) {
         const theta = (segment * 2 * Math.PI) / segments + rowPhase;
