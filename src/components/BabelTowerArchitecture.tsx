@@ -12,8 +12,6 @@ const BRONZE_TOWER = {
   accentColor: "#cd7f32"
 };
 
-type Ring = { index: number; units: number; radius: number; y: number; };
-
 function InstancedSlots({ matrices, geometry, material }: {
   matrices: THREE.Matrix4[];
   geometry: THREE.BufferGeometry;
@@ -40,68 +38,62 @@ function BronzeTowerModel() {
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
-    const verticalGap = 0, rowPitch = posterHeight + verticalGap;
-    const ringGap = 0.48;
-    const ringHeight = 3 * rowPitch + ringGap;
+    const verticalGap = 0.16;
+    const rowPitch = posterHeight + verticalGap;
+
     const unitsByRing = [12, 11, 10];
-    // Yuvalar birbirine bitişik: merkezler arası başlangıç kiriş mesafesi
-    // poster genişliğine eşittir. Her halka kendi başlangıç yarıçapını korur.
     const centerSpacing = posterWidth;
-    const radiiByRing = unitsByRing.map(units =>
-      centerSpacing / (2 * Math.sin(Math.PI / units))
-    );
-    const rings: Ring[] = unitsByRing.map((units, index) => ({
-      index,
-      units,
-      radius: radiiByRing[index],
-      y: index * ringHeight
-    }));
-    const bodyHeight = rings.length * ringHeight;
+
+    // En alt halkanın başlangıç yarıçapını referans alıyoruz.
+    const baseRadius = centerSpacing / (2 * Math.sin(Math.PI / unitsByRing[0]));
+
     const slots: THREE.Matrix4[] = [];
 
-    // 12'lik halka: 12+12+12, 11'lik halka: 11+11+11,
-    // 10'luk halka: 10+10+10.
-    rings.forEach(ring => {
-      for (let row = 0; row < 3; row++) {
-        const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        const angularStep = (2 * Math.PI) / ring.units;
-        // Her halkanın üç sırası tek bir kesintisiz spiral oluşturur.
-        // Üç sıra boyunca toplam içe daralma yaklaşık bir poster genişliğidir.
-        const radialStep = posterWidth / (ring.units * 3);
-        const risePerSlot = posterHeight / 4;
+    // --- SÜREKLİ SPİRAL (HELIX) ---
+    let globalIndex = 0;
+    const slotsPerTurn = 12;
+    const risePerSlot = rowPitch / slotsPerTurn;
+    const shrinkPerTurn = posterWidth * 0.85;
 
-        for (let slot = 0; slot < ring.units; slot++) {
-          // Sayaçlar sıra geçişlerinde sıfırlanmaz: 0 ... (3 * units - 1).
-          const continuousSlot = row * ring.units + slot;
+    unitsByRing.forEach((units) => {
+      const totalSlotsInRing = units * 3;
 
-          const spiralRise = continuousSlot * risePerSlot;
-          const y = ring.y + posterHeight / 2 + 0.12 + spiralRise;
-          const theta = continuousSlot * angularStep;
-          // Her halka kendi başlangıç yarıçapından içe doğru ilerler.
-          const rowRadius = ring.radius - continuousSlot * radialStep;
-          const position = new THREE.Vector3(
-            rowRadius * Math.cos(theta),
-            y,
-            rowRadius * Math.sin(theta)
-          );
-          const rotation = new THREE.Quaternion().setFromEuler(
-            new THREE.Euler(0, -theta + Math.PI / 2, 0)
-          );
-          slots.push(new THREE.Matrix4().compose(
-            position, rotation, new THREE.Vector3(1, 1, 1)
-          ));
-        }
+      for (let i = 0; i < totalSlotsInRing; i++) {
+        const theta = globalIndex * (2 * Math.PI / slotsPerTurn);
+        const y = globalIndex * risePerSlot + posterHeight / 2 + 0.12;
+
+        const turnsCompleted = globalIndex / slotsPerTurn;
+        const currentRadius = baseRadius - (turnsCompleted * shrinkPerTurn);
+
+        const position = new THREE.Vector3(
+          currentRadius * Math.cos(theta),
+          y,
+          currentRadius * Math.sin(theta)
+        );
+
+        const rotation = new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(0, -theta + Math.PI / 2, 0)
+        );
+
+        slots.push(new THREE.Matrix4().compose(
+          position,
+          rotation,
+          new THREE.Vector3(1, 1, 1)
+        ));
+
+        globalIndex++;
       }
     });
 
-    // 99 halka yuvasına ek olarak ayrılmış tek tepe yuvası.
+    // Tepe yuvası: globalIndex toplam slot sayısına eşittir.
+    const bodyHeight = globalIndex * risePerSlot + posterHeight / 2 + 0.12;
     slots.push(new THREE.Matrix4().compose(
       new THREE.Vector3(0, bodyHeight + 0.95, 0),
       new THREE.Quaternion(),
       new THREE.Vector3(1, 1, 1)
     ));
 
-    return { rings, bodyHeight, slots, ringHeight };
+    return { slots, bodyHeight };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
