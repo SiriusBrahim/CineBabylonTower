@@ -13,16 +13,17 @@ const BRONZE_TOWER = {
 const TOWER_CONFIG = {
   posterWidth: 0.92,
   posterHeight: 1.38,
-  horizontalGap: 0.04,
+  horizontalGap: 0.10,
+  verticalGap: 0.08,
   rowsPerFloor: 3,
   slotsByFloor: [36, 33, 30] as const,
   segmentsByFloor: [12, 11, 10] as const,
-  floorHeight: 4.5,
-  terraceGap: 0.36,
-  crownY: 14.0,
+  // 10 posteri 0.92 genişlik + 0.10 boşlukla çakışmadan taşıyabilmek
+  // için üst kat yarıçapı 1.30 yerine 1.65 seçildi.
+  radiusByFloor: [2.5, 1.9, 1.65] as const,
+  floorGap: 0.5,
   crownExtraGap: 0.5
 };
-
 type TerraceRing = {
   radius: number;
   y: number;
@@ -32,60 +33,65 @@ function createTowerLayout() {
   const {
     posterWidth,
     posterHeight,
-    horizontalGap,
+    verticalGap,
     rowsPerFloor,
     segmentsByFloor,
-    floorHeight,
-    crownY
+    radiusByFloor,
+    floorGap,
+    crownExtraGap
   } = TOWER_CONFIG;
 
-  const arcStep = posterWidth + horizontalGap;
+  const rowHeight = posterHeight + verticalGap;
+  const floorHeight = rowsPerFloor * rowHeight + floorGap;
   const slots: THREE.Matrix4[] = [];
   const terraceRings: TerraceRing[] = [];
-  const floorRadii = segmentsByFloor.map(
-    (segments) => (segments * arcStep) / (2 * Math.PI)
-  );
 
   segmentsByFloor.forEach((segments, floorIndex) => {
-    const radius = floorRadii[floorIndex];
+    const radius = radiusByFloor[floorIndex];
     const floorBaseY = floorIndex * floorHeight;
-    const rowGap = (floorHeight - rowsPerFloor * posterHeight) / (rowsPerFloor - 1);
-    const rowPitch = posterHeight + rowGap;
 
-    for (let row = 0; row < rowsPerFloor; row++) {
-      // Her katta üç yatay sıra bulunur. Sıralar açısal olarak kaydırılarak
-      // kat içinde hafif spiral/örgü etkisi oluşturulur.
-      const rowPhase = (row * (2 * Math.PI / segments)) / rowsPerFloor;
-      const y = floorBaseY + posterHeight / 2 + row * rowPitch;
+    // Her kat 3 ardışık spiral sıradan oluşur. Her yeni sıranın açısı
+    // yarım segment kadar kaydırılır; böylece sıralar üst üste halka gibi
+    // görünmek yerine birbirine şaşırtmalı biçimde bağlanır.
+    for (let slotIndex = 0; slotIndex < segments * rowsPerFloor; slotIndex++) {
+      const row = Math.floor(slotIndex / segments);
+      const segment = slotIndex % segments;
+      const rowPhase = row * (Math.PI / 12);
+      const theta = (segment * 2 * Math.PI) / segments + rowPhase;
+      const y = floorBaseY + posterHeight / 2 + row * rowHeight;
 
-      for (let segment = 0; segment < segments; segment++) {
-        const theta = (segment * 2 * Math.PI) / segments + rowPhase;
-        const position = new THREE.Vector3(
-          radius * Math.cos(theta),
-          y,
-          radius * Math.sin(theta)
-        );
-        const rotation = new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(0, -theta + Math.PI / 2, 0)
-        );
+      const position = new THREE.Vector3(
+        radius * Math.cos(theta),
+        y,
+        radius * Math.sin(theta)
+      );
+      const rotation = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, -theta + Math.PI / 2, 0)
+      );
 
-        slots.push(new THREE.Matrix4().compose(
-          position,
-          rotation,
-          new THREE.Vector3(1, 1, 1)
-        ));
-      }
+      slots.push(new THREE.Matrix4().compose(
+        position,
+        rotation,
+        new THREE.Vector3(1, 1, 1)
+      ));
     }
 
-    // İki teras sınırına, komşu katların yarıçaplarının ortalamasında
-    // ince bronz korniş yerleştirilir.
+    // Katlar arasında belirgin teras boşluğu ve iki katın arasında
+    // yarıçapı kademeli bağlayan yatay bronz korniş.
     if (floorIndex < segmentsByFloor.length - 1) {
       terraceRings.push({
-        radius: (radius + floorRadii[floorIndex + 1]) / 2,
-        y: (floorIndex + 1) * floorHeight
+        radius: (radius + radiusByFloor[floorIndex + 1]) / 2,
+        y: floorBaseY + rowsPerFloor * rowHeight + floorGap / 2
       });
     }
   });
+
+  const lastFloorBaseY = (segmentsByFloor.length - 1) * floorHeight;
+  const lastFloorTop = lastFloorBaseY
+    + posterHeight / 2
+    + (rowsPerFloor - 1) * rowHeight
+    + posterHeight / 2;
+  const crownY = lastFloorTop + crownExtraGap + posterHeight / 2;
 
   // Dördüncü kat: merkezde tek taç slotu.
   slots.push(new THREE.Matrix4().compose(
@@ -100,11 +106,11 @@ function createTowerLayout() {
   return {
     slots,
     terraceRings,
-    floorRadii,
+    floorRadii: [...radiusByFloor],
     bodyHeight,
     totalSlots,
-    baseRadius: floorRadii[0],
-    topRadius: floorRadii[floorRadii.length - 1]
+    baseRadius: radiusByFloor[0],
+    topRadius: radiusByFloor[radiusByFloor.length - 1]
   };
 }
 
