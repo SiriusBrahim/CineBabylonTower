@@ -7,111 +7,10 @@ const BRONZE_TOWER = {
   name: "Bronz Kule",
   targetTotal: 100,
   segments: 3,
+  baseUnits: 12,
+  topUnits: 10,
   accentColor: "#cd7f32"
 };
-
-const TOWER_CONFIG = {
-  posterWidth: 0.92,
-  posterHeight: 1.38,
-  horizontalGap: 0.10,
-  verticalGap: 0.08,
-  rowsPerFloor: 3,
-  slotsByFloor: [36, 33, 30] as const,
-  segmentsByFloor: [12, 11, 10] as const,
-  // 10 posteri 0.92 genişlik + 0.10 boşlukla çakışmadan taşıyabilmek
-  // için üst kat yarıçapı 1.30 yerine 1.67 seçildi.
-  radiusByFloor: [2.5, 1.9, 1.67] as const,
-  floorGap: 0.5,
-  crownExtraGap: 0.5
-};
-type TerraceRing = {
-  radius: number;
-  y: number;
-};
-
-function createTowerLayout() {
-  const {
-    posterHeight,
-    verticalGap,
-    rowsPerFloor,
-    segmentsByFloor,
-    radiusByFloor,
-    floorGap,
-    crownExtraGap
-  } = TOWER_CONFIG;
-
-  const rowHeight = posterHeight + verticalGap;
-  const floorHeight = rowsPerFloor * rowHeight + floorGap;
-  const slots: THREE.Matrix4[] = [];
-  const terraceRings: TerraceRing[] = [];
-
-  segmentsByFloor.forEach((segments, floorIndex) => {
-    const radius = radiusByFloor[floorIndex];
-    const floorBaseY = floorIndex * floorHeight;
-
-    // Her kat 3 ardışık spiral sıradan oluşur. Her yeni sıranın açısı
-    // yarım segment kadar kaydırılır; böylece sıralar üst üste halka gibi
-    // görünmek yerine birbirine şaşırtmalı biçimde bağlanır.
-    for (let slotIndex = 0; slotIndex < segments * rowsPerFloor; slotIndex++) {
-      const row = Math.floor(slotIndex / segments);
-      const segment = slotIndex % segments;
-      const rowAngleOffset = row * (Math.PI / segments);
-      const theta = (segment * 2 * Math.PI) / segments + rowAngleOffset;
-      const y = floorBaseY + posterHeight / 2 + row * rowHeight;
-
-      const position = new THREE.Vector3(
-        radius * Math.cos(theta),
-        y,
-        radius * Math.sin(theta)
-      );
-      const rotation = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(0, -theta + Math.PI / 2, 0)
-      );
-
-      slots.push(new THREE.Matrix4().compose(
-        position,
-        rotation,
-        new THREE.Vector3(1, 1, 1)
-      ));
-    }
-
-    // Katlar arasında belirgin teras boşluğu ve iki katın arasında
-    // yarıçapı kademeli bağlayan yatay bronz korniş.
-    if (floorIndex < segmentsByFloor.length - 1) {
-      terraceRings.push({
-        radius: (radius + radiusByFloor[floorIndex + 1]) / 2,
-        y: floorBaseY + rowsPerFloor * rowHeight + floorGap / 2
-      });
-    }
-  });
-
-  const lastFloorBaseY = (segmentsByFloor.length - 1) * floorHeight;
-  const lastFloorTop = lastFloorBaseY
-    + posterHeight / 2
-    + (rowsPerFloor - 1) * rowHeight
-    + posterHeight / 2;
-  const crownY = lastFloorTop + crownExtraGap + posterHeight / 2;
-
-  // Dördüncü kat: merkezde tek taç slotu.
-  slots.push(new THREE.Matrix4().compose(
-    new THREE.Vector3(0, crownY, 0),
-    new THREE.Quaternion(),
-    new THREE.Vector3(1, 1, 1)
-  ));
-
-  const bodyHeight = crownY + posterHeight / 2;
-  const totalSlots = slots.length;
-
-  return {
-    slots,
-    terraceRings,
-    floorRadii: [...radiusByFloor],
-    bodyHeight,
-    totalSlots,
-    baseRadius: radiusByFloor[0],
-    topRadius: radiusByFloor[radiusByFloor.length - 1]
-  };
-}
 
 function InstancedSlots({ matrices, geometry, material }: {
   matrices: THREE.Matrix4[];
@@ -121,33 +20,71 @@ function InstancedSlots({ matrices, geometry, material }: {
   const mesh = useMemo(() => {
     const instance = new THREE.InstancedMesh(geometry, material, matrices.length);
     const slotColor = new THREE.Color();
-
     matrices.forEach((matrix, index) => {
       instance.setMatrixAt(index, matrix);
+      // Her yuvaya komşularından ayırt edilebilen, dengeli bir renk ver.
       slotColor.setHSL((index * 0.61803398875) % 1, 0.62, 0.56);
       instance.setColorAt(index, slotColor);
     });
-
     instance.instanceMatrix.needsUpdate = true;
     if (instance.instanceColor) instance.instanceColor.needsUpdate = true;
     instance.computeBoundingSphere();
     return instance;
   }, [geometry, material, matrices]);
-
   return <primitive object={mesh} />;
 }
 
 function BronzeTowerModel() {
-  const layout = useMemo(() => createTowerLayout(), []);
+  const dims = useMemo(() => {
+    const posterWidth = 0.92;
+    const posterHeight = 1.38;
+    const horizontalGap = 0.04;
+    const arcStep = posterWidth + horizontalGap;
+
+    const unitsByRing = [12, 11, 10];
+    const rowsPerRing = 3;
+    const totalSlots = unitsByRing.reduce((sum, units) => sum + units * rowsPerRing, 0);
+
+    // Babel silüeti için tabandan tepeye güçlü ve kontrollü daralma.
+    const taper = 0.62;
+    const turnGap = 0.85;
+    const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.7;
+    const topRadius = baseRadius * (1 - taper);
+    const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
+
+    const slots: THREE.Matrix4[] = [];
+    let theta = 0;
+    let y = posterHeight / 2 + 0.12;
+
+    for (let i = 0; i < totalSlots; i++) {
+      const radius = baseRadius - i * radialStep;
+
+      slots.push(new THREE.Matrix4().compose(
+        new THREE.Vector3(radius * Math.cos(theta), y, radius * Math.sin(theta)),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -theta + Math.PI / 2, 0)),
+        new THREE.Vector3(1, 1, 1)
+      ));
+
+      // Yatay ilerleme: her adımın yay uzunluğu arcStep olarak korunur.
+      theta += arcStep / radius;
+
+      // Dikey ilerleme yarıçapa bağlıdır; bir turdaki yükselme yaklaşık
+      // posterHeight + turnGap olur ve üst katlarda sabit rise kullanılmaz.
+      y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
+    }
+
+    const bodyHeight = y;
+    slots.push(new THREE.Matrix4().compose(
+      new THREE.Vector3(0, bodyHeight + 0.95, 0),
+      new THREE.Quaternion(),
+      new THREE.Vector3(1, 1, 1)
+    ));
+
+    return { slots, bodyHeight, baseRadius, topRadius };
+  }, []);
+
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
-  const slotGeometry = useMemo(
-    () => new THREE.BoxGeometry(
-      TOWER_CONFIG.posterWidth,
-      TOWER_CONFIG.posterHeight,
-      0.075
-    ),
-    []
-  );
+  const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: "#ffffff",
     metalness: 0.68,
@@ -155,56 +92,44 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
-  const terraceGeometry = useMemo(
-    () => new THREE.TorusGeometry(1, 0.035, 8, 96),
-    []
-  );
-  const terraceMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: BRONZE_TOWER.accentColor,
-    metalness: 0.78,
-    roughness: 0.3,
-    emissive: BRONZE_TOWER.accentColor,
-    emissiveIntensity: 0.18
-  }), []);
 
   return (
     <group>
-      <InstancedSlots matrices={layout.slots} geometry={slotGeometry} material={slotMaterial} />
-      {layout.terraceRings.map((ring, index) => (
-        <mesh
-          key={index}
-          geometry={terraceGeometry}
-          material={terraceMaterial}
-          position={[0, ring.y, 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-          scale={[ring.radius, ring.radius, ring.radius]}
-        />
-      ))}
+      <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
     </group>
   );
 }
 
 export default function BabelTowerArchitecture() {
-  const layout = useMemo(() => createTowerLayout(), []);
-  const height = layout.bodyHeight;
-  const centerY = height / 2;
-  const radius = layout.baseRadius;
-  const cameraDistance = height * 1.75;
+  // Kamera ve sis değerleri yeni spiral geometrisinin gerçek ölçülerinden türetilir.
+  const posterWidth = 0.92;
+  const posterHeight = 1.38;
+  const arcStep = posterWidth + 0.04;
+  const unitsByRing = [12, 11, 10];
+  const rowsPerRing = 3;
+  const totalSlots = unitsByRing.reduce((sum, units) => sum + units * rowsPerRing, 0);
+  const taper = 0.62;
+  const turnGap = 0.85;
+  const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.7;
+  const topRadius = baseRadius * (1 - taper);
+  const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
+
+  // Kamera yüksekliğini modelde kullanılan değişken yükselme adımlarıyla eşleştir.
+  let bodyHeight = posterHeight / 2 + 0.12;
+  for (let i = 0; i < totalSlots; i++) {
+    const slotRadius = baseRadius - i * radialStep;
+    bodyHeight += (posterHeight + turnGap) * arcStep / (2 * Math.PI * slotRadius);
+  }
+  const height = bodyHeight + 0.95;
+  const radius = baseRadius;
 
   return (
     <Canvas shadows dpr={[1, 1.7]}
-      camera={{
-        position: [
-          cameraDistance * 0.72,
-          centerY + cameraDistance * 0.34,
-          cameraDistance * 0.9
-        ],
-        fov: 39
-      }}>
+      camera={{ position: [radius * 2.45, height * 0.72, radius * 3.05], fov: 39 }}>
       <color attach="background" args={["#090b12"]} />
       <fog attach="fog" args={["#090b12", height * 1.7, height * 4.8]} />
       <ambientLight intensity={0.68} />
-      <directionalLight position={[18, height * 1.25, 14]} intensity={2.0}
+      <directionalLight position={[18, height * 1.6, 14]} intensity={2.0}
         castShadow shadow-mapSize={[2048, 2048]} />
       <pointLight position={[-radius * 2, height * 0.55, -radius]}
         intensity={height * 0.1} color={BRONZE_TOWER.accentColor} />
@@ -213,8 +138,8 @@ export default function BabelTowerArchitecture() {
       <BronzeTowerModel />
       <Environment preset="city" />
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
-        minDistance={radius * 1.3} maxDistance={height * 3.5}
-        maxPolarAngle={Math.PI * 0.49} target={[0, centerY, 0]} />
+        minDistance={radius * 1.3} maxDistance={height * 4.5}
+        maxPolarAngle={Math.PI * 0.49} target={[0, height * 0.43, 0]} />
     </Canvas>
   );
 }
