@@ -67,7 +67,7 @@ export const DEFAULT_TOWER_METRICS: TowerMetrics = {
 
 export const TOWER_TIERS: TowerTierConfig[] = [
   { id: "bronze", name: "Bronz Kule", targetTotal: 100, segments: 3, baseUnits: 12, topUnits: 10 },
-  { id: "silver", name: "Gümüş Kule", targetTotal: 365, segments: 4, baseUnits: 16, topUnits: 10 },
-  { id: "gold", name: "Altın Kule", targetTotal: 835, segments: 5, baseUnits: 20, topUnits: 10 },
-  { id: "premium", name: "Premium Kule", targetTotal: 1550, segments: 6, baseUnits: 24, topUnits: 10 }
+  { id: "silver", name: "Gümüş Kule", targetTotal: 368, segments: 4, baseUnits: 16, topUnits: 10 },
+  { id: "gold", name: "Altın Kule", targetTotal: 833, segments: 5, baseUnits: 20, topUnits: 10 },
+  { id: "premium", name: "Premium Kule", targetTotal: 1545, segments: 6, baseUnits: 24, topUnits: 10 }
 ];
