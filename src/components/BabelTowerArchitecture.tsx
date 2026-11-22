@@ -12,7 +12,7 @@ const BRONZE_TOWER = {
   accentColor: "#cd7f32"
 };
 
-type Floor = { index: number; capacity: number; radius: number; y: number };
+type Ring = { index: number; units: number; radius: number; y: number; };
 
 function InstancedSlots({ matrices, geometry, material }: {
   matrices: THREE.Matrix4[];
@@ -31,48 +31,53 @@ function InstancedSlots({ matrices, geometry, material }: {
 
 function BronzeTowerModel() {
   const dims = useMemo(() => {
-    const posterWidth = 1, posterHeight = 1.5, horizontalGap = 0.15, verticalGap = 0.3;
-    const floorHeight = posterHeight + verticalGap;
+    const posterWidth = 1, posterHeight = 1.5, horizontalGap = 0.15;
+    const verticalGap = 0.16, rowPitch = posterHeight + verticalGap;
+    const ringGap = 0.48;
+    const ringHeight = 3 * rowPitch + ringGap;
     const pitch = posterWidth + horizontalGap;
-    const capacities: number[] = [];
-    for (let units = BRONZE_TOWER.baseUnits; units >= BRONZE_TOWER.topUnits; units--) {
-      capacities.push(BRONZE_TOWER.segments * units);
-    }
-    const floors: Floor[] = capacities.map((capacity, index) => ({
+    const unitsByRing = [12, 11, 10];
+    const rings: Ring[] = unitsByRing.map((units, index) => ({
       index,
-      capacity,
-      radius: capacity * pitch / (2 * Math.PI),
-      y: index * floorHeight
+      units,
+      radius: units * pitch / (2 * Math.PI),
+      y: index * ringHeight
     }));
-    const bodyHeight = floors.length * floorHeight;
-    const baseRadius = floors[0].radius;
+    const bodyHeight = rings.length * ringHeight;
+    const baseRadius = rings[0].radius;
     const slots: THREE.Matrix4[] = [];
 
-    floors.forEach(floor => {
-      const phase = floor.index * Math.PI / BRONZE_TOWER.segments;
-      for (let slot = 0; slot < floor.capacity; slot++) {
-        const theta = slot / floor.capacity * Math.PI * 2 + phase;
-        const y = floor.y + slot / floor.capacity * floorHeight + posterHeight / 2;
-        const position = new THREE.Vector3(
-          floor.radius * Math.cos(theta),
-          y,
-          floor.radius * Math.sin(theta)
-        );
-        const rotation = new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(0, -theta + Math.PI / 2, 0)
-        );
-        slots.push(new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1)));
+    // Her halka kendi çevresinde 3 dikey poster sırası taşır.
+    // 12'lik halka: 12+12+12, 11'lik halka: 11+11+11,
+    // 10'luk halka: 10+10+10. Posterler spiral boyunca yükselmez.
+    rings.forEach(ring => {
+      for (let row = 0; row < 3; row++) {
+        const y = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
+        for (let slot = 0; slot < ring.units; slot++) {
+          const theta = slot / ring.units * Math.PI * 2;
+          const position = new THREE.Vector3(
+            ring.radius * Math.cos(theta),
+            y,
+            ring.radius * Math.sin(theta)
+          );
+          const rotation = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(0, -theta + Math.PI / 2, 0)
+          );
+          slots.push(new THREE.Matrix4().compose(
+            position, rotation, new THREE.Vector3(1, 1, 1)
+          ));
+        }
       }
     });
 
-    // Bronz Kule'nin şimdilik ayrılmış tek üst yuvası da boş poster çerçevesidir.
+    // 99 halka yuvasına ek olarak ayrılmış tek tepe yuvası.
     slots.push(new THREE.Matrix4().compose(
-      new THREE.Vector3(0, bodyHeight + posterHeight * 0.65, 0),
+      new THREE.Vector3(0, bodyHeight + 0.95, 0),
       new THREE.Quaternion(),
       new THREE.Vector3(1, 1, 1)
     ));
 
-    return { floors, bodyHeight, baseRadius, slots, floorHeight };
+    return { rings, bodyHeight, baseRadius, slots, ringHeight };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -111,20 +116,30 @@ function BronzeTowerModel() {
         <meshStandardMaterial color={accent} metalness={0.8} roughness={0.25} />
       </mesh>
 
-      {dims.floors.map(floor => (
-        <group key={floor.index}>
-          <mesh position={[0, floor.y + dims.floorHeight / 2, 0]} castShadow receiveShadow>
-            <cylinderGeometry args={[floor.radius - 0.12, floor.radius - 0.04, dims.floorHeight, 72]} />
-            <meshStandardMaterial color={floor.index % 2 ? "#51483e" : "#625548"} roughness={0.82} metalness={0.12} />
+      {dims.rings.map(ring => (
+        <group key={ring.index}>
+          <mesh position={[0, ring.y + dims.ringHeight / 2, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[ring.radius - 0.12, ring.radius - 0.04, dims.ringHeight, 72]} />
+            <meshStandardMaterial color={ring.index % 2 ? "#51483e" : "#625548"} roughness={0.82} metalness={0.12} />
           </mesh>
-          <mesh position={[0, floor.y + 0.08, 0]} castShadow receiveShadow>
-            <cylinderGeometry args={[floor.radius + 0.24, floor.radius + 0.42, 0.16, 72]} />
+          <mesh position={[0, ring.y + 0.08, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[ring.radius + 0.24, ring.radius + 0.42, 0.16, 72]} />
             <meshStandardMaterial color="#81705b" roughness={0.72} metalness={0.2} />
           </mesh>
-          <mesh position={[0, floor.y + 0.17, 0]}>
-            <torusGeometry args={[floor.radius + 0.31, 0.055, 10, 72]} />
+          <mesh position={[0, ring.y + 0.17, 0]}>
+            <torusGeometry args={[ring.radius + 0.31, 0.055, 10, 72]} />
             <meshStandardMaterial color={accent} metalness={0.82} roughness={0.28} />
           </mesh>
+          <group position={[0, ring.y + dims.ringHeight - 0.12, 0]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <ringGeometry args={[ring.radius + 0.28, ring.radius + 1.05, 96]} />
+              <primitive object={walkwayMaterial} attach="material" />
+            </mesh>
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[ring.radius + 1.05, 0.075, 10, 96]} />
+              <primitive object={railMaterial} attach="material" />
+            </mesh>
+          </group>
         </group>
       ))}
 
@@ -142,24 +157,6 @@ function BronzeTowerModel() {
             <mesh>
               <boxGeometry args={[0.54, dims.bodyHeight + 0.36, 0.62]} />
               <meshStandardMaterial color={accent} wireframe metalness={0.7} roughness={0.3} />
-            </mesh>
-          </group>
-        );
-      })}
-
-      {dims.floors.map(floor => {
-        const innerRadius = floor.radius + 0.28;
-        const outerRadius = floor.radius + 1.05;
-        const y = floor.y + dims.floorHeight - 0.12;
-        return (
-          <group key={floor.index} position={[0, y, 0]}>
-            <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-              <ringGeometry args={[innerRadius, outerRadius, 96]} />
-              <primitive object={walkwayMaterial} attach="material" />
-            </mesh>
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[outerRadius, 0.075, 10, 96]} />
-              <primitive object={railMaterial} attach="material" />
             </mesh>
           </group>
         );
