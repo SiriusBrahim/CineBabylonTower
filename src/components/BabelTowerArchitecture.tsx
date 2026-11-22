@@ -80,7 +80,9 @@ function BronzeTowerModel() {
           // Böylece spiral yükselirken dikey olarak kesişebilecek
           // poster yuvaları farklı radyal düzlemlerde kalır.
           const ringRadiusOffset = ring.index * posterWidth * 0.5;
-          const rowRadiusOffset = (1 - row) * posterWidth * 0.25;
+          const rowRadiusOffset = ring.index === 0
+            ? 0
+            : (1 - row) * posterWidth * 0.25;
           const rowRadius = ring.radius + ringRadiusOffset + rowRadiusOffset;
           const position = new THREE.Vector3(
             rowRadius * Math.cos(theta),
