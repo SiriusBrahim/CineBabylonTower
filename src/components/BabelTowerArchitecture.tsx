@@ -70,7 +70,7 @@ function BronzeTowerModel() {
         // 1. sıra 0, 2. sıra -x/4, 3. sıra -x/2 yay mesafesinden başlar.
         // Her sırada slot genişliği kadar boşluk: merkezden merkeze mesafe 2x.
         // Üst halkaların mevcut başlangıç düzeni korunur.
-        const rowStartArcOffsets = [0, -posterWidth / 4, -posterWidth / 2];
+        const rowStartArcOffsets = [0, posterWidth / 4, posterWidth / 2];
         const rowArcSteps = [2 * posterWidth, 2 * posterWidth, 2 * posterWidth];
         const rowAngleOffset = ring.index === 0
           ? rowStartArcOffsets[row] / ring.radius
