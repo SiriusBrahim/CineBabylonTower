@@ -76,10 +76,15 @@ function BronzeTowerModel() {
             : 0;
           const y = rowY + spiralRise;
           const theta = ((slot + slotOffset) / ring.units) * Math.PI * 2;
+          // Spiral yükselişi olan taban ilk sırayı, aynı halkadaki
+          // diğer iki sırayla çakışmaması için biraz daha dış çapa al.
+          const rowRadius = ring.radius + (
+            ring.index === 0 && row === 0 ? posterWidth * 0.25 : 0
+          );
           const position = new THREE.Vector3(
-            ring.radius * Math.cos(theta),
+            rowRadius * Math.cos(theta),
             y,
-            ring.radius * Math.sin(theta)
+            rowRadius * Math.sin(theta)
           );
           const rotation = new THREE.Quaternion().setFromEuler(
             new THREE.Euler(0, -theta + Math.PI / 2, 0)
