@@ -4,7 +4,8 @@ import {
   type PosterNode3D,
   type TowerBuildResult,
   type TowerMetrics,
-  type TowerTierConfig
+  type TowerTierConfig,
+  type TowerWalkway3D
 } from "../types/content";
 
 function assertValidInputs(tier: TowerTierConfig, watchedCount: number, watchlistCount: number, metrics: TowerMetrics) {
@@ -37,13 +38,26 @@ export function calculateBabelTower(
   assertValidInputs(tier, watchedCount, watchlistCount, metrics);
 
   const nodes: PosterNode3D[] = [];
+  const walkways: TowerWalkway3D[] = [];
   const floorHeight = metrics.posterHeight + metrics.verticalGap;
   const unitArcLength = metrics.posterWidth + metrics.horizontalGap;
   const totalUserItems = watchedCount + watchlistCount;
-  const floorCapacities = getBodyFloorCapacities(tier);
+
+  // Clip configured capacities to the tier's real target. This prevents
+  // oversized generated tiers from creating empty upper floors.
+  let remainingCapacity = tier.targetTotal;
+  const floorCapacities = getBodyFloorCapacities(tier)
+    .map(capacity => {
+      const activeCapacity = Math.min(capacity, remainingCapacity);
+      remainingCapacity -= activeCapacity;
+      return activeCapacity;
+    })
+    .filter(capacity => capacity > 0);
+
   const bodyCapacity = floorCapacities.reduce((sum, cap) => sum + cap, 0);
   const flagCount = Math.max(0, tier.targetTotal - bodyCapacity);
   const baseRadius = (floorCapacities[0] * unitArcLength) / (2 * Math.PI);
+  const walkwayWidth = Math.max(0.9, metrics.posterHeight * 0.72);
   let currentIndex = 0;
 
   const makeNode = (index: number, position: [number, number, number], rotation: [number, number, number], floorIndex: number, isFlag: boolean): PosterNode3D => ({
@@ -55,10 +69,18 @@ export function calculateBabelTower(
   floorCapacities.forEach((capacity, floorIdx) => {
     const radius = (capacity * unitArcLength) / (2 * Math.PI);
     const floorAngleOffset = (floorIdx * Math.PI) / tier.segments;
-    for (let slot = 0; slot < capacity && currentIndex < tier.targetTotal; slot++) {
-      const progressInFloor = slot / capacity;
-      const theta = progressInFloor * Math.PI * 2 + floorAngleOffset;
-      const y = (floorIdx + progressInFloor) * floorHeight + metrics.posterHeight / 2;
+    const floorY = floorIdx * floorHeight;
+
+    walkways.push({
+      floorIndex: floorIdx,
+      innerRadius: Math.max(0.1, radius - walkwayWidth / 2),
+      outerRadius: radius + walkwayWidth / 2,
+      y: floorY - 0.015
+    });
+
+    for (let slot = 0; slot < capacity; slot++) {
+      const theta = (slot / capacity) * Math.PI * 2 + floorAngleOffset;
+      const y = floorY + metrics.posterHeight / 2;
       nodes.push(makeNode(
         currentIndex,
         [radius * Math.cos(theta), y, radius * Math.sin(theta)],
@@ -104,7 +126,7 @@ export function calculateBabelTower(
   const maxHeight = nodes.reduce((max, node) => Math.max(max, node.position[1] + metrics.posterHeight / 2), floorHeight);
   const crownFloors = flagCount > 1 ? Math.ceil(flagCount / Math.min(flagCount, Math.max(tier.segments, 5))) : flagCount;
   return {
-    tier, nodes, bodyCapacity, flagCount,
+    tier, nodes, walkways, bodyCapacity, flagCount,
     totalFloors: floorCapacities.length + crownFloors,
     maxHeight, baseRadius, watchedCount, watchlistCount, targetTotal: tier.targetTotal
   };
