@@ -64,8 +64,8 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const y = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // Yalnızca taban halkanın orta sırası, bir poster genişliği kadar yarım adım kaydırılır.
-        const slotOffset = (ring.index === 0 && row === 1) ? 0.5 : 0;
+        // Her halkanın orta sırası, bir poster genişliği kadar yarım adım kaydırılır.
+        const slotOffset = row === 1 ? 0.5 : 0;
         for (let slot = 0; slot < ring.units; slot++) {
           const theta = ((slot + slotOffset) / ring.units) * Math.PI * 2;
           const position = new THREE.Vector3(
