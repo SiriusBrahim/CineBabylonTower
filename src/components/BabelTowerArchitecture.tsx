@@ -64,21 +64,26 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // Bütün halkalarda sıra başlangıçları çevre boyunca 0, +x/4 ve +x/2 kayar.
-        // Slotlar bitişik yerleşir; her sıra kendi halkasının çevresinde bir tur atar.
-        const rowStartArcOffsets = [0, posterWidth / 4, posterWidth / 2];
-        const rowAngleOffset = rowStartArcOffsets[row] / ring.radius;
         const angularStep = (2 * Math.PI) / ring.units;
-        // Bir tam tur boyunca toplam içe daralma posterWidth kadar olur.
         const radialStep = posterWidth / ring.units;
+        const risePerSlot = posterHeight / 4;
+
         for (let slot = 0; slot < ring.units; slot++) {
-          // Her slot bir öncekinin dörtte bir poster yüksekliği kadar yükselir.
-          const spiralRise = slot * (posterHeight / 4);
-          const y = rowY + spiralRise;
-          const theta = rowAngleOffset + slot * angularStep;
-          // Her halka kendi başlangıç yarıçapından başlar ve aynı miktarda
-          // (posterWidth) içe daralarak helisel spiral oluşturur.
-          const rowRadius = ring.radius - slot * radialStep;
+          // Yalnızca taban halkada üç sıra tek ve kesintisiz bir spiral oluşturur.
+          // Sıra geçişlerinde açı, yarıçap ve yükseklik sayaçları sıfırlanmaz.
+          const isBaseRing = ring.index === 0;
+          const continuousSlot = isBaseRing ? row * ring.units + slot : slot;
+          const rowStartArcOffsets = [0, posterWidth / 4, posterWidth / 2];
+          const rowAngleOffset = isBaseRing ? 0 : rowStartArcOffsets[row] / ring.radius;
+
+          const spiralRise = continuousSlot * risePerSlot;
+          const y = isBaseRing
+            ? ring.y + posterHeight / 2 + 0.12 + spiralRise
+            : rowY + spiralRise;
+          const theta = rowAngleOffset + continuousSlot * angularStep;
+          // Her sıranın ilk halkası kendi başlangıç yarıçapını korur.
+          // Taban halkada daralma ve yükselme 36 slot boyunca kesintisiz sürer.
+          const rowRadius = ring.radius - continuousSlot * radialStep;
           const position = new THREE.Vector3(
             rowRadius * Math.cos(theta),
             y,
