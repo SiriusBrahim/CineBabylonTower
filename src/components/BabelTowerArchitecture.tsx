@@ -43,12 +43,13 @@ function BronzeTowerModel() {
     const ringGap = 0.48;
     const ringHeight = 3 * rowPitch + ringGap;
     const unitsByRing = [12, 11, 10];
+    // Çaplar poster ölçüsü ve sayısından bağımsız ayarlanır.
+    // İlk deneme: alt 2.30, orta 1.85, üst 1.52 birim yarıçap.
+    const radiiByRing = [2.30, 1.85, 1.52];
     const rings: Ring[] = unitsByRing.map((units, index) => ({
       index,
       units,
-      // Merkezler arası kiriş mesafesi poster genişliğine eşit:
-      // aynı sıradaki poster çerçeveleri yan yana, boşluksuz dizilir.
-      radius: posterWidth / (2 * Math.sin(Math.PI / units)),
+      radius: radiiByRing[index],
       y: index * ringHeight
     }));
     const bodyHeight = rings.length * ringHeight;
