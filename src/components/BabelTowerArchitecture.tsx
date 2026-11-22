@@ -38,7 +38,7 @@ function InstancedSlots({ matrices, geometry, material }: {
 
 function BronzeTowerModel() {
   const dims = useMemo(() => {
-    const posterWidth = 0.92, posterHeight = 1.38;
+    const posterHeight = 1.38;
     const verticalGap = 0, rowPitch = posterHeight + verticalGap;
     const ringGap = 0.48;
     const ringHeight = 3 * rowPitch + ringGap;
