@@ -14,9 +14,9 @@ export interface ArchitectureTier {
 }
 export const ARCHITECTURE_TIERS: ArchitectureTier[] = [
   { id: "bronze", name: "Bronz Kule", targetTotal: 100, segments: 3, baseUnits: 12, topUnits: 10, accentColor: "#cd7f32" },
-  { id: "silver", name: "Gümüş Kule", targetTotal: 365, segments: 4, baseUnits: 16, topUnits: 10, accentColor: "#c0c0c0" },
-  { id: "gold", name: "Altın Kule", targetTotal: 835, segments: 5, baseUnits: 20, topUnits: 10, accentColor: "#ffd700" },
-  { id: "premium", name: "Premium Kule", targetTotal: 1550, segments: 6, baseUnits: 24, topUnits: 10, accentColor: "#38bdf8" }
+  { id: "silver", name: "Gümüş Kule", targetTotal: 368, segments: 4, baseUnits: 16, topUnits: 10, accentColor: "#c0c0c0" },
+  { id: "gold", name: "Altın Kule", targetTotal: 833, segments: 5, baseUnits: 20, topUnits: 10, accentColor: "#ffd700" },
+  { id: "premium", name: "Premium Kule", targetTotal: 1545, segments: 6, baseUnits: 24, topUnits: 10, accentColor: "#38bdf8" }
 ];
 type Floor = { index: number; capacity: number; radius: number; y: number };
 function InstancedBlocks({ matrices, geometry, material }: { matrices: THREE.Matrix4[]; geometry: THREE.BufferGeometry; material: THREE.Material }) {
@@ -60,6 +60,11 @@ function ArchitectureModel({ tier }: { tier: ArchitectureTier }) {
       const theta = slot / count * Math.PI * 2 + ring * 0.4, r = crownRadius * Math.pow(0.85, ring);
       crowns.push({ position: [r * Math.cos(theta), bodyHeight + ring * floorHeight + posterHeight * 0.65, r * Math.sin(theta)], rotation: -theta + Math.PI / 2 });
     }
+    crowns.forEach(crown => {
+      const position = new THREE.Vector3(...crown.position);
+      const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, crown.rotation, 0));
+      slots.push(new THREE.Matrix4().compose(position, rotation, new THREE.Vector3(1, 1, 1)));
+    });
     return { floors, bodyCapacity, flagCount, bodyHeight, floorHeight, baseRadius, topRadius, crowns, slots };
   }, [tier]);
   const accent = useMemo(() => new THREE.Color(tier.accentColor), [tier.accentColor]);
@@ -116,16 +121,7 @@ function ArchitectureModel({ tier }: { tier: ArchitectureTier }) {
     </group>)}
     {/* Empty poster-slot architectural frames */}
     <InstancedBlocks matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
-    {/* Crown terrace */}
-    <mesh position={[0, dims.bodyHeight + 0.02, 0]} castShadow><cylinderGeometry args={[dims.topRadius * 0.78, dims.topRadius * 1.03, 0.38, 64]} /><meshStandardMaterial color="#8b765b" metalness={0.42} roughness={0.45} /></mesh>
-    <mesh position={[0, dims.bodyHeight + 0.24, 0]}><torusGeometry args={[dims.topRadius * 0.76, 0.07, 12, 64]} /><meshStandardMaterial color={accent} metalness={0.85} roughness={0.2} /></mesh>
-    {dims.flagCount === 1 ? <group position={[0, dims.bodyHeight + 1.05, 0]}>
-      <mesh position={[0, 0.8, 0]} castShadow><cylinderGeometry args={[0.045, 0.07, 1.7, 12]} /><meshStandardMaterial color="#d7bd88" metalness={0.8} /></mesh>
-      <mesh position={[0.42, 1.32, 0]}><planeGeometry args={[0.85, 0.48]} /><meshStandardMaterial color={accent} side={THREE.DoubleSide} metalness={0.45} /></mesh>
-      <mesh position={[0, 1.72, 0]}><octahedronGeometry args={[0.16, 0]} /><meshStandardMaterial color={accent} metalness={0.9} /></mesh>
-    </group> : dims.crowns.map((flag, i) => <group key={i} position={flag.position} rotation={[0, flag.rotation, 0]}>
-      <mesh castShadow><boxGeometry args={[0.96, 1.38, 0.08]} /><meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.22} metalness={0.78} roughness={0.25} /></mesh>
-    </group>)}
+    {/* Upper-section slots use the same neutral empty-frame treatment; crown styling is deferred. */}
   </group>;
 }
 export default function BabelTowerArchitecture({ tier }: { tier: ArchitectureTier }) {
