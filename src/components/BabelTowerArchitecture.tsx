@@ -21,8 +21,15 @@ function InstancedSlots({ matrices, geometry, material }: {
 }) {
   const mesh = useMemo(() => {
     const instance = new THREE.InstancedMesh(geometry, material, matrices.length);
-    matrices.forEach((matrix, index) => instance.setMatrixAt(index, matrix));
+    const slotColor = new THREE.Color();
+    matrices.forEach((matrix, index) => {
+      instance.setMatrixAt(index, matrix);
+      // Her yuvaya komşularından ayırt edilebilen, dengeli bir renk ver.
+      slotColor.setHSL((index * 0.61803398875) % 1, 0.62, 0.56);
+      instance.setColorAt(index, slotColor);
+    });
     instance.instanceMatrix.needsUpdate = true;
+    if (instance.instanceColor) instance.instanceColor.needsUpdate = true;
     instance.computeBoundingSphere();
     return instance;
   }, [geometry, material, matrices]);
@@ -84,7 +91,7 @@ function BronzeTowerModel() {
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: "#39404b",
+    color: "#ffffff",
     metalness: 0.68,
     roughness: 0.38,
     emissive: accent,
