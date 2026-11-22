@@ -125,7 +125,7 @@ export default function BabelTowerArchitecture() {
 
   return (
     <Canvas shadows dpr={[1, 1.7]}
-      camera={{ position: [radius * 5.5, height * 1.15, radius * 8.0], fov: 39 }}>
+      camera={{ position: [radius * 5.5, height * 2.875, radius * 8.0], fov: 39 }}>
       <color attach="background" args={["#090b12"]} />
       <fog attach="fog" args={["#090b12", height * 1.7, height * 4.8]} />
       <ambientLight intensity={0.68} />
