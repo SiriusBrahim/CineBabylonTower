@@ -92,7 +92,7 @@ function Tower({ build, content }: { build: TowerBuildResult; content: TowerCont
     <group>
       {build.walkways.map(ring => <Walkway key={ring.floorIndex} ring={ring} />)}
       {build.nodes.map(node => <Poster key={node.index} node={node} content={content[node.index]} />)}
-      <mesh position={[0, -0.08, 0]} receiveShadow>
+      <mesh position={[0, -0.16, 0]} receiveShadow>
         <cylinderGeometry args={[build.baseRadius * 1.22, build.baseRadius * 1.3, 0.16, 64]} />
         <meshStandardMaterial color="#151c2b" metalness={0.5} roughness={0.6} />
       </mesh>
