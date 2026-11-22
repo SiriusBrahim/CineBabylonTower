@@ -31,7 +31,6 @@ type TerraceRing = {
 
 function createTowerLayout() {
   const {
-    posterWidth,
     posterHeight,
     verticalGap,
     rowsPerFloor,
