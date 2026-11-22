@@ -65,33 +65,20 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // İlk halkada sıralar aynı yarıçapta kalır; başlangıçları
-        // çevre boyunca x/4'lük kademelerle sola kaydırılır.
-        // 1. sıra 0, 2. sıra -x/4, 3. sıra -x/2 yay mesafesinden başlar.
-        // Her sırada slot genişliği kadar boşluk: merkezden merkeze mesafe 2x.
-        // Üst halkaların mevcut başlangıç düzeni korunur.
+        // Bütün halkalarda aynı sıra düzeni uygulanır:
+        // başlangıçlar çevre boyunca 0, +x/4 ve +x/2 kayar.
+        // Slot genişliği x, slotlar arası boşluk x; merkez aralığı 2x.
         const rowStartArcOffsets = [0, posterWidth / 4, posterWidth / 2];
         const rowArcSteps = [2 * posterWidth, 2 * posterWidth, 2 * posterWidth];
-        const rowAngleOffset = ring.index === 0
-          ? rowStartArcOffsets[row] / ring.radius
-          : (row === 1 ? 0.5 : 0) * Math.PI * 2 / ring.units;
+        const rowAngleOffset = rowStartArcOffsets[row] / ring.radius;
         for (let slot = 0; slot < ring.units; slot++) {
-          // Taban halkanın üç sırası da 1/4 oranında yükselir.
-          // Üst halkalarda yalnızca ilk sıranın mevcut spirali korunur.
-          const spiralRise = ring.index === 0 || row === 0
-            ? slot * (posterHeight / 4)
-            : 0;
+          // Bütün halkaların üç sırasında da slotlar y/4 oranında yükselir.
+          const spiralRise = slot * (posterHeight / 4);
           const y = rowY + spiralRise;
-          const theta = ring.index === 0
-            ? rowAngleOffset + (slot * rowArcSteps[row]) / ring.radius
-            : (slot / ring.units) * Math.PI * 2 + rowAngleOffset;
-          // Taban halkanın üç sırası aynı çapta kalır.
-          // Üst halkaların önceki çap ayarları korunur.
-          const ringRadiusOffset = ring.index * posterWidth * 0.5;
-          const rowRadiusOffset = ring.index === 0
-            ? 0
-            : (1 - row) * posterWidth * 0.25;
-          const rowRadius = ring.radius + ringRadiusOffset + rowRadiusOffset;
+          const theta = rowAngleOffset + (slot * rowArcSteps[row]) / ring.radius;
+          // Her halkanın kendi yarıçapı korunur; aynı halkanın üç sırası
+          // aynı çapta kalır. Halkalar arası çap farkını unitsByRing belirler.
+          const rowRadius = ring.radius;
           const position = new THREE.Vector3(
             rowRadius * Math.cos(theta),
             y,
