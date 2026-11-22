@@ -8,6 +8,10 @@ export default function App() {
   const [content, setContent] = useState<TowerContent[]>(sampleContent);
   const watchedCount = content.filter(item => item.status === "watched").length;
   const watchlistCount = content.length - watchedCount;
+  const towerOrder = useMemo(
+    () => [...content].sort((a, b) => Number(b.status === "watched") - Number(a.status === "watched")),
+    [content]
+  );
   const build = useMemo(() => buildTowerForContent(watchedCount, watchlistCount), [watchedCount, watchlistCount]);
   const progress = Math.min(100, (content.length / build.targetTotal) * 100);
 
@@ -32,7 +36,7 @@ export default function App() {
     </section>
     <section className="tower-panel">
       <div className="panel-heading"><div><p className="eyebrow">INTERACTIVE 3D MODEL</p><h2>Babylon Tower</h2></div><span className="drag-hint">↻ Sürükle · Yakınlaştır · İncele</span></div>
-      <div className="scene-wrap"><TowerScene build={build} content={content} /><div className="scene-label"><span className="legend watched" /> İzlenen <span className="legend planned" /> İzlenecek <span className="legend ghost" /> Potansiyel</div></div>
+      <div className="scene-wrap"><TowerScene build={build} content={towerOrder} /><div className="scene-label"><span className="legend watched" /> İzlenen <span className="legend planned" /> İzlenecek <span className="legend ghost" /> Potansiyel</div></div>
       <div className="progress-row"><div><span>KULE İNŞA İLERLEMESİ</span><strong>{content.length} / {build.targetTotal}</strong></div><div className="progress-track"><i style={{ width: `${progress}%` }} /></div></div>
     </section>
     <section className="library">
