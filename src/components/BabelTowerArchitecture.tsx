@@ -44,11 +44,13 @@ function BronzeTowerModel() {
     const ringGap = 0.48;
     const ringHeight = 3 * rowPitch + ringGap;
     const unitsByRing = [12, 11, 10];
-    // Çaplar poster ölçüsü ve sayısından bağımsız ayarlanır.
-    // Taban halkasında iki poster yuvası arasında bir yuva genişliğinde boşluk bırakılır.
-    // Merkezler arası kiriş mesafesi: poster genişliği + poster genişliği.
-    const baseRadius = (posterWidth * 2) / (2 * Math.sin(Math.PI / unitsByRing[0]));
-    const radiiByRing = [baseRadius, 1.85, 1.52];
+    // Her halkada komşu poster yuvalarının kenarları arasında
+    // bir poster genişliği kadar boşluk bırakılır.
+    // Bu nedenle yuva merkezleri arasındaki kiriş mesafesi 2 × posterWidth olur.
+    const centerSpacing = posterWidth * 2;
+    const radiiByRing = unitsByRing.map(units =>
+      centerSpacing / (2 * Math.sin(Math.PI / units))
+    );
     const rings: Ring[] = unitsByRing.map((units, index) => ({
       index,
       units,
@@ -58,13 +60,12 @@ function BronzeTowerModel() {
     const bodyHeight = rings.length * ringHeight;
     const slots: THREE.Matrix4[] = [];
 
-    // Her halka kendi çevresinde 3 dikey poster sırası taşır.
     // 12'lik halka: 12+12+12, 11'lik halka: 11+11+11,
     // 10'luk halka: 10+10+10. Posterler spiral boyunca yükselmez.
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const y = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // Her halkanın orta sırası, bir poster genişliği kadar yarım adım kaydırılır.
+        // Her halkanın orta sırası yarım yuva adımı kadar kaydırılır.
         const slotOffset = row === 1 ? 0.5 : 0;
         for (let slot = 0; slot < ring.units; slot++) {
           const theta = ((slot + slotOffset) / ring.units) * Math.PI * 2;
@@ -90,7 +91,7 @@ function BronzeTowerModel() {
       new THREE.Vector3(1, 1, 1)
     ));
 
-    return { rings, bodyHeight, baseRadius, slots, ringHeight };
+    return { rings, bodyHeight, slots, ringHeight };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
