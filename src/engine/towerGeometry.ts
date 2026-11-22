@@ -136,11 +136,11 @@ export function getActiveTier(totalUserItems: number): TowerTierConfig {
   if (!Number.isInteger(totalUserItems) || totalUserItems < 0) throw new RangeError("totalUserItems negatif olmayan bir tam sayı olmalı.");
   const tier = TOWER_TIERS.find(item => totalUserItems <= item.targetTotal);
   if (tier) return { ...tier };
-  const extraLevel = Math.ceil((totalUserItems - 1550) / 1000);
+  const extraLevel = Math.ceil((totalUserItems - 1545) / 1000);
   return {
     id: "premium",
     name: `Efsanevi Kule Sv.${extraLevel}`,
-    targetTotal: 1550 + extraLevel * 1000,
+    targetTotal: 1545 + extraLevel * 1000,
     segments: 6 + extraLevel,
     baseUnits: 24 + extraLevel * 4,
     topUnits: 10
