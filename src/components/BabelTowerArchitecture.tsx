@@ -48,7 +48,7 @@ function BronzeTowerModel() {
     // Babel silüeti için tabandan tepeye güçlü ve kontrollü daralma.
     const taper = 0.56;
     const turnGap = 0.65;
-    const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.7;
+    const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.8;
     const topRadius = baseRadius * (1 - taper);
     const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
 
@@ -110,7 +110,7 @@ export default function BabelTowerArchitecture() {
   const totalSlots = unitsByRing.reduce((sum, units) => sum + units * rowsPerRing, 0);
   const taper = 0.56;
   const turnGap = 0.65;
-  const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.7;
+  const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.8;
   const topRadius = baseRadius * (1 - taper);
   const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
 
