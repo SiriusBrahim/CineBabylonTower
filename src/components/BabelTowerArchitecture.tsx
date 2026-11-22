@@ -31,16 +31,17 @@ function InstancedSlots({ matrices, geometry, material }: {
 
 function BronzeTowerModel() {
   const dims = useMemo(() => {
-    const posterWidth = 1, posterHeight = 1.5, horizontalGap = 0.15;
+    const posterWidth = 0.92, posterHeight = 1.38;
     const verticalGap = 0.16, rowPitch = posterHeight + verticalGap;
     const ringGap = 0.48;
     const ringHeight = 3 * rowPitch + ringGap;
-    const pitch = posterWidth + horizontalGap;
     const unitsByRing = [12, 11, 10];
     const rings: Ring[] = unitsByRing.map((units, index) => ({
       index,
       units,
-      radius: units * pitch / (2 * Math.PI),
+      // Merkezler arası kiriş mesafesi poster genişliğine eşit:
+      // aynı sıradaki poster çerçeveleri yan yana, boşluksuz dizilir.
+      radius: posterWidth / (2 * Math.sin(Math.PI / units)),
       y: index * ringHeight
     }));
     const bodyHeight = rings.length * ringHeight;
