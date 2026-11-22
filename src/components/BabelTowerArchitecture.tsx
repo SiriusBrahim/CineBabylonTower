@@ -70,7 +70,8 @@ function BronzeTowerModel() {
         // Sıra içindeki yay adımları sırasıyla 2x, 2x/4 ve 3x/4'tür.
         // Üst halkaların mevcut başlangıç düzeni korunur.
         const rowStartXOffsets = [0, -posterWidth / 4, -posterWidth / 2];
-        const rowArcSteps = [2 * posterWidth, posterWidth / 2, posterWidth * 3 / 4];
+        // Her sırada slot genişliği kadar boşluk: merkezden merkeze mesafe 2x.
+        const rowArcSteps = [2 * posterWidth, 2 * posterWidth, 2 * posterWidth];
         const rowAngleOffset = ring.index === 0
           ? 0
           : (row === 1 ? 0.5 : 0) * Math.PI * 2 / ring.units;
