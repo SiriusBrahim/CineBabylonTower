@@ -65,18 +65,28 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // Sıralar çevre boyunca slot genişliği kadar kademeli başlar:
-        // 1. sıra x, 2. sıra 2x, 3. sıra 3x.
-        // Her sıranın ilk slotu kendi başlangıç yüksekliğinde sabittir;
-        // sonraki slotlar her adımda poster yüksekliğinin 1/4'ü kadar yükselir.
-        const rowArcOffset = (row + 1) * posterWidth;
-        const rowAngleOffset = rowArcOffset / ring.radius;
+        // Taban halkada sıralar çevre boyunca slot genişliği kadar
+        // kademeli başlar: 1. sıra x, 2. sıra 2x, 3. sıra 3x.
+        // Üst halkaların mevcut başlangıç düzeni korunur.
+        const rowArcOffset = ring.index === 0 ? (row + 1) * posterWidth : 0;
+        const rowAngleOffset = ring.index === 0
+          ? rowArcOffset / ring.radius
+          : (row === 1 ? 0.5 : 0) * Math.PI * 2 / ring.units;
         for (let slot = 0; slot < ring.units; slot++) {
-          const spiralRise = slot * (posterHeight / 4);
+          // Taban halkanın üç sırası da 1/4 oranında yükselir.
+          // Üst halkalarda yalnızca ilk sıranın mevcut spirali korunur.
+          const spiralRise = ring.index === 0 || row === 0
+            ? slot * (posterHeight / 4)
+            : 0;
           const y = rowY + spiralRise;
           const theta = (slot / ring.units) * Math.PI * 2 + rowAngleOffset;
-          // Tüm sıralar aynı halka çapını kullanır.
-          const rowRadius = ring.radius;
+          // Taban halkanın üç sırası aynı çapta kalır.
+          // Üst halkaların önceki çap ayarları korunur.
+          const ringRadiusOffset = ring.index * posterWidth * 0.5;
+          const rowRadiusOffset = ring.index === 0
+            ? 0
+            : (1 - row) * posterWidth * 0.25;
+          const rowRadius = ring.radius + ringRadiusOffset + rowRadiusOffset;
           const position = new THREE.Vector3(
             rowRadius * Math.cos(theta),
             y,
