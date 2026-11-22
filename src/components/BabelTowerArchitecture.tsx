@@ -65,28 +65,19 @@ function BronzeTowerModel() {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
         const angularStep = (2 * Math.PI) / ring.units;
-        // Taban halkanın 36 slotluk üç sırası boyunca toplam içe daralma bir poster genişliğidir.
-        // Böylece spiral yarıçapı sıfırı geçmez ve slotlar merkeze yığılmaz.
-        const radialStep = ring.index === 0
-          ? posterWidth / (ring.units * 3)
-          : posterWidth / ring.units;
+        // Her halkanın üç sırası tek bir kesintisiz spiral oluşturur.
+        // Üç sıra boyunca toplam içe daralma yaklaşık bir poster genişliğidir.
+        const radialStep = posterWidth / (ring.units * 3);
         const risePerSlot = posterHeight / 4;
 
         for (let slot = 0; slot < ring.units; slot++) {
-          // Yalnızca taban halkada üç sıra tek ve kesintisiz bir spiral oluşturur.
-          // Sıra geçişlerinde açı, yarıçap ve yükseklik sayaçları sıfırlanmaz.
-          const isBaseRing = ring.index === 0;
-          const continuousSlot = isBaseRing ? row * ring.units + slot : slot;
-          const rowStartArcOffsets = [0, posterWidth / 4, posterWidth / 2];
-          const rowAngleOffset = isBaseRing ? 0 : rowStartArcOffsets[row] / ring.radius;
+          // Sayaçlar sıra geçişlerinde sıfırlanmaz: 0 ... (3 * units - 1).
+          const continuousSlot = row * ring.units + slot;
 
           const spiralRise = continuousSlot * risePerSlot;
-          const y = isBaseRing
-            ? ring.y + posterHeight / 2 + 0.12 + spiralRise
-            : rowY + spiralRise;
-          const theta = rowAngleOffset + continuousSlot * angularStep;
-          // Her sıranın ilk halkası kendi başlangıç yarıçapını korur.
-          // Taban halkada daralma ve yükselme 36 slot boyunca kesintisiz sürer.
+          const y = ring.y + posterHeight / 2 + 0.12 + spiralRise;
+          const theta = continuousSlot * angularStep;
+          // Her halka kendi başlangıç yarıçapından içe doğru ilerler.
           const rowRadius = ring.radius - continuousSlot * radialStep;
           const position = new THREE.Vector3(
             rowRadius * Math.cos(theta),
