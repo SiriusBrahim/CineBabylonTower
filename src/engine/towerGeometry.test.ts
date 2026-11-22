@@ -37,6 +37,15 @@ describe("tower geometry", () => {
     }
   });
 
+  it("does not generate empty floors when a dynamic tier reaches its target before its nominal capacity", () => {
+    const tier = getActiveTier(2551);
+    const result = calculateBabelTower(tier, 2000, 1550);
+    expect(result.nodes).toHaveLength(tier.targetTotal);
+    expect(result.bodyCapacity).toBe(tier.targetTotal);
+    expect(result.flagCount).toBe(0);
+    expect(result.walkways).toHaveLength(result.nodes.filter(node => !node.isFlag).reduce((max, node) => Math.max(max, node.floorIndex + 1), 0));
+  });
+
   it("creates multiple crown rings for gold tier", () => {
     const result = calculateBabelTower(TOWER_TIERS[2], 400, 100);
     expect(result.flagCount).toBe(10);
