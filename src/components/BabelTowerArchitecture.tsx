@@ -19,8 +19,8 @@ const TOWER_CONFIG = {
   slotsByFloor: [36, 33, 30] as const,
   segmentsByFloor: [12, 11, 10] as const,
   // 10 posteri 0.92 genişlik + 0.10 boşlukla çakışmadan taşıyabilmek
-  // için üst kat yarıçapı 1.30 yerine 1.65 seçildi.
-  radiusByFloor: [2.5, 1.9, 1.65] as const,
+  // için üst kat yarıçapı 1.30 yerine 1.67 seçildi.
+  radiusByFloor: [2.5, 1.9, 1.67] as const,
   floorGap: 0.5,
   crownExtraGap: 0.5
 };
