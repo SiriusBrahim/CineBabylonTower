@@ -42,7 +42,18 @@ export function calculateBabelTower(
   const floorHeight = metrics.posterHeight + metrics.verticalGap;
   const unitArcLength = metrics.posterWidth + metrics.horizontalGap;
   const totalUserItems = watchedCount + watchlistCount;
-  const floorCapacities = getBodyFloorCapacities(tier);
+
+  // Clip configured capacities to the tier's real target. This prevents
+  // oversized generated tiers from creating empty upper floors.
+  let remainingCapacity = tier.targetTotal;
+  const floorCapacities = getBodyFloorCapacities(tier)
+    .map(capacity => {
+      const activeCapacity = Math.min(capacity, remainingCapacity);
+      remainingCapacity -= activeCapacity;
+      return activeCapacity;
+    })
+    .filter(capacity => capacity > 0);
+
   const bodyCapacity = floorCapacities.reduce((sum, cap) => sum + cap, 0);
   const flagCount = Math.max(0, tier.targetTotal - bodyCapacity);
   const baseRadius = (floorCapacities[0] * unitArcLength) / (2 * Math.PI);
@@ -64,10 +75,10 @@ export function calculateBabelTower(
       floorIndex: floorIdx,
       innerRadius: Math.max(0.1, radius - walkwayWidth / 2),
       outerRadius: radius + walkwayWidth / 2,
-      y: floorY - 0.055
+      y: floorY - 0.015
     });
 
-    for (let slot = 0; slot < capacity && currentIndex < tier.targetTotal; slot++) {
+    for (let slot = 0; slot < capacity; slot++) {
       const theta = (slot / capacity) * Math.PI * 2 + floorAngleOffset;
       const y = floorY + metrics.posterHeight / 2;
       nodes.push(makeNode(
