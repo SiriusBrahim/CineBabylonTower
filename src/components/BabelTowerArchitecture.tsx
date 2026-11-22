@@ -56,7 +56,6 @@ function BronzeTowerModel() {
       y: index * ringHeight
     }));
     const bodyHeight = rings.length * ringHeight;
-    const baseRadius = rings[0].radius;
     const slots: THREE.Matrix4[] = [];
 
     // Her halka kendi çevresinde 3 dikey poster sırası taşır.
