@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { useEffect, useMemo, useState } from "react";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import type { PosterNode3D, TowerBuildResult, TowerContent, TowerWalkway3D } from "../types/content";
@@ -8,10 +8,36 @@ function getPosterOpacity(node: PosterNode3D) {
   return node.isBlueprint ? 0.22 : node.isWatched ? 1 : 0.48;
 }
 
-function RemotePosterMaterial({ url, opacity }: { url: string; opacity: number }) {
-  const texture = useLoader(THREE.TextureLoader, url);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return <meshStandardMaterial map={texture} transparent opacity={opacity} side={THREE.DoubleSide} roughness={0.82} />;
+function RemotePosterMaterial({ url, opacity, fallback }: { url: string; opacity: number; fallback: THREE.Texture }) {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    setTexture(null);
+    const loader = new THREE.TextureLoader();
+    const loadedTexture = loader.load(
+      url,
+      loaded => {
+        if (disposed) {
+          loaded.dispose();
+          return;
+        }
+        loaded.colorSpace = THREE.SRGBColorSpace;
+        setTexture(loaded);
+      },
+      undefined,
+      () => {
+        if (!disposed) setTexture(null);
+      }
+    );
+
+    return () => {
+      disposed = true;
+      loadedTexture.dispose();
+    };
+  }, [url]);
+
+  return <meshStandardMaterial map={texture ?? fallback} transparent opacity={opacity} side={THREE.DoubleSide} roughness={0.82} />;
 }
 
 function Poster({ node, content }: { node: PosterNode3D; content?: TowerContent }) {
@@ -57,9 +83,7 @@ function Poster({ node, content }: { node: PosterNode3D; content?: TowerContent 
     <mesh position={node.position} rotation={node.rotation}>
       <planeGeometry args={[0.92, 1.38]} />
       {content?.posterUrl ? (
-        <Suspense fallback={<meshStandardMaterial map={texture} transparent opacity={opacity} side={THREE.DoubleSide} roughness={0.82} />}>
-          <RemotePosterMaterial url={content.posterUrl} opacity={opacity} />
-        </Suspense>
+        <RemotePosterMaterial url={content.posterUrl} opacity={opacity} fallback={texture} />
       ) : (
         <meshStandardMaterial map={texture} transparent opacity={opacity} side={THREE.DoubleSide} roughness={0.82} />
       )}
