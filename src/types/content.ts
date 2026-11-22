@@ -37,9 +37,17 @@ export interface PosterNode3D {
   isBlueprint: boolean;
 }
 
+export interface TowerWalkway3D {
+  floorIndex: number;
+  innerRadius: number;
+  outerRadius: number;
+  y: number;
+}
+
 export interface TowerBuildResult {
   tier: TowerTierConfig;
   nodes: PosterNode3D[];
+  walkways: TowerWalkway3D[];
   bodyCapacity: number;
   flagCount: number;
   totalFloors: number;
