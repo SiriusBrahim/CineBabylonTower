@@ -38,14 +38,17 @@ function InstancedSlots({ matrices, geometry, material }: {
 
 function BronzeTowerModel() {
   const dims = useMemo(() => {
+    const posterWidth = 0.92;
     const posterHeight = 1.38;
     const verticalGap = 0, rowPitch = posterHeight + verticalGap;
     const ringGap = 0.48;
     const ringHeight = 3 * rowPitch + ringGap;
     const unitsByRing = [12, 11, 10];
     // Çaplar poster ölçüsü ve sayısından bağımsız ayarlanır.
-    // İlk deneme: alt 2.30, orta 1.85, üst 1.52 birim yarıçap.
-    const radiiByRing = [2.30, 1.85, 1.52];
+    // Taban halkasında iki poster yuvası arasında bir yuva genişliğinde boşluk bırakılır.
+    // Merkezler arası kiriş mesafesi: poster genişliği + poster genişliği.
+    const baseRadius = (posterWidth * 2) / (2 * Math.sin(Math.PI / unitsByRing[0]));
+    const radiiByRing = [baseRadius, 1.85, 1.52];
     const rings: Ring[] = unitsByRing.map((units, index) => ({
       index,
       units,
@@ -108,7 +111,7 @@ function BronzeTowerModel() {
 
 export default function BabelTowerArchitecture() {
   const height = 3 * (3 * (1.5 + 0.16) + 0.48);
-  const radius = 3 * 12 * 1.15 / (2 * Math.PI);
+  const radius = 3 * 12 * 1.84 / (2 * Math.PI);
   return (
     <Canvas shadows dpr={[1, 1.7]}
       camera={{ position: [radius * 2.45, height * 0.72, radius * 3.05], fov: 39 }}>
