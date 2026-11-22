@@ -68,7 +68,8 @@ function BronzeTowerModel() {
         // Taban halkada sıralar çevre boyunca slot genişliği kadar
         // kademeli başlar: 1. sıra x, 2. sıra 2x, 3. sıra 3x.
         // Üst halkaların mevcut başlangıç düzeni korunur.
-        const rowArcOffset = ring.index === 0 ? (row + 1) * posterWidth : 0;
+        const rowArcOffsets = [posterWidth, posterWidth / 4, posterWidth / 8];
+        const rowArcOffset = ring.index === 0 ? rowArcOffsets[row] : 0;
         const rowAngleOffset = ring.index === 0
           ? rowArcOffset / ring.radius
           : (row === 1 ? 0.5 : 0) * Math.PI * 2 / ring.units;
