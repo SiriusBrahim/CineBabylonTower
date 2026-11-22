@@ -31,6 +31,10 @@ const _normal = new THREE.Vector3();
 const _euler = new THREE.Euler();
 const _quat = new THREE.Quaternion();
 const _scale = new THREE.Vector3(1, 1, 1);
+const _camLocalPos = new THREE.Vector3();
+const _invMat = new THREE.Matrix4();
+const _instPos = new THREE.Vector3();
+const _zeroMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 
 function createBeveledMonolithGeometry(width = 0.9, height = 1.38, depth = 0.055) {
   const bevel = 0.018;
@@ -79,22 +83,30 @@ interface SlotBucketProps {
   nodes: PosterNode3D[];
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
+  baseRadius: number;
   onHoverNode: (node: PosterNode3D | null) => void;
   onSelectFloor: (floorIndex: number) => void;
 }
 
-function SlotInstancedBucket({ nodes, geometry, material, onHoverNode, onSelectFloor }: SlotBucketProps) {
-  const mesh = useMemo(() => {
+function SlotInstancedBucket({ nodes, geometry, material, baseRadius, onHoverNode, onSelectFloor }: SlotBucketProps) {
+  const { mesh, baseMatrices, hiddenFlags, lastCamPos } = useMemo(() => {
     const instance = new THREE.InstancedMesh(geometry, material, Math.max(1, nodes.length));
-    nodes.forEach((node, idx) => {
-      instance.setMatrixAt(idx, buildNodeMatrix(node));
+    const matrices = nodes.map((node, idx) => {
+      const m = buildNodeMatrix(node);
+      instance.setMatrixAt(idx, m);
+      return m;
     });
     instance.count = nodes.length;
     instance.instanceMatrix.needsUpdate = true;
     instance.castShadow = false;
     instance.receiveShadow = false;
     instance.computeBoundingSphere();
-    return instance;
+    return {
+      mesh: instance,
+      baseMatrices: matrices,
+      hiddenFlags: new Uint8Array(nodes.length),
+      lastCamPos: new THREE.Vector3(Infinity, Infinity, Infinity)
+    };
   }, [geometry, material, nodes]);
 
   useEffect(() => {
@@ -102,6 +114,51 @@ function SlotInstancedBucket({ nodes, geometry, material, onHoverNode, onSelectF
       mesh.dispose();
     };
   }, [mesh]);
+
+  // Adaptive LOD culling for ultra-high-capacity tiers (e.g. Gold 835 / Premium 1550) when zoomed in close
+  useFrame(({ camera }) => {
+    if (nodes.length <= 400 || !mesh.parent) return;
+    if (lastCamPos.distanceToSquared(camera.position) < 0.25) return;
+    lastCamPos.copy(camera.position);
+
+    const camOriginDist = camera.position.length();
+    const isCloseInspection = camOriginDist < baseRadius * 2.35;
+
+    if (!isCloseInspection) {
+      let restored = false;
+      for (let i = 0; i < nodes.length; i++) {
+        if (hiddenFlags[i] === 1) {
+          hiddenFlags[i] = 0;
+          mesh.setMatrixAt(i, baseMatrices[i]);
+          restored = true;
+        }
+      }
+      if (restored) mesh.instanceMatrix.needsUpdate = true;
+      return;
+    }
+
+    mesh.parent.updateWorldMatrix(true, false);
+    _invMat.copy(mesh.parent.matrixWorld).invert();
+    _camLocalPos.copy(camera.position).applyMatrix4(_invMat);
+
+    const maxDistSq = Math.pow(camOriginDist + baseRadius * 0.95, 2);
+    let dirty = false;
+
+    for (let i = 0; i < nodes.length; i++) {
+      const p = nodes[i].position;
+      _instPos.set(p[0], p[1], p[2]);
+      const shouldHide = _instPos.distanceToSquared(_camLocalPos) > maxDistSq ? 1 : 0;
+      if (hiddenFlags[i] !== shouldHide) {
+        hiddenFlags[i] = shouldHide;
+        mesh.setMatrixAt(i, shouldHide ? _zeroMatrix : baseMatrices[i]);
+        dirty = true;
+      }
+    }
+
+    if (dirty) {
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  });
 
   if (nodes.length === 0) return null;
 
@@ -152,10 +209,14 @@ function BlueprintWireframeLayer({ nodes }: { nodes: PosterNode3D[] }) {
       new THREE.LineBasicMaterial({
         color: SLOT_COLORS.blueprint,
         transparent: true,
-        opacity: 0.72
+        opacity: 0.65
       }),
     []
   );
+
+  useFrame((state) => {
+    lineMaterial.opacity = 0.56 + Math.sin(state.clock.elapsedTime * 2.6) * 0.16;
+  });
 
   useEffect(() => {
     return () => {
@@ -319,20 +380,52 @@ function TowerBody({
     []
   );
 
-  const blueprintMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: SLOT_COLORS.blueprint,
-        emissive: SLOT_COLORS.blueprint,
-        emissiveIntensity: 0.14,
-        roughness: 0.35,
-        metalness: 0.3,
-        transparent: true,
-        opacity: 0.26,
-        depthWrite: false
-      }),
-    []
-  );
+  const scanlineUniform = useMemo(() => ({ value: 0 }), []);
+
+  const blueprintMaterial = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: SLOT_COLORS.blueprint,
+      emissive: SLOT_COLORS.blueprint,
+      emissiveIntensity: 0.16,
+      roughness: 0.35,
+      metalness: 0.3,
+      transparent: true,
+      opacity: 0.24,
+      depthWrite: false
+    });
+    mat.customProgramCacheKey = () => "blueprint-scanline-v1";
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = scanlineUniform;
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          "#include <common>",
+          "#include <common>\nvarying vec3 vWorldPos;"
+        )
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+          vec4 bpPos = vec4(transformed, 1.0);
+          #ifdef USE_INSTANCING
+            bpPos = instanceMatrix * bpPos;
+          #endif
+          vWorldPos = (modelMatrix * bpPos).xyz;`
+        );
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          "#include <common>",
+          "#include <common>\nuniform float uTime;\nvarying vec3 vWorldPos;"
+        )
+        .replace(
+          "#include <emissivemap_fragment>",
+          `#include <emissivemap_fragment>
+          float bpScan = smoothstep(0.65, 0.98, sin(vWorldPos.y * 5.0 - uTime * 3.2) * 0.5 + 0.5);
+          float bpSweep = smoothstep(0.84, 1.0, sin(vWorldPos.y * 0.45 - uTime * 1.4) * 0.5 + 0.5);
+          totalEmissiveRadiance += vec3(0.024, 0.714, 0.831) * (bpScan * 0.45 + bpSweep * 0.85);
+          diffuseColor.a = clamp(diffuseColor.a + bpScan * 0.08 + bpSweep * 0.14, 0.16, 0.55);`
+        );
+    };
+    return mat;
+  }, [scanlineUniform]);
 
   const buttressMaterial = useMemo(
     () =>
@@ -376,13 +469,14 @@ function TowerBody({
     };
   }, [buttressMesh]);
 
-  // Subtle auto-rotation pauses on hover + gentle core light flicker
+  // Subtle auto-rotation pauses on hover + gentle core light flicker + holographic scanline sweep
   useFrame((state, delta) => {
+    const t = state.clock.elapsedTime;
+    scanlineUniform.value = t;
     if (groupRef.current && !hoveredNode) {
       groupRef.current.rotation.y += delta * 0.08;
     }
     if (coreLightRef.current) {
-      const t = state.clock.elapsedTime;
       coreLightRef.current.intensity = 2.4 + Math.sin(t * 3.1) * 0.28 + Math.sin(t * 7.4) * 0.14;
     }
   });
@@ -397,6 +491,22 @@ function TowerBody({
         intensity={2.4}
         distance={build.baseRadius * 3.5 + 10}
         decay={0.8}
+      />
+
+      {/* Katman Bazlı (Tier-Specific) Taban Işıkları */}
+      <pointLight
+        position={[0, 0.85, 0]}
+        color={accentColor}
+        intensity={3.2}
+        distance={build.baseRadius * 2.4 + 6}
+        decay={1.1}
+      />
+      <pointLight
+        position={[0, -1.4, 0]}
+        color={accentColor}
+        intensity={1.8}
+        distance={build.baseRadius * 2.2 + 6}
+        decay={1.2}
       />
 
       {/* Faz 5.3: Yansıtıcı Dairesel Taban Platformu (metalness: 0.8, roughness: 0.2) */}
@@ -441,6 +551,7 @@ function TowerBody({
         nodes={architecture.watchedNodes}
         geometry={monolithGeometry}
         material={watchedMaterial}
+        baseRadius={build.baseRadius}
         onHoverNode={onHoverNode}
         onSelectFloor={onSelectFloor}
       />
@@ -448,6 +559,7 @@ function TowerBody({
         nodes={architecture.watchlistNodes}
         geometry={monolithGeometry}
         material={watchlistMaterial}
+        baseRadius={build.baseRadius}
         onHoverNode={onHoverNode}
         onSelectFloor={onSelectFloor}
       />
@@ -455,6 +567,7 @@ function TowerBody({
         nodes={architecture.blueprintNodes}
         geometry={monolithGeometry}
         material={blueprintMaterial}
+        baseRadius={build.baseRadius}
         onHoverNode={onHoverNode}
         onSelectFloor={onSelectFloor}
       />
