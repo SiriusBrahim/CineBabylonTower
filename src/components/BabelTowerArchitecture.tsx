@@ -38,62 +38,50 @@ function BronzeTowerModel() {
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
+    const horizontalGap = 0.06;
     const verticalGap = 0.16;
     const rowPitch = posterHeight + verticalGap;
 
     const unitsByRing = [12, 11, 10];
-    const centerSpacing = posterWidth;
+    const arcStep = posterWidth + horizontalGap;
 
-    // En alt halkanın başlangıç yarıçapını referans alıyoruz.
-    const baseRadius = centerSpacing / (2 * Math.sin(Math.PI / unitsByRing[0]));
+    // Konik başlangıç ve bitiş yarıçapları pozitif tutulur.
+    const baseRadius = arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]));
+    const topRadius = arcStep / (2 * Math.sin(Math.PI / unitsByRing[unitsByRing.length - 1]));
+
+    const totalSlots = unitsByRing.reduce((sum, units) => sum + units * 3, 0);
+    const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
+
+    // Yükselme oranı, başlangıç çevresinde yaklaşık 12 slot/tur olacak şekilde ayarlanır.
+    const slotsPerTurn = (2 * Math.PI * baseRadius) / arcStep;
+    const risePerSlot = rowPitch / slotsPerTurn;
 
     const slots: THREE.Matrix4[] = [];
+    let theta = 0;
+    let y = posterHeight / 2 + 0.12;
 
-    // --- SÜREKLİ SPİRAL (HELIX) ---
-    let globalIndex = 0;
-    const slotsPerTurn = 12;
-    const risePerSlot = rowPitch / slotsPerTurn;
-    const shrinkPerTurn = posterWidth * 0.85;
+    for (let i = 0; i < totalSlots; i++) {
+      const radius = baseRadius - i * radialStep;
 
-    unitsByRing.forEach((units) => {
-      const totalSlotsInRing = units * 3;
+      slots.push(new THREE.Matrix4().compose(
+        new THREE.Vector3(radius * Math.cos(theta), y, radius * Math.sin(theta)),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -theta + Math.PI / 2, 0)),
+        new THREE.Vector3(1, 1, 1)
+      ));
 
-      for (let i = 0; i < totalSlotsInRing; i++) {
-        const theta = globalIndex * (2 * Math.PI / slotsPerTurn);
-        const y = globalIndex * risePerSlot + posterHeight / 2 + 0.12;
+      // Açı, mevcut yarıçaptaki yay uzunluğuna göre biriktirilir.
+      theta += arcStep / radius;
+      y += risePerSlot;
+    }
 
-        const turnsCompleted = globalIndex / slotsPerTurn;
-        const currentRadius = baseRadius - (turnsCompleted * shrinkPerTurn);
-
-        const position = new THREE.Vector3(
-          currentRadius * Math.cos(theta),
-          y,
-          currentRadius * Math.sin(theta)
-        );
-
-        const rotation = new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(0, -theta + Math.PI / 2, 0)
-        );
-
-        slots.push(new THREE.Matrix4().compose(
-          position,
-          rotation,
-          new THREE.Vector3(1, 1, 1)
-        ));
-
-        globalIndex++;
-      }
-    });
-
-    // Tepe yuvası: globalIndex toplam slot sayısına eşittir.
-    const bodyHeight = globalIndex * risePerSlot + posterHeight / 2 + 0.12;
+    const bodyHeight = y;
     slots.push(new THREE.Matrix4().compose(
       new THREE.Vector3(0, bodyHeight + 0.95, 0),
       new THREE.Quaternion(),
       new THREE.Vector3(1, 1, 1)
     ));
 
-    return { slots, bodyHeight };
+    return { slots, bodyHeight, baseRadius, topRadius };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -114,8 +102,19 @@ function BronzeTowerModel() {
 }
 
 export default function BabelTowerArchitecture() {
-  const height = 3 * (3 * (1.5 + 0.16) + 0.48);
-  const radius = 3 * 12 * 1.84 / (2 * Math.PI);
+  // Kamera ve sis değerleri yeni spiral geometrisinin gerçek ölçülerinden türetilir.
+  const posterWidth = 0.92;
+  const posterHeight = 1.38;
+  const arcStep = posterWidth + 0.06;
+  const rowPitch = posterHeight + 0.16;
+  const unitsByRing = [12, 11, 10];
+  const totalSlots = unitsByRing.reduce((sum, units) => sum + units * 3, 0);
+  const baseRadius = arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]));
+  const slotsPerTurn = (2 * Math.PI * baseRadius) / arcStep;
+  const risePerSlot = rowPitch / slotsPerTurn;
+  const height = totalSlots * risePerSlot + posterHeight / 2 + 0.12 + 0.95;
+  const radius = baseRadius;
+
   return (
     <Canvas shadows dpr={[1, 1.7]}
       camera={{ position: [radius * 2.45, height * 0.72, radius * 3.05], fov: 39 }}>
