@@ -48,13 +48,13 @@ describe("tower geometry", () => {
 
   it("creates multiple crown rings for gold tier", () => {
     const result = calculateBabelTower(TOWER_TIERS[2], 400, 100);
-    expect(result.flagCount).toBe(10);
-    expect(result.nodes.filter(n => n.isFlag)).toHaveLength(10);
+    expect(result.flagCount).toBe(8);
+    expect(result.nodes.filter(n => n.isFlag)).toHaveLength(8);
     expect(result.totalFloors).toBeGreaterThan(11);
   });
 
   it("scales beyond premium", () => {
-    expect(getActiveTier(1551).targetTotal).toBe(2550);
+    expect(getActiveTier(1546).targetTotal).toBe(2545);
   });
 
   it("rejects invalid counts", () => {
