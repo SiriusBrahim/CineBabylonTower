@@ -38,23 +38,19 @@ function BronzeTowerModel() {
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
-    const horizontalGap = 0.06;
-    const verticalGap = 0.16;
-    const rowPitch = posterHeight + verticalGap;
-
-    const unitsByRing = [12, 11, 10];
+    const horizontalGap = 0.04;
     const arcStep = posterWidth + horizontalGap;
 
-    // Konik başlangıç ve bitiş yarıçapları pozitif tutulur.
-    const baseRadius = arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]));
-    const topRadius = arcStep / (2 * Math.sin(Math.PI / unitsByRing[unitsByRing.length - 1]));
+    const unitsByRing = [12, 11, 10];
+    const rowsPerRing = 3;
+    const totalSlots = unitsByRing.reduce((sum, units) => sum + units * rowsPerRing, 0);
 
-    const totalSlots = unitsByRing.reduce((sum, units) => sum + units * 3, 0);
+    // Babel silüeti için tabandan tepeye güçlü ve kontrollü daralma.
+    const taper = 0.62;
+    const turnGap = 0.85;
+    const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.7;
+    const topRadius = baseRadius * (1 - taper);
     const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
-
-    // Yükselme oranı, başlangıç çevresinde yaklaşık 12 slot/tur olacak şekilde ayarlanır.
-    const slotsPerTurn = (2 * Math.PI * baseRadius) / arcStep;
-    const risePerSlot = rowPitch / slotsPerTurn;
 
     const slots: THREE.Matrix4[] = [];
     let theta = 0;
@@ -69,9 +65,12 @@ function BronzeTowerModel() {
         new THREE.Vector3(1, 1, 1)
       ));
 
-      // Açı, mevcut yarıçaptaki yay uzunluğuna göre biriktirilir.
+      // Yatay ilerleme: her adımın yay uzunluğu arcStep olarak korunur.
       theta += arcStep / radius;
-      y += risePerSlot;
+
+      // Dikey ilerleme yarıçapa bağlıdır; bir turdaki yükselme yaklaşık
+      // posterHeight + turnGap olur ve üst katlarda sabit rise kullanılmaz.
+      y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
     const bodyHeight = y;
@@ -105,14 +104,23 @@ export default function BabelTowerArchitecture() {
   // Kamera ve sis değerleri yeni spiral geometrisinin gerçek ölçülerinden türetilir.
   const posterWidth = 0.92;
   const posterHeight = 1.38;
-  const arcStep = posterWidth + 0.06;
-  const rowPitch = posterHeight + 0.16;
+  const arcStep = posterWidth + 0.04;
   const unitsByRing = [12, 11, 10];
-  const totalSlots = unitsByRing.reduce((sum, units) => sum + units * 3, 0);
-  const baseRadius = arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]));
-  const slotsPerTurn = (2 * Math.PI * baseRadius) / arcStep;
-  const risePerSlot = rowPitch / slotsPerTurn;
-  const height = totalSlots * risePerSlot + posterHeight / 2 + 0.12 + 0.95;
+  const rowsPerRing = 3;
+  const totalSlots = unitsByRing.reduce((sum, units) => sum + units * rowsPerRing, 0);
+  const taper = 0.62;
+  const turnGap = 0.85;
+  const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 1.7;
+  const topRadius = baseRadius * (1 - taper);
+  const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
+
+  // Kamera yüksekliğini modelde kullanılan değişken yükselme adımlarıyla eşleştir.
+  let bodyHeight = posterHeight / 2 + 0.12;
+  for (let i = 0; i < totalSlots; i++) {
+    const slotRadius = baseRadius - i * radialStep;
+    bodyHeight += (posterHeight + turnGap) * arcStep / (2 * Math.PI * slotRadius);
+  }
+  const height = bodyHeight + 0.95;
   const radius = baseRadius;
 
   return (
