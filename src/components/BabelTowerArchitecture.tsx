@@ -65,13 +65,14 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // Taban halkada sıralar çevre boyunca slot genişliği kadar
-        // kademeli başlar: 1. sıra x, 2. sıra 2x, 3. sıra 3x.
+        // İlk halkada her sıranın başlangıcı ve yatay adımı ayrı tanımlanır.
+        // x = posterWidth; başlangıçlar sırasıyla 0, -x/4 ve -x/2 yay mesafesidir.
+        // Sıra adımları sırasıyla 2x, 2x/4 ve 3x/4'tür.
         // Üst halkaların mevcut başlangıç düzeni korunur.
-        const rowArcOffsets = [posterWidth, posterWidth / 4, posterWidth / 8];
-        const rowArcOffset = ring.index === 0 ? rowArcOffsets[row] : 0;
+        const rowStartArcOffsets = [0, -posterWidth / 4, -posterWidth / 2];
+        const rowArcSteps = [2 * posterWidth, posterWidth / 2, posterWidth * 3 / 4];
         const rowAngleOffset = ring.index === 0
-          ? rowArcOffset / ring.radius
+          ? rowStartArcOffsets[row] / ring.radius
           : (row === 1 ? 0.5 : 0) * Math.PI * 2 / ring.units;
         for (let slot = 0; slot < ring.units; slot++) {
           // Taban halkanın üç sırası da 1/4 oranında yükselir.
@@ -80,7 +81,9 @@ function BronzeTowerModel() {
             ? slot * (posterHeight / 4)
             : 0;
           const y = rowY + spiralRise;
-          const theta = (slot / ring.units) * Math.PI * 2 + rowAngleOffset;
+          const theta = ring.index === 0
+            ? rowAngleOffset + (slot * rowArcSteps[row]) / ring.radius
+            : (slot / ring.units) * Math.PI * 2 + rowAngleOffset;
           // Taban halkanın üç sırası aynı çapta kalır.
           // Üst halkaların önceki çap ayarları korunur.
           const ringRadiusOffset = ring.index * posterWidth * 0.5;
