@@ -65,36 +65,24 @@ function ArchitectureModel({ tier }: { tier: ArchitectureTier }) {
   const accent = useMemo(() => new THREE.Color(tier.accentColor), [tier.accentColor]);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: "#39404b", metalness: 0.68, roughness: 0.38, emissive: accent, emissiveIntensity: 0.12 }), [accent]);
-  const stairGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 0.14, 0.7), []);
-  const stairMatrices = useMemo(() => {
-    // Keep one continuous stair path. Each floor gains a small angular offset,
-    // so successive landings do not stack directly above the base starting point.
-    const stepsPerFloor = 36;
-    const floorCount = dims.floors.length;
-    const count = floorCount * stepsPerFloor + 1;
-    const landingOffset = Math.PI / 6; // 30 degrees beyond one full turn per floor
-
-    return Array.from({ length: count }, (_, i) => {
-      const progress = (i / (count - 1)) * floorCount;
-      const floorIndex = Math.min(Math.floor(progress), floorCount - 1);
-      const localProgress = progress - floorIndex;
-      const currentFloor = dims.floors[floorIndex];
-      const nextFloor = dims.floors[Math.min(floorIndex + 1, floorCount - 1)];
-
-      // Follow the tower's taper instead of keeping the staircase at the base radius.
-      const radius = THREE.MathUtils.lerp(
-        currentFloor.radius + 0.78,
-        nextFloor.radius + 0.78,
-        localProgress
-      );
-      const theta = progress * (Math.PI * 2 + landingOffset);
-      const y = THREE.MathUtils.lerp(0.12, dims.bodyHeight - 0.12, progress / floorCount);
-      const p = new THREE.Vector3(radius * Math.cos(theta), y, radius * Math.sin(theta));
-      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -theta, 0));
-      return new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1));
-    });
-  }, [dims]);
-  const stairMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: "#a18d72", roughness: 0.8, metalness: 0.12 }), []);
+  const ringWalkways = useMemo(() => dims.floors.map(floor => ({
+    index: floor.index,
+    y: floor.y + dims.floorHeight - 0.12,
+    innerRadius: floor.radius + 0.28,
+    outerRadius: floor.radius + 1.05,
+    railRadius: floor.radius + 1.05
+  })), [dims]);
+  const walkwayMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#8e7b63",
+    roughness: 0.68,
+    metalness: 0.24,
+    side: THREE.DoubleSide
+  }), []);
+  const railMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: accent,
+    metalness: 0.82,
+    roughness: 0.24
+  }), [accent]);
   return <group>
     {/* Broad stepped stone plinth */}
     <mesh position={[0, -0.62, 0]} castShadow receiveShadow><cylinderGeometry args={[dims.baseRadius + 2.1, dims.baseRadius + 2.45, 0.42, 96]} /><meshStandardMaterial color="#24252a" roughness={0.82} /></mesh>
@@ -114,8 +102,18 @@ function ArchitectureModel({ tier }: { tier: ArchitectureTier }) {
         <mesh><boxGeometry args={[0.54, dims.bodyHeight + 0.36, 0.62]} /><meshStandardMaterial color={accent} wireframe metalness={0.7} roughness={0.3} /></mesh>
       </group>;
     })}
-    {/* Continuous helical stair flight */}
-    <InstancedBlocks matrices={stairMatrices} geometry={stairGeometry} material={stairMaterial} />
+    {/* Horizontal annular walkways: one complete, level ring per tower floor.
+        No helical connector means there are no vertical floor-transition joints to break. */}
+    {ringWalkways.map(ring => <group key={ring.index} position={[0, ring.y, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <ringGeometry args={[ring.innerRadius, ring.outerRadius, 96]} />
+        <primitive object={walkwayMaterial} attach="material" />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[ring.railRadius, 0.075, 10, 96]} />
+        <primitive object={railMaterial} attach="material" />
+      </mesh>
+    </group>)}
     {/* Empty poster-slot architectural frames */}
     <InstancedBlocks matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
     {/* Crown terrace */}
