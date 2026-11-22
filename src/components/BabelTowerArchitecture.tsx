@@ -55,8 +55,8 @@ function createTowerLayout() {
     for (let slotIndex = 0; slotIndex < segments * rowsPerFloor; slotIndex++) {
       const row = Math.floor(slotIndex / segments);
       const segment = slotIndex % segments;
-      const rowPhase = row * (Math.PI / 12);
-      const theta = (segment * 2 * Math.PI) / segments + rowPhase;
+      const rowAngleOffset = row * (Math.PI / segments);
+      const theta = (segment * 2 * Math.PI) / segments + rowAngleOffset;
       const y = floorBaseY + posterHeight / 2 + row * rowHeight;
 
       const position = new THREE.Vector3(
