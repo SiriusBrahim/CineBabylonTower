@@ -65,7 +65,11 @@ function BronzeTowerModel() {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
         const angularStep = (2 * Math.PI) / ring.units;
-        const radialStep = posterWidth / ring.units;
+        // Taban halkanın 36 slotluk üç sırası boyunca toplam içe daralma bir poster genişliğidir.
+        // Böylece spiral yarıçapı sıfırı geçmez ve slotlar merkeze yığılmaz.
+        const radialStep = ring.index === 0
+          ? posterWidth / (ring.units * 3)
+          : posterWidth / ring.units;
         const risePerSlot = posterHeight / 4;
 
         for (let slot = 0; slot < ring.units; slot++) {
