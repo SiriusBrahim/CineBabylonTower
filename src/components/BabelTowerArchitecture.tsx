@@ -65,14 +65,14 @@ function BronzeTowerModel() {
     rings.forEach(ring => {
       for (let row = 0; row < 3; row++) {
         const rowY = ring.y + row * rowPitch + posterHeight / 2 + 0.12;
-        // İlk halkada her sıranın başlangıcı ve yatay adımı ayrı tanımlanır.
-        // x = posterWidth; başlangıçlar sırasıyla 0, -x/4 ve -x/2 yay mesafesidir.
-        // Sıra adımları sırasıyla 2x, 2x/4 ve 3x/4'tür.
+        // İlk halkada ilk slotlar ekrandaki yatay eksende kademeli başlar:
+        // 1. sıra 0, 2. sıra x/4 sola, 3. sıra x/2 sola kaydırılır.
+        // Sıra içindeki yay adımları sırasıyla 2x, 2x/4 ve 3x/4'tür.
         // Üst halkaların mevcut başlangıç düzeni korunur.
-        const rowStartArcOffsets = [0, -posterWidth / 4, -posterWidth / 2];
+        const rowStartXOffsets = [0, -posterWidth / 4, -posterWidth / 2];
         const rowArcSteps = [2 * posterWidth, posterWidth / 2, posterWidth * 3 / 4];
         const rowAngleOffset = ring.index === 0
-          ? rowStartArcOffsets[row] / ring.radius
+          ? 0
           : (row === 1 ? 0.5 : 0) * Math.PI * 2 / ring.units;
         for (let slot = 0; slot < ring.units; slot++) {
           // Taban halkanın üç sırası da 1/4 oranında yükselir.
@@ -91,8 +91,9 @@ function BronzeTowerModel() {
             ? 0
             : (1 - row) * posterWidth * 0.25;
           const rowRadius = ring.radius + ringRadiusOffset + rowRadiusOffset;
+          const rowStartXOffset = ring.index === 0 ? rowStartXOffsets[row] : 0;
           const position = new THREE.Vector3(
-            rowRadius * Math.cos(theta),
+            rowRadius * Math.cos(theta) + rowStartXOffset,
             y,
             rowRadius * Math.sin(theta)
           );
