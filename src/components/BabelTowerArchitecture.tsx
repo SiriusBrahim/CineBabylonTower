@@ -125,7 +125,7 @@ export default function BabelTowerArchitecture() {
 
   return (
     <Canvas shadows dpr={[1, 1.7]}
-      camera={{ position: [radius * 2.2, height * 1.15, radius * 3.2], fov: 39 }}>
+      camera={{ position: [radius * 5.5, height * 1.15, radius * 8.0], fov: 39 }}>
       <color attach="background" args={["#090b12"]} />
       <fog attach="fog" args={["#090b12", height * 1.7, height * 4.8]} />
       <ambientLight intensity={0.68} />
@@ -138,7 +138,7 @@ export default function BabelTowerArchitecture() {
       <BronzeTowerModel />
       <Environment preset="city" />
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
-        minDistance={radius * 1.3} maxDistance={height * 4.5}
+        minDistance={radius * 3.25} maxDistance={height * 4.5}
         maxPolarAngle={Math.PI * 0.49} target={[0, height * 0.48, 0]} />
     </Canvas>
   );
