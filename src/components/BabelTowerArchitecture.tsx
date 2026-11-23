@@ -127,7 +127,7 @@ export default function BabelTowerArchitecture() {
     <Canvas shadows dpr={[1, 1.7]}
       camera={{ position: [radius * 5.5, height * 2.875, radius * 8.0], fov: 39 }}>
       <color attach="background" args={["#090b12"]} />
-      <fog attach="fog" args={["#090b12", height * 1.7, height * 4.8]} />
+      <fog attach="fog" args={["#090b12", height * 10, height * 24]} />
       <ambientLight intensity={0.68} />
       <directionalLight position={[18, height * 1.6, 14]} intensity={2.0}
         castShadow shadow-mapSize={[2048, 2048]} />
