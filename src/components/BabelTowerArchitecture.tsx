@@ -53,16 +53,27 @@ function BronzeTowerModel() {
     const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
 
     const slots: THREE.Matrix4[] = [];
+    const roadCenters: THREE.Vector3[] = [];
     let theta = 0;
     let y = posterHeight / 2 + 0.12;
 
     for (let i = 0; i < totalSlots; i++) {
       const radius = baseRadius - i * radialStep;
+      const x = radius * Math.cos(theta);
+      const z = radius * Math.sin(theta);
 
       slots.push(new THREE.Matrix4().compose(
-        new THREE.Vector3(radius * Math.cos(theta), y, radius * Math.sin(theta)),
+        new THREE.Vector3(x, y, z),
         new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -theta + Math.PI / 2, 0)),
         new THREE.Vector3(1, 1, 1)
+      ));
+
+      // Yol, posterlerin iç tarafındaki boşluğu izleyerek aynı spiral yükselişi takip eder.
+      const roadRadius = radius - 0.82;
+      roadCenters.push(new THREE.Vector3(
+        roadRadius * Math.cos(theta),
+        y - posterHeight * 0.58,
+        roadRadius * Math.sin(theta)
       ));
 
       // Yatay ilerleme: her adımın yay uzunluğu arcStep olarak korunur.
@@ -73,6 +84,33 @@ function BronzeTowerModel() {
       y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
+    // Yol yüzeyini merkez hattı boyunca genişliği sabit bir şerit olarak üret.
+    const roadPositions: number[] = [];
+    const roadIndices: number[] = [];
+    const roadHalfWidth = 0.38;
+
+    for (let i = 0; i < roadCenters.length; i++) {
+      const previous = roadCenters[Math.max(0, i - 1)];
+      const next = roadCenters[Math.min(roadCenters.length - 1, i + 1)];
+      const tangent = next.clone().sub(previous).normalize();
+      const radial = new THREE.Vector3(roadCenters[i].x, 0, roadCenters[i].z).normalize();
+      const side = radial.addScaledVector(tangent, -radial.dot(tangent)).normalize();
+      const left = roadCenters[i].clone().addScaledVector(side, roadHalfWidth);
+      const right = roadCenters[i].clone().addScaledVector(side, -roadHalfWidth);
+
+      roadPositions.push(left.x, left.y, left.z, right.x, right.y, right.z);
+
+      if (i < roadCenters.length - 1) {
+        const a = i * 2;
+        roadIndices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+    }
+
+    const roadGeometry = new THREE.BufferGeometry();
+    roadGeometry.setAttribute("position", new THREE.Float32BufferAttribute(roadPositions, 3));
+    roadGeometry.setIndex(roadIndices);
+    roadGeometry.computeVertexNormals();
+
     const bodyHeight = y;
     slots.push(new THREE.Matrix4().compose(
       new THREE.Vector3(0, bodyHeight + 0.95, 0),
@@ -80,7 +118,7 @@ function BronzeTowerModel() {
       new THREE.Vector3(1, 1, 1)
     ));
 
-    return { slots, bodyHeight, baseRadius, topRadius };
+    return { slots, roadGeometry, bodyHeight, baseRadius, topRadius };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -92,10 +130,17 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
+  const roadMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#343943",
+    metalness: 0.42,
+    roughness: 0.72,
+    side: THREE.DoubleSide
+  }), []);
 
   return (
     <group>
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
+      <mesh geometry={dims.roadGeometry} material={roadMaterial} castShadow receiveShadow />
     </group>
   );
 }
