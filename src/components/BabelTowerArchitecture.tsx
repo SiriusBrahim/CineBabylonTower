@@ -72,7 +72,7 @@ function BronzeTowerModel() {
       const roadRadius = radius - 0.82;
       roadCenters.push(new THREE.Vector3(
         roadRadius * Math.cos(theta),
-        y - posterHeight * 0.58,
+        y + posterHeight * 0.58 + 0.12,
         roadRadius * Math.sin(theta)
       ));
 
