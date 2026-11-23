@@ -128,18 +128,18 @@ function BronzeTowerModel() {
     const wallPositions: number[] = [];
     const wallIndices: number[] = [];
     const wallTopOffset = posterHeight * 0.5 + 0.025;
-    // Duvar ikinci slottan başlar; alt kenarı bir önceki slotun tabanına kadar iner.
-    // Böylece duvar yüksekliği sabit bir 1.35 değerine değil, slotların gerçek düşey
-    // aralığına bağlanır ve ilk slotun tabanına kadar kesintisiz ulaşır.
+    // Duvar ikinci slottan başlar. Her noktada alt kenar 1. slotun tabanında
+    // sabit kalır; üst kenar ise ilgili slotun tabanını izler. Böylece duvarın
+    // yüksekliği her slotta 1. slota göre biriken gerçek yükselme kadar artar.
+    const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
     for (let i = 1; i < slotCenters.length; i++) {
       const current = slotCenters[i];
-      const previous = slotCenters[i - 1];
       const radial = new THREE.Vector3(current.x, 0, current.z).normalize();
       const wallCenter = current.clone().addScaledVector(radial, -0.085);
       const top = wallCenter.clone();
       top.y -= wallTopOffset;
       const bottom = wallCenter.clone();
-      bottom.y = previous.y - posterHeight * 0.5 - 0.025;
+      bottom.y = firstSlotBaseY;
 
       wallPositions.push(top.x, top.y, top.z, bottom.x, bottom.y, bottom.z);
 
