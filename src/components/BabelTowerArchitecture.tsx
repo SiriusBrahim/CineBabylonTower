@@ -138,7 +138,7 @@ export default function BabelTowerArchitecture() {
       <BronzeTowerModel />
       <Environment preset="city" />
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
-        minDistance={radius * 3.25} maxDistance={height * 4.5}
+        minDistance={radius * 3.25} maxDistance={height * 18}
         maxPolarAngle={Math.PI * 0.49} target={[0, height * 0.48, 0]} />
     </Canvas>
   );
