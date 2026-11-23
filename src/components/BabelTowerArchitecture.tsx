@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Environment, OrbitControls } from "@react-three/drei";
+import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
 const BRONZE_TOWER = {
@@ -54,6 +54,7 @@ function BronzeTowerModel() {
 
     const slots: THREE.Matrix4[] = [];
     const roadCenters: THREE.Vector3[] = [];
+    const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number }[] = [];
     let theta = 0;
     let y = posterHeight / 2 + 0.12;
 
@@ -62,11 +63,20 @@ function BronzeTowerModel() {
       const x = radius * Math.cos(theta);
       const z = radius * Math.sin(theta);
 
+      const slotRotation = new THREE.Euler(0, -theta + Math.PI / 2, 0);
       slots.push(new THREE.Matrix4().compose(
         new THREE.Vector3(x, y, z),
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -theta + Math.PI / 2, 0)),
+        new THREE.Quaternion().setFromEuler(slotRotation),
         new THREE.Vector3(1, 1, 1)
       ));
+
+      // Numarayı posterin ön yüzüne, yüzeyden çok az dışarıda yerleştir.
+      const frontNormal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
+      slotLabels.push({
+        position: new THREE.Vector3(x, y, z).addScaledVector(frontNormal, 0.045),
+        rotation: slotRotation.clone(),
+        number: i + 1
+      });
 
       // Yol, posterlerin iç tarafındaki boşluğu izleyerek aynı spiral yükselişi takip eder.
       const roadRadius = radius - 0.82;
@@ -112,13 +122,19 @@ function BronzeTowerModel() {
     roadGeometry.computeVertexNormals();
 
     const bodyHeight = y;
+    const crownPosition = new THREE.Vector3(0, bodyHeight + 0.95, 0);
     slots.push(new THREE.Matrix4().compose(
-      new THREE.Vector3(0, bodyHeight + 0.95, 0),
+      crownPosition,
       new THREE.Quaternion(),
       new THREE.Vector3(1, 1, 1)
     ));
+    slotLabels.push({
+      position: crownPosition.clone().add(new THREE.Vector3(0, 0, 0.045)),
+      rotation: new THREE.Euler(0, 0, 0),
+      number: 100
+    });
 
-    return { slots, roadGeometry, bodyHeight, baseRadius, topRadius };
+    return { slots, slotLabels, roadGeometry, bodyHeight, baseRadius, topRadius };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -140,6 +156,22 @@ function BronzeTowerModel() {
   return (
     <group>
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
+      {dims.slotLabels.map((label) => (
+        <Text
+          key={label.number}
+          position={label.position}
+          rotation={label.rotation}
+          fontSize={0.24}
+          color="#ffffff"
+          outlineColor="#090b12"
+          outlineWidth={0.012}
+          anchorX="center"
+          anchorY="middle"
+          renderOrder={2}
+        >
+          {label.number}
+        </Text>
+      ))}
       <mesh geometry={dims.roadGeometry} material={roadMaterial} castShadow receiveShadow />
     </group>
   );
