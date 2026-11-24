@@ -888,6 +888,28 @@ function BronzeTowerModel() {
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
 
+    // A44-SÜ ile A45-SÜ arasındaki fuşya bağlantı ve 0.10 birimlik dikmeler.
+    const a44SuPoint = a30SpiralLinePoints[a30SpiralLinePoints.length - 1];
+    const a45SuPoint = new THREE.Vector3(-6.021561, 0, 10.093715);
+    const a44ToA45FuchsiaLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a44SuPoint, a45SuPoint]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a44ToA45FuchsiaLine.renderOrder = 20;
+
+    const a44Su1Point = a44SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
+    const a45Su1Point = a45SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
+    const a44SuVerticalLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a44SuPoint, a44Su1Point]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a44SuVerticalLine.renderOrder = 21;
+    const a45SuVerticalLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a45SuPoint, a45Su1Point]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a45SuVerticalLine.renderOrder = 21;
+
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
@@ -1345,6 +1367,11 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
       a30SpiralBottomLine,
+      a44ToA45FuchsiaLine,
+      a44SuVerticalLine,
+      a45SuVerticalLine,
+      a44Su1LabelPosition: a44Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a45Su1LabelPosition: a45Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1405,6 +1432,33 @@ function BronzeTowerModel() {
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
+      <primitive object={dims.a44ToA45FuchsiaLine} />
+      <primitive object={dims.a44SuVerticalLine} />
+      <primitive object={dims.a45SuVerticalLine} />
+      <Text
+        position={dims.a44Su1LabelPosition}
+        fontSize={0.13}
+        color="#ff00ff"
+        outlineColor="#090b12"
+        outlineWidth={0.012}
+        anchorX="left"
+        anchorY="middle"
+        renderOrder={22}
+      >
+        A44SÜ1
+      </Text>
+      <Text
+        position={dims.a45Su1LabelPosition}
+        fontSize={0.13}
+        color="#ff00ff"
+        outlineColor="#090b12"
+        outlineWidth={0.012}
+        anchorX="left"
+        anchorY="middle"
+        renderOrder={22}
+      >
+        A45SÜ1
+      </Text>
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
