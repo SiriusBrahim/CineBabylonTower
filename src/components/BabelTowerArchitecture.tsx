@@ -496,9 +496,9 @@ function BronzeTowerModel() {
       return { upperPoint, basePoint };
     });
 
-    // Deneme 6.1: Mevcut ön yüzey panellerinden A30-SÜ–30-SÜ
-    // aralığındaki sabit 60 panel mavi materyalle renklendirilir.
-    const lastBlueFrontFaceIndex = 60; // A30...A, ardından 1-SÜ...30-SÜ
+    // Deneme 6.2: A30-SÜ'den 118-SÜ'ye kadar mevcut ön yüzey panelleri
+    // sabit olarak mavi materyalle ve %100 opaklıkta renklendirilir.
+    const lastBlueFrontFaceIndex = 148; // A30...A, ardından 1-SÜ...118-SÜ
     const blueFrontFaceMaterial = new THREE.MeshBasicMaterial({
       color: 0x1565ff,
       transparent: true,
