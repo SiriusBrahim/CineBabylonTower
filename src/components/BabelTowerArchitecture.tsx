@@ -254,10 +254,9 @@ function BronzeTowerModel() {
       });
     }
 
-    // Geçici kontrol çizgisi: 119 sol üst köşesinden 118 sol üst köşesine.
-    const slot119 = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119)!;
-    const slot118 = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118)!;
-    const getSlotUpperLeft = (slot: typeof slot119) => new THREE.Vector3(
+    // Kırmızı kılavuz çizgisi: 1'den 119'a kadar tüm slotların
+    // sol üst köşelerini sırasıyla birleştirir.
+    const getSlotUpperLeft = (slot: typeof SPIRAL_SLOT_LAYOUT[number]) => new THREE.Vector3(
       -posterWidth * 0.5,
       posterHeight * 0.5,
       0.075 * 0.5
@@ -265,10 +264,9 @@ function BronzeTowerModel() {
       new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
     ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
 
-    const wallGuideLineGeometry = new THREE.BufferGeometry().setFromPoints([
-      getSlotUpperLeft(slot119),
-      getSlotUpperLeft(slot118)
-    ]);
+    const wallGuideLineGeometry = new THREE.BufferGeometry().setFromPoints(
+      SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft)
+    );
     const wallGuideLine = new THREE.Line(
       wallGuideLineGeometry,
       new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
