@@ -1248,11 +1248,11 @@ function BronzeTowerModel() {
     // A31-SÜ ... A44-SÜ boyunca her komşu nokta çifti için,
     // A29-SÜ / 120'A29-SÜ / 120'A30-SÜ / A30-SÜ düzenindeki
     // dörtgen yüzeyleri oluştur.
-    const a31A44CrownS2FacePanels: THREE.Mesh[] = [];
-    const a31ToA44UpperPoints = a30SpiralLinePoints.slice(1);
-    for (let i = 0; i < a31ToA44UpperPoints.length - 1; i++) {
-      const currentUpperPoint = a31ToA44UpperPoints[i];
-      const nextUpperPoint = a31ToA44UpperPoints[i + 1];
+    const a30A44CrownS2FacePanels: THREE.Mesh[] = [];
+    const a30ToA44UpperPoints = a30SpiralLinePoints.slice(0);
+    for (let i = 0; i < a30ToA44UpperPoints.length - 1; i++) {
+      const currentUpperPoint = a30ToA44UpperPoints[i];
+      const nextUpperPoint = a30ToA44UpperPoints[i + 1];
       const currentCrownPoint = crownWallMatchPoint.clone();
       const nextCrownPoint = crownWallMatchPoint.clone();
       currentCrownPoint.y = currentUpperPoint.y;
@@ -1268,9 +1268,9 @@ function BronzeTowerModel() {
       panelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
       panelGeometry.computeVertexNormals();
 
-      const panel = new THREE.Mesh(panelGeometry, a30A29EnclosedFaceMaterial);
+      const panel = new THREE.Mesh(panelGeometry, topGreenMaterial);
       panel.renderOrder = 10;
-      a31A44CrownS2FacePanels.push(panel);
+      a30A44CrownS2FacePanels.push(panel);
     }
 
     // A30-SÜ-0'dan başlayıp 119-SÜ-0'a kadar tüm komşu taban
@@ -1352,7 +1352,7 @@ function BronzeTowerModel() {
       upperBridgeGreenMaterial,
       crownPanelMaterial,
       a30A29EnclosedFaceGeometry,
-      a31A44CrownS2FacePanels,
+      a30A44CrownS2FacePanels,
       a30A29EnclosedFaceMaterial,
     };
   }, []);
@@ -1408,7 +1408,7 @@ function BronzeTowerModel() {
       <primitive object={dims.a30SpiralGuideLine} />
       <primitive object={dims.a30SpiralBottomLine} />
       <primitive object={dims.a44ToCrownS2GuideLine} />
-      {dims.a31A44CrownS2FacePanels.map((panel, index) => (
+      {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
       {dims.a31ToA43CrownS2GuideLines.map((line, index) => (
