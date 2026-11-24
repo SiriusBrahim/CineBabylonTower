@@ -254,49 +254,40 @@ function BronzeTowerModel() {
       });
     }
 
-    // Slotların altından aşağı sarkan, aynı helis hattını izleyen saydam mavi duvar.
+    // Ana spiral boyunca yükselen, tek parça helisel duvar yüzeyi.
+    // Slot ölçüleri/mesh'leri kullanılmaz; sabit koordinatlar yalnızca
+    // duvarın izlediği merkez hattını ve yönünü tanımlar.
     const wallPositions: number[] = [];
     const wallIndices: number[] = [];
-    const wallTopOffset = posterHeight * 0.5 + 0.025;
-    // Duvar ikinci slottan başlar. Her noktada alt kenar 1. slotun tabanında
-    // sabit kalır; üst kenar ise ilgili slotun tabanını izler. Böylece duvarın
-    // yüksekliği her slotta 1. slota göre biriken gerçek yükselme kadar artar.
+    const wallHalfHeight = posterHeight * 0.5;
+    const wallInset = 0.085;
     const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
 
-    // Spiral duvarının son üst noktası, 119. slotun sol alt köşesine
-    // sabitlenir; böylece 118-119 arasında duvar kesintisiz devam eder.
-    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
-    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
-    );
-    const lastSpiralLowerLeft = new THREE.Vector3(
-      -posterWidth * 0.5,
-      -posterHeight * 0.5,
-      0.075 * 0.5
-    ).applyQuaternion(lastSpiralRotation).add(
-      new THREE.Vector3(lastSpiralLayout.x, lastSpiralLayout.y, lastSpiralLayout.z)
-    );
+    for (let i = 0; i < SPIRAL_SLOT_LAYOUT.length; i++) {
+      const layout = SPIRAL_SLOT_LAYOUT[i];
+      const center = new THREE.Vector3(layout.x, layout.y, layout.z);
+      const radial = new THREE.Vector3(layout.x, 0, layout.z).normalize();
+      center.addScaledVector(radial, -wallInset);
 
-    for (let i = 1; i < slotCenters.length; i++) {
-      const current = slotCenters[i];
-      const radial = new THREE.Vector3(current.x, 0, current.z).normalize();
-      const wallCenter = current.clone().addScaledVector(radial, -0.085);
-      const top = i === slotCenters.length - 1
-        ? lastSpiralLowerLeft.clone()
-        : wallCenter.clone();
-      if (i !== slotCenters.length - 1) top.y -= wallTopOffset;
-      const bottom = wallCenter.clone();
-      if (i === slotCenters.length - 1) {
-        bottom.x = lastSpiralLowerLeft.x;
-        bottom.z = lastSpiralLowerLeft.z;
-      }
+      // Duvarın alt sınırı mevcut ilk taban kotundan başlar;
+      // üst sınır ise spiral merkez hattını kesintisiz takip eder.
+      const top = center.clone();
+      const bottom = center.clone();
+      top.y += wallHalfHeight;
       bottom.y = firstSlotBaseY;
 
-      wallPositions.push(top.x, top.y, top.z, bottom.x, bottom.y, bottom.z);
+      wallPositions.push(
+        top.x, top.y, top.z,
+        bottom.x, bottom.y, bottom.z
+      );
 
-      if (i < slotCenters.length - 1) {
-        const index = (i - 1) * 2;
-        wallIndices.push(index, index + 1, index + 2, index + 1, index + 3, index + 2);
+      if (i > 0) {
+        const previous = (i - 1) * 2;
+        const current = i * 2;
+        wallIndices.push(
+          previous, previous + 1, current,
+          previous + 1, current + 1, current
+        );
       }
     }
 
@@ -304,8 +295,6 @@ function BronzeTowerModel() {
     wallGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wallPositions, 3));
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
-
-
 
     const crownPosition = new THREE.Vector3(
       CROWN_SLOT_POSITION.x,
