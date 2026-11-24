@@ -1368,62 +1368,10 @@ function BronzeTowerModel() {
     emissiveIntensity: 0.12
   }), [accent]);
 
-  // Bağımsız slot ölçü çizimi: 1. slotla aynı yönelimde,
-  // 120. slotun merkez yüksekliğinde ve kulenin dışında gösterilir.
-  // Sarı çizgiler slot sınırını, fuşya çizgiler yanlardan 0.10 içeri alınmış
-  // ve slot yan kenarlarına paralel iki dikey hattı gösterir.
-  const slotOutlineGeometry = useMemo(() => {
-    const halfWidth = 0.92 * 0.5;
-    const halfHeight = 1.38 * 0.5;
-    const points = [
-      new THREE.Vector3(-halfWidth, -halfHeight, 0),
-      new THREE.Vector3(halfWidth, -halfHeight, 0),
-      new THREE.Vector3(halfWidth, halfHeight, 0),
-      new THREE.Vector3(-halfWidth, halfHeight, 0),
-      new THREE.Vector3(-halfWidth, -halfHeight, 0)
-    ];
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, []);
-  const slotOutlineMaterial = useMemo(() => new THREE.LineBasicMaterial({
-    color: "#ffff00",
-    depthTest: false,
-    depthWrite: false
-  }), []);
-  const innerParallelLinesGeometry = useMemo(() => {
-    const halfWidth = 0.92 * 0.5;
-    const halfHeight = 1.38 * 0.5;
-    const inset = 0.10;
-    const innerX = halfWidth - inset;
-    return new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-innerX, -halfHeight, 0),
-      new THREE.Vector3(-innerX, halfHeight, 0),
-      new THREE.Vector3(innerX, -halfHeight, 0),
-      new THREE.Vector3(innerX, halfHeight, 0)
-    ]);
-  }, []);
-  const innerParallelLinesMaterial = useMemo(() => new THREE.LineBasicMaterial({
-    color: "#ff00cc",
-    depthTest: false,
-    depthWrite: false
-  }), []);
+
 
   return (
     <group>
-      {/* Kule dışında, 120. slot yüksekliğinde sarı slot sınırı ve fuşya paraleller. */}
-      <line
-        geometry={slotOutlineGeometry}
-        material={slotOutlineMaterial}
-        position={[14.5, 8.72150815736696, 0]}
-        rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
-        renderOrder={30}
-      />
-      <lineSegments
-        geometry={innerParallelLinesGeometry}
-        material={innerParallelLinesMaterial}
-        position={[14.5, 8.72150815736696, 0]}
-        rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
-        renderOrder={31}
-      />
       {/* Sabit mavi yüzeyler: useMemo içinde bir kez oluşturulur, tekrar renderda üretilmez. */}
       {dims.slotFrontFacePanels.map((panel, index) => (
         <primitive key={`blue-front-face-panel-${index}`} object={panel} />
