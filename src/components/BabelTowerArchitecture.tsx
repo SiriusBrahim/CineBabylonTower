@@ -474,32 +474,26 @@ function BronzeTowerModel() {
     // ön yüzeyleri dörtgen paneller halinde doldur:
     // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ ve aynı düzen tüm hat boyunca.
     const slotFrontFacePanels: THREE.Mesh[] = [];
-    const slotFrontFaceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8f3030,
-      transparent: true,
-      opacity: 0.28,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-
-    // SÜ noktası ile taban izdüşümü ve 120 bağlantı hattı arasındaki
-    // dikdörtgen yan paneller tamamen opak gösterilir.
-    const slotSideFaceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8f3030,
-      transparent: true,
+    // Deneme 8: Bütün duvarlar ve bütün üst yüzeyler için iki sabit ortak materyal.
+    const wallBlueMaterial = new THREE.MeshBasicMaterial({
+      color: 0x1565ff,
+      transparent: false,
       opacity: 1,
       side: THREE.DoubleSide,
-      depthWrite: false
+      depthWrite: true
     });
-
-    // Deneme 5 için ayrı materyal: kısmi pasta dilimi yüzeyi %50 opaklıkta.
-    const a30A29EnclosedFaceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8f3030,
-      transparent: true,
+    const topGreenMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00c853,
+      transparent: false,
       opacity: 1,
       side: THREE.DoubleSide,
-      depthWrite: false
+      depthWrite: true
     });
+
+    // Eski materyal adları aynı ortak materyallere yönlendirilir.
+    const slotFrontFaceMaterial = wallBlueMaterial;
+    const slotSideFaceMaterial = wallBlueMaterial;
+    const a30A29EnclosedFaceMaterial = wallBlueMaterial;
     const frontFaceSlotsInPathOrder = [
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
       ...SPIRAL_SLOT_LAYOUT
@@ -514,13 +508,7 @@ function BronzeTowerModel() {
     // Deneme 6.2: A30-SÜ'den 118-SÜ'ye kadar mevcut ön yüzey panelleri
     // sabit olarak mavi materyalle ve %100 opaklıkta renklendirilir.
     const lastBlueFrontFaceIndex = 149; // A30...A, ardından 1-SÜ...119-SÜ
-    const blueFrontFaceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x1565ff,
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    const blueFrontFaceMaterial = wallBlueMaterial;
     for (let i = 1; i < frontFacePoints.length; i++) {
       if (i > lastBlueFrontFaceIndex) continue;
       const previous = frontFacePoints[i - 1];
@@ -923,30 +911,9 @@ function BronzeTowerModel() {
     // dörtgeni ve aynı düzende hat boyunca devam eden tüm komşu alanlar.
     // A30-SÜ'den 118-SÜ'ye kadar tüm üst yüzeyler opak yeşil.
     // Sabit nokta koordinatları ve upperBridgePairHeights değerleri korunur.
-    const upperBridgeGreenMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00c853,
-      transparent: false,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: true
-    });
-    // 117-SÜ → 118-SÜ ve 120'117-SÜ → 120'118-SÜ arasındaki alanı
-    // komşu yeşil panellerden ayırmak için geçici turuncu renklendir.
-    const upperBridgeHighlightMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff8c00,
-      transparent: false,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: true
-    });
-    // 120-S1 → 120-S2 → 118-SÜ → 119-SÜ tepe paneli için ayırt edici fuşya.
-    const crownPanelMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff00d4,
-      transparent: false,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: true
-    });
+    const upperBridgeGreenMaterial = topGreenMaterial;
+    const upperBridgeHighlightMaterial = topGreenMaterial;
+    const crownPanelMaterial = topGreenMaterial;
     const upperBridgeFacePanels: THREE.Mesh[] = [];
     const upperBridgeSlots = [
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
@@ -1134,11 +1101,8 @@ function BronzeTowerModel() {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
 
-      // 117-SÜ–118-SÜ paneli (120'117-SÜ–120'118-SÜ karşılığı) turuncu;
-      // diğer üst köprü panelleri mevcut opak yeşil rengini korur.
-      const panelMaterial = i === 148
-        ? upperBridgeHighlightMaterial
-        : upperBridgeGreenMaterial;
+      // Bütün üst köprü panelleri aynı sabit yeşil materyali kullanır.
+      const panelMaterial = upperBridgeGreenMaterial;
       const panel = new THREE.Mesh(geometry, panelMaterial);
       panel.renderOrder = 8;
       upperBridgeFacePanels.push(panel);
@@ -1268,6 +1232,9 @@ function BronzeTowerModel() {
       {/* Sabit mavi yüzeyler: useMemo içinde bir kez oluşturulur, tekrar renderda üretilmez. */}
       {dims.slotFrontFacePanels.map((panel, index) => (
         <primitive key={`blue-front-face-panel-${index}`} object={panel} />
+      ))}
+      {dims.slotSideFacePanels.map((panel, index) => (
+        <primitive key={`blue-side-face-panel-${index}`} object={panel} />
       ))}
       <mesh
         geometry={dims.slot119ToCrownS1WallGeometry}
