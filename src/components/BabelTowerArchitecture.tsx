@@ -422,6 +422,28 @@ function BronzeTowerModel() {
       slotToCrownS2HorizontalGuideLines.push(connectorLine);
     }
 
+    // Her SÜ noktasından aynı X/Z koordinatını koruyarak y=0 tabanına
+    // tam dikey kırmızı bir izdüşüm çizgisi indir.
+    const slotUpperLeftToBaseGuideLines: THREE.Line[] = [];
+    const allUpperLeftSlots = [...SIDE_SLOT_LAYOUT, ...SPIRAL_SLOT_LAYOUT];
+
+    for (const slot of allUpperLeftSlots) {
+      const slotUpperLeft = getSlotUpperLeft(slot);
+      const basePoint = slotUpperLeft.clone();
+      basePoint.y = 0;
+
+      const verticalGeometry = new THREE.BufferGeometry().setFromPoints([
+        slotUpperLeft,
+        basePoint
+      ]);
+      const verticalLine = new THREE.Line(
+        verticalGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      verticalLine.renderOrder = 14;
+      slotUpperLeftToBaseGuideLines.push(verticalLine);
+    }
+
     type WallPathPoint = {
       x: number; y: number; z: number; halfHeight: number;
       rotationY: number; radialX: number; radialZ: number;
@@ -740,6 +762,7 @@ function BronzeTowerModel() {
       wallGuideLine,
       crownS2VerticalGuideLine,
       slotToCrownS2HorizontalGuideLines,
+      slotUpperLeftToBaseGuideLines,
       slot118ToCrownGuideLine,
       crownPanelGeometry,
       crownPanelConnectorLine,
@@ -773,6 +796,9 @@ function BronzeTowerModel() {
       <primitive object={dims.crownS2VerticalGuideLine} />
       {dims.slotToCrownS2HorizontalGuideLines.map((line, index) => (
         <primitive key={`sü-to-120s2-${index}`} object={line} />
+      ))}
+      {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
+        <primitive key={`sü-to-base-${index}`} object={line} />
       ))}
       <primitive object={dims.slot118ToCrownGuideLine} />
       <primitive object={dims.crownPanelConnectorLine} />
