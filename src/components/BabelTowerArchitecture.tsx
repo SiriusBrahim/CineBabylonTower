@@ -88,12 +88,12 @@ function BronzeTowerModel() {
       y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
-    // Yol, posterin yerel sağ-alt köşesinden başlayıp spiral duvarın iç yüzeyine ulaşır.
-    // Poster altından küçük bir düşey boşluk bırakılır; böylece poster yüzeyi kapanmaz.
+    // Yol şeridi: slotun sağ-alt köşesinden duvarın iç yüzeyine uzanan
+    // sürekli helis yüzeyi. Her slotta yerel sağ yönü ve radyal duvar yönü kullanılır.
     const roadPositions: number[] = [];
     const roadIndices: number[] = [];
-    const roadClearance = 0.035;
-    const slotSideClearance = 0.025;
+    const roadClearance = 0.018;
+    const slotSideClearance = 0.018;
     const wallInset = 0.085;
     const posterDepth = 0.075;
 
@@ -102,18 +102,19 @@ function BronzeTowerModel() {
       const theta = Math.atan2(center.z, center.x);
       const slotRotation = new THREE.Euler(0, -theta + Math.PI / 2, 0);
       const radial = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
-      const frontNormal = radial.clone();
       const slotRight = new THREE.Vector3(1, 0, 0)
         .applyEuler(slotRotation)
         .normalize();
 
-      // Yolun iç kenarı posterin sağ-alt köşesinin hemen dışındadır.
+      // Başlangıç sınırı posterin sağ kenarının hemen dışında, ön düzleme yakın.
       const innerEdge = center.clone()
         .addScaledVector(slotRight, posterWidth * 0.5 + slotSideClearance)
-        .addScaledVector(frontNormal, posterDepth * 0.5 + 0.012);
+        .addScaledVector(radial, posterDepth * 0.5 + 0.025);
 
-      // Yolun dış kenarı, mavi spiral duvarın merkez hattına oturur.
+      // Bitiş sınırı duvarın iç yüzeyidir.
       const outerEdge = center.clone().addScaledVector(radial, -wallInset);
+
+      // Yol poster alt kenarına çok yakın, ancak posterin altında kalır.
       const roadY = center.y - posterHeight * 0.5 - roadClearance;
       innerEdge.y = roadY;
       outerEdge.y = roadY;
@@ -125,7 +126,8 @@ function BronzeTowerModel() {
 
       if (i < slotCenters.length - 1) {
         const a = i * 2;
-        roadIndices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        // Tutarlı üçgen sırası; çift taraflı materyal ile iki yönden görünür.
+        roadIndices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
       }
     }
 
@@ -133,6 +135,8 @@ function BronzeTowerModel() {
     roadGeometry.setAttribute("position", new THREE.Float32BufferAttribute(roadPositions, 3));
     roadGeometry.setIndex(roadIndices);
     roadGeometry.computeVertexNormals();
+    roadGeometry.computeBoundingBox();
+    roadGeometry.computeBoundingSphere();
 
     // Slotların altından aşağı sarkan, aynı helis hattını izleyen saydam mavi duvar.
     const wallPositions: number[] = [];
@@ -190,9 +194,11 @@ function BronzeTowerModel() {
     emissiveIntensity: 0.12
   }), [accent]);
   const roadMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: "#343943",
-    metalness: 0.42,
-    roughness: 0.72,
+    color: "#687586",
+    emissive: "#182330",
+    emissiveIntensity: 0.35,
+    metalness: 0.28,
+    roughness: 0.68,
     side: THREE.DoubleSide
   }), []);
   const wallMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
@@ -227,7 +233,7 @@ function BronzeTowerModel() {
           {label.number}
         </Text>
       ))}
-      <mesh geometry={dims.roadGeometry} material={roadMaterial} castShadow receiveShadow />
+      <mesh geometry={dims.roadGeometry} material={roadMaterial} castShadow receiveShadow renderOrder={3} />
     </group>
   );
 }
