@@ -304,6 +304,43 @@ function BronzeTowerModel() {
     );
     wallGuideLine.renderOrder = 10;
 
+    // Dört kenarlı kırmızı panel: 119-SÜ, 118-SÜ, 120-S2, 120-S1.
+    const crownPanelVertices = [
+      slot119UpperLeftGuidePoint,
+      slot118UpperLeftGuidePoint,
+      crownWallMatchPoint,
+      crownLowerLeftGuidePoint
+    ];
+    const crownPanelGeometry = new THREE.BufferGeometry();
+    crownPanelGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      crownPanelVertices.flatMap((point) => [point.x, point.y, point.z]),
+      3
+    ));
+    crownPanelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    crownPanelGeometry.computeVertexNormals();
+
+    // Dikdörtgenin eksik kenarı: 119-SÜ -> 120-S1.
+    const crownPanelConnectorGeometry = new THREE.BufferGeometry().setFromPoints([
+      slot119UpperLeftGuidePoint,
+      crownLowerLeftGuidePoint
+    ]);
+    const crownPanelConnectorLine = new THREE.Line(
+      crownPanelConnectorGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    crownPanelConnectorLine.renderOrder = 12;
+
+    // 120-S1 -> 120-S2 kenarı.
+    const crownPanelBaseEdgeGeometry = new THREE.BufferGeometry().setFromPoints([
+      crownLowerLeftGuidePoint,
+      crownWallMatchPoint
+    ]);
+    const crownPanelBaseEdgeLine = new THREE.Line(
+      crownPanelBaseEdgeGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    crownPanelBaseEdgeLine.renderOrder = 12;
+
     const slot118ToCrownGuideGeometry = new THREE.BufferGeometry().setFromPoints([
       slot118UpperLeftGuidePoint,
       crownWallMatchPoint
@@ -654,6 +691,9 @@ function BronzeTowerModel() {
       wallGeometry,
       wallGuideLine,
       slot118ToCrownGuideLine,
+      crownPanelGeometry,
+      crownPanelConnectorLine,
+      crownPanelBaseEdgeLine,
       wallGuideLabels,
       crownWallGeometry,
       crownWallPosition,
@@ -693,6 +733,18 @@ function BronzeTowerModel() {
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
       <primitive object={dims.wallGuideLine} />
       <primitive object={dims.slot118ToCrownGuideLine} />
+      <mesh geometry={dims.crownPanelGeometry}>
+        <meshStandardMaterial
+          color="#ff2020"
+          emissive="#8f0000"
+          emissiveIntensity={0.18}
+          side={THREE.DoubleSide}
+          roughness={0.62}
+          metalness={0.08}
+        />
+      </mesh>
+      <primitive object={dims.crownPanelConnectorLine} />
+      <primitive object={dims.crownPanelBaseEdgeLine} />
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
