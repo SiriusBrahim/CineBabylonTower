@@ -269,6 +269,11 @@ function BronzeTowerModel() {
       getSlotUpperLeft(slot119),
       getSlotUpperLeft(slot118)
     ]);
+    const wallGuideLine = new THREE.Line(
+      wallGuideLineGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    wallGuideLine.renderOrder = 10;
 
     // Tek parça spiral duvarın alt ucu A30-120 sağ bağlantısına,
     // üst ucu 119-120 sol bağlantısına oturur.
@@ -593,7 +598,7 @@ function BronzeTowerModel() {
       aSlotPosition,
       descendingSideSlots,
       wallGeometry,
-      wallGuideLineGeometry,
+      wallGuideLine,
       crownWallGeometry,
       crownWallPosition,
       wallConnectorGeometry,
@@ -630,9 +635,7 @@ function BronzeTowerModel() {
   return (
     <group>
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
-      <line geometry={dims.wallGuideLineGeometry}>
-        <lineBasicMaterial color="#ff0000" depthTest={false} />
-      </line>
+      <primitive object={dims.wallGuideLine} />
       <mesh
         geometry={dims.crownWallGeometry}
         material={wallMaterial}
