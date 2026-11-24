@@ -276,15 +276,19 @@ function BronzeTowerModel() {
       CROWN_SLOT_POSITION.z
     ));
 
-    // 118-SÜ noktasının 120. destek duvarındaki aynı yükseklikteki karşılığı.
+    // 120-S1 -> 120-S2 doğrusu, 119-SÜ -> 118-SÜ doğrusu ile
+    // aynı yönde, paralel ve aynı uzunlukta olacak şekilde oluşturulur.
     const slot118Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118);
-    if (!slot118Layout) throw new Error("118. slot yerleşimi bulunamadı.");
+    const slot119Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119);
+    if (!slot118Layout || !slot119Layout) {
+      throw new Error("118 veya 119. slot yerleşimi bulunamadı.");
+    }
     const slot118UpperLeftGuidePoint = getSlotUpperLeft(slot118Layout);
-    const crownWallMatchPoint = new THREE.Vector3(
-      -posterWidth * 0.5,
-      slot118Layout.y + posterHeight * 0.5,
-      0.075 * 0.5
-    );
+    const slot119UpperLeftGuidePoint = getSlotUpperLeft(slot119Layout);
+    const guideSegmentVector = slot118UpperLeftGuidePoint.clone()
+      .sub(slot119UpperLeftGuidePoint);
+    const crownWallMatchPoint = crownLowerLeftGuidePoint.clone()
+      .add(guideSegmentVector);
 
     const wallGuideLinePoints = [
       ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
