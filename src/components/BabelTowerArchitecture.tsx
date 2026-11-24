@@ -348,7 +348,7 @@ function BronzeTowerModel() {
     wallConnectorFillGeometry.computeVertexNormals();
 
 
-    // 97-118 arasındaki her slot, kendi tavan yüksekliğinde 120. slotun
+    // 1-118 arasındaki her slot, kendi tavan yüksekliğinde 120. slotun
     // destek duvarına aynı dikey bağlantı geometrisiyle bağlanır.
     const wallToCrownConnectors: {
       left: THREE.BufferGeometry;
@@ -356,7 +356,7 @@ function BronzeTowerModel() {
       fill: THREE.BufferGeometry;
     }[] = [];
 
-    for (const slot of SPIRAL_SLOT_LAYOUT.filter((item) => item.number >= 97 && item.number <= 118)) {
+    for (const slot of SPIRAL_SLOT_LAYOUT.filter((item) => item.number >= 1 && item.number <= 118)) {
       const slotRotation = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(0, slot.rotationY, 0)
       );
