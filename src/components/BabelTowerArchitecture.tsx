@@ -224,7 +224,28 @@ function BronzeTowerModel() {
       number: 120
     });
 
-    return { slots, slotLabels, wallGeometry, prismGeometry, bodyHeight, baseRadius, topRadius };
+    // 120. slotun altından ana duvar tabanına kadar inen, slotla aynı
+    // genişlikte ve aynı dikey düzlemde bir destek duvarı.
+    const crownWallTopY = crownPosition.y - posterHeight * 0.5 - 0.003;
+    const crownWallHeight = crownWallTopY - firstSlotBaseY;
+    const crownWallGeometry = new THREE.BoxGeometry(posterWidth, crownWallHeight, 0.075);
+    const crownWallPosition = new THREE.Vector3(
+      0,
+      firstSlotBaseY + crownWallHeight * 0.5,
+      0
+    );
+
+    return {
+      slots,
+      slotLabels,
+      wallGeometry,
+      crownWallGeometry,
+      crownWallPosition,
+      prismGeometry,
+      bodyHeight,
+      baseRadius,
+      topRadius
+    };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -257,6 +278,11 @@ function BronzeTowerModel() {
   return (
     <group>
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
+      <mesh
+        geometry={dims.crownWallGeometry}
+        material={wallMaterial}
+        position={dims.crownWallPosition}
+      />
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
       {dims.slotLabels.map((label) => (
         <Text
