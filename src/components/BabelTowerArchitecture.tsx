@@ -88,56 +88,6 @@ function BronzeTowerModel() {
       y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
-    // Yol şeridi: slotun sağ-alt köşesinden duvarın iç yüzeyine uzanan
-    // sürekli helis yüzeyi. Her slotta yerel sağ yönü ve radyal duvar yönü kullanılır.
-    const roadPositions: number[] = [];
-    const roadIndices: number[] = [];
-    const roadClearance = 0.018;
-    const slotSideClearance = 0.018;
-    const wallInset = 0.085;
-    const posterDepth = 0.075;
-
-    for (let i = 0; i < slotCenters.length; i++) {
-      const center = slotCenters[i];
-      const theta = Math.atan2(center.z, center.x);
-      const slotRotation = new THREE.Euler(0, -theta + Math.PI / 2, 0);
-      const radial = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
-      const slotRight = new THREE.Vector3(1, 0, 0)
-        .applyEuler(slotRotation)
-        .normalize();
-
-      // Başlangıç sınırı posterin sağ kenarının hemen dışında, ön düzleme yakın.
-      const innerEdge = center.clone()
-        .addScaledVector(slotRight, posterWidth * 0.5 + slotSideClearance)
-        .addScaledVector(radial, posterDepth * 0.5 + 0.025);
-
-      // Bitiş sınırı duvarın iç yüzeyidir.
-      const outerEdge = center.clone().addScaledVector(radial, -wallInset);
-
-      // Yol poster alt kenarına çok yakın, ancak posterin altında kalır.
-      const roadY = center.y - posterHeight * 0.5 - roadClearance;
-      innerEdge.y = roadY;
-      outerEdge.y = roadY;
-
-      roadPositions.push(
-        innerEdge.x, innerEdge.y, innerEdge.z,
-        outerEdge.x, outerEdge.y, outerEdge.z
-      );
-
-      if (i < slotCenters.length - 1) {
-        const a = i * 2;
-        // Tutarlı üçgen sırası; çift taraflı materyal ile iki yönden görünür.
-        roadIndices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
-      }
-    }
-
-    const roadGeometry = new THREE.BufferGeometry();
-    roadGeometry.setAttribute("position", new THREE.Float32BufferAttribute(roadPositions, 3));
-    roadGeometry.setIndex(roadIndices);
-    roadGeometry.computeVertexNormals();
-    roadGeometry.computeBoundingBox();
-    roadGeometry.computeBoundingSphere();
-
     // Slotların altından aşağı sarkan, aynı helis hattını izleyen saydam mavi duvar.
     const wallPositions: number[] = [];
     const wallIndices: number[] = [];
@@ -167,6 +117,58 @@ function BronzeTowerModel() {
     wallGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wallPositions, 3));
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
+    // Tek slotluk test dikmesi: 1. slotun sağ-üst-ön köşesinden
+    // spiral duvarın üst kenarına en kısa (dik) bağlantı.
+    const firstCenter = slotCenters[0];
+    const firstTheta = Math.atan2(firstCenter.z, firstCenter.x);
+    const firstRotation = new THREE.Euler(0, -firstTheta + Math.PI / 2, 0);
+    const firstRadial = new THREE.Vector3(Math.cos(firstTheta), 0, Math.sin(firstTheta));
+    const firstRight = new THREE.Vector3(1, 0, 0).applyEuler(firstRotation).normalize();
+    const strutStart = firstCenter.clone()
+      .addScaledVector(firstRight, posterWidth * 0.5)
+      .add(new THREE.Vector3(0, posterHeight * 0.5, 0))
+      .addScaledVector(firstRadial, 0.075 / 2);
+
+    let nearestWallPoint: THREE.Vector3 | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (let i = 1; i < slotCenters.length - 1; i++) {
+      const wallA = slotCenters[i].clone();
+      const radialA = new THREE.Vector3(wallA.x, 0, wallA.z).normalize();
+      wallA.addScaledVector(radialA, -0.085);
+      wallA.y -= posterHeight * 0.5 + 0.025;
+
+      const wallB = slotCenters[i + 1].clone();
+      const radialB = new THREE.Vector3(wallB.x, 0, wallB.z).normalize();
+      wallB.addScaledVector(radialB, -0.085);
+      wallB.y -= posterHeight * 0.5 + 0.025;
+
+      const segment = wallB.clone().sub(wallA);
+      const denominator = segment.lengthSq();
+      const t = denominator > 0
+        ? THREE.MathUtils.clamp(strutStart.clone().sub(wallA).dot(segment) / denominator, 0, 1)
+        : 0;
+      const candidate = wallA.clone().addScaledVector(segment, t);
+      const distance = candidate.distanceToSquared(strutStart);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestWallPoint = candidate;
+      }
+    }
+
+    const strutEnd = nearestWallPoint ?? firstCenter.clone().addScaledVector(firstRadial, -0.085);
+    const strutDirection = strutEnd.clone().sub(strutStart);
+    const strutLength = strutDirection.length();
+    const strutGeometry = new THREE.CylinderGeometry(0.025, 0.025, strutLength, 12);
+    strutGeometry.translate(0, strutLength * 0.5, 0);
+    strutGeometry.rotateX(Math.PI / 2);
+    strutGeometry.computeBoundingBox();
+    strutGeometry.computeBoundingSphere();
+    const strutQuaternion = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      strutDirection.clone().normalize()
+    );
+    const strutPosition = strutStart.clone().add(strutEnd).multiplyScalar(0.5);
+
 
     const bodyHeight = y;
     const crownPosition = new THREE.Vector3(0, bodyHeight + 0.95, 0);
@@ -181,7 +183,7 @@ function BronzeTowerModel() {
       number: 100
     });
 
-    return { slots, slotLabels, roadGeometry, wallGeometry, bodyHeight, baseRadius, topRadius };
+    return { slots, slotLabels, wallGeometry, strutGeometry, strutPosition, strutQuaternion, bodyHeight, baseRadius, topRadius };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -193,12 +195,13 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
-  const roadMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: "#687586",
-    emissive: "#182330",
-    emissiveIntensity: 0.35,
-    metalness: 0.28,
-    roughness: 0.68,
+  const strutMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#ff2020",
+    emissive: "#ff0000",
+    emissiveIntensity: 0.22,
+    transparent: true,
+    opacity: 0.48,
+    depthWrite: false,
     side: THREE.DoubleSide
   }), []);
   const wallMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
@@ -233,7 +236,13 @@ function BronzeTowerModel() {
           {label.number}
         </Text>
       ))}
-      <mesh geometry={dims.roadGeometry} material={roadMaterial} castShadow receiveShadow renderOrder={3} />
+      <mesh
+        geometry={dims.strutGeometry}
+        position={dims.strutPosition}
+        quaternion={dims.strutQuaternion}
+        material={strutMaterial}
+        renderOrder={4}
+      />
     </group>
   );
 }
