@@ -887,34 +887,60 @@ function BronzeTowerModel() {
       new THREE.Vector3(-7.518807, 0.028288, 8.895625), // A43-SÜ
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
-    // Kırmızı spiral A30-SÜ'den A31...A44 noktalarından geçerek
-    // A30-SÜ-0'a ulaşır. Alt kenar ayrıca belirgin bir çizgi olarak çizilir.
-    const a30SpiralBasePoint = getSlotUpperLeft(a30);
-    a30SpiralBasePoint.y = 0;
-    a30SpiralLinePoints.push(a30SpiralBasePoint);
+
+    // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
       new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
     );
     a30SpiralGuideLine.renderOrder = 15;
 
-    const a44SpiralPoint = a30SpiralLinePoints[a30SpiralLinePoints.length - 2];
+    // Alt kırmızı sınır: A30-SÜ-0 → A31-SÜ-0 ... A43-SÜ-0 → A44-SÜ.
+    // Her taban noktası, ilgili SÜ noktasının Y=0 düzlemine dik izdüşümüdür.
+    const a30SpiralBaseLinePoints = [
+      a30SpiralLinePoints[0].clone().setY(0),
+      new THREE.Vector3(-10.890838, 0, -1.630302), // A31-SÜ0
+      new THREE.Vector3(-11.044312, 0, -0.678389), // A32-SÜ0
+      new THREE.Vector3(-11.114468, 0, 0.282966), // A33-SÜ0
+      new THREE.Vector3(-11.101256, 0, 1.246445), // A34-SÜ0
+      new THREE.Vector3(-11.005266, 0, 2.204831), // A35-SÜ0
+      new THREE.Vector3(-10.827707, 0, 3.151063), // A36-SÜ0
+      new THREE.Vector3(-10.570380, 0, 4.078282), // A37-SÜ0
+      new THREE.Vector3(-10.235651, 0, 4.979888), // A38-SÜ0
+      new THREE.Vector3(-9.826415, 0, 5.849575), // A39-SÜ0
+      new THREE.Vector3(-9.346062, 0, 6.681377), // A40-SÜ0
+      new THREE.Vector3(-8.798441, 0, 7.469704), // A41-SÜ0
+      new THREE.Vector3(-8.187811, 0, 8.209371), // A42-SÜ0
+      new THREE.Vector3(-7.518807, 0, 8.895625), // A43-SÜ0
+      a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone() // A44-SÜ
+    ];
     const a30SpiralBottomLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44SpiralPoint, a30SpiralBasePoint]),
+      new THREE.BufferGeometry().setFromPoints(a30SpiralBaseLinePoints),
       new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
     );
     a30SpiralBottomLine.renderOrder = 16;
 
-    // Mavi duvarın dış sınırı A30-SÜ → A31...A44-SÜ spiralini,
-    // alt sınırı A44-SÜ → A30-SÜ-0 doğrultusunu takip eder.
-    // A30-SÜ-0 ile A30-SÜ arasındaki kenar duvarı kapatır.
+    // Mavi duvar, üst ve alt spiral sınırların ardışık noktaları
+    // arasında ayrı dörtgen paneller oluşturularak doldurulur.
     const a30A44WallGeometry = new THREE.BufferGeometry();
-    const a30A44WallPositions = a30SpiralLinePoints.flatMap((point) => [
-      point.x, point.y, point.z
-    ]);
+    const a30A44WallPositions: number[] = [];
     const a30A44WallIndices: number[] = [];
-    for (let i = 1; i < a30SpiralLinePoints.length - 1; i++) {
-      a30A44WallIndices.push(0, i, i + 1);
+    for (let i = 0; i < a30SpiralLinePoints.length - 1; i++) {
+      const upperStart = a30SpiralLinePoints[i];
+      const upperEnd = a30SpiralLinePoints[i + 1];
+      const baseEnd = a30SpiralBaseLinePoints[i + 1];
+      const baseStart = a30SpiralBaseLinePoints[i];
+      const offset = a30A44WallPositions.length / 3;
+      a30A44WallPositions.push(
+        upperStart.x, upperStart.y, upperStart.z,
+        upperEnd.x, upperEnd.y, upperEnd.z,
+        baseEnd.x, baseEnd.y, baseEnd.z,
+        baseStart.x, baseStart.y, baseStart.z
+      );
+      a30A44WallIndices.push(
+        offset, offset + 1, offset + 2,
+        offset, offset + 2, offset + 3
+      );
     }
     a30A44WallGeometry.setAttribute(
       "position",
