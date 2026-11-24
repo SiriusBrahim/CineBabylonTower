@@ -495,37 +495,40 @@ function BronzeTowerModel() {
       slotFrontFacePanels.push(panelMesh);
     }
 
-    // Yan yüzey denemesi:
-    // A30-SÜ-0 → A30-SÜ → 120A30-SÜ → 120A30-SÜ-0.
-    // 120A30-SÜ, 120-S2 düşey hattının A30-SÜ yüksekliğindeki noktasıdır.
-    const a30SideSlot = SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A30");
-    if (!a30SideSlot) throw new Error("A30 yerleşimi bulunamadı.");
-
-    const a30SideUpperPoint = getSlotUpperLeft(a30SideSlot);
-    const a30SideBasePoint = a30SideUpperPoint.clone();
-    a30SideBasePoint.y = 0;
-
-    const crownS2AtA30Height = crownWallMatchPoint.clone();
-    crownS2AtA30Height.y = a30SideUpperPoint.y;
+    // Yan yüzeyleri aynı dörtgen mantığıyla tüm SÜ noktalarından
+    // 120-S2 düşey hattına kadar doldur:
+    // Her panel: SÜ-0 → SÜ → 120[SÜ yüksekliği] → 120-S2-0.
+    const slotSideFacePanels: THREE.Mesh[] = [];
+    const sideFaceSlots = [...SIDE_SLOT_LAYOUT, ...SPIRAL_SLOT_LAYOUT];
 
     const crownS2AtZeroHeight = crownWallMatchPoint.clone();
     crownS2AtZeroHeight.y = 0;
 
-    const slotSideFaceGeometry = new THREE.BufferGeometry();
-    slotSideFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-      a30SideBasePoint.x, a30SideBasePoint.y, a30SideBasePoint.z,
-      a30SideUpperPoint.x, a30SideUpperPoint.y, a30SideUpperPoint.z,
-      crownS2AtA30Height.x, crownS2AtA30Height.y, crownS2AtA30Height.z,
-      crownS2AtZeroHeight.x, crownS2AtZeroHeight.y, crownS2AtZeroHeight.z
-    ], 3));
-    slotSideFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
-    slotSideFaceGeometry.computeVertexNormals();
+    for (const slot of sideFaceSlots) {
+      const slotUpperPoint = getSlotUpperLeft(slot);
+      const slotBasePoint = slotUpperPoint.clone();
+      slotBasePoint.y = 0;
 
-    const slotSideFacePanel = new THREE.Mesh(
-      slotSideFaceGeometry,
-      slotFrontFaceMaterial
-    );
-    slotSideFacePanel.renderOrder = 6;
+      const crownS2AtSlotHeight = crownWallMatchPoint.clone();
+      crownS2AtSlotHeight.y = slotUpperPoint.y;
+
+      const sideFaceGeometry = new THREE.BufferGeometry();
+      sideFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        slotBasePoint.x, slotBasePoint.y, slotBasePoint.z,
+        slotUpperPoint.x, slotUpperPoint.y, slotUpperPoint.z,
+        crownS2AtSlotHeight.x, crownS2AtSlotHeight.y, crownS2AtSlotHeight.z,
+        crownS2AtZeroHeight.x, crownS2AtZeroHeight.y, crownS2AtZeroHeight.z
+      ], 3));
+      sideFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+      sideFaceGeometry.computeVertexNormals();
+
+      const sideFacePanel = new THREE.Mesh(
+        sideFaceGeometry,
+        slotFrontFaceMaterial
+      );
+      sideFacePanel.renderOrder = 6;
+      slotSideFacePanels.push(sideFacePanel);
+    }
 
     // Taban noktalarını kule yolundaki sırayla birbirine bağla:
     // A30 → A29 → ... → A → 1 → 2 → ... → 119.
@@ -918,7 +921,7 @@ function BronzeTowerModel() {
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
       slotFrontFacePanels,
-      slotSideFacePanel,
+      slotSideFacePanels,
       slotBaseToBaseGuideLines,
       slotBaseToCrownS2GuideLines,
       slot118ToCrownGuideLine,
@@ -958,7 +961,9 @@ function BronzeTowerModel() {
       {dims.slotFrontFacePanels.map((panel, index) => (
         <primitive key={`slot-front-face-panel-${index}`} object={panel} />
       ))}
-      <primitive object={dims.slotSideFacePanel} />
+      {dims.slotSideFacePanels.map((panel, index) => (
+        <primitive key={`slot-side-face-panel-${index}`} object={panel} />
+      ))}
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
       ))}
