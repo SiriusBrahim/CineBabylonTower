@@ -868,13 +868,13 @@ function BronzeTowerModel() {
     const a29UpperRight = getSideSlotUpperRight(a29);
     const a30UpperRight = getSideSlotUpperRight(a30);
 
-    // Deneme 9: A30-SÜ'den tabana 88.01° eğimli, merkezden dışarı yönelen kırmızı spiral doğrusu.
-    // Açı yatay düzleme göre ölçülür; taban ucunun radyal kaçıklığı bu açıdan hesaplanır.
+    // Deneme 9.1: A30-SÜ'den merkezden dışarı doğru ilerlerken Y=0'a inen kırmızı doğru.
+    // 88.01° açı dikey eksene göredir; böylece doğru dışa doğru geniş bir radyal mesafe alır.
     const a30SpiralLineStart = getSlotUpperLeft(a30);
     const a30SpiralLineEnd = a30SpiralLineStart.clone();
-    const a30SpiralLineAngle = THREE.MathUtils.degToRad(88.01);
+    const a30SpiralLineAngleFromVertical = THREE.MathUtils.degToRad(88.01);
     const a30SpiralLineVerticalDrop = a30SpiralLineStart.y;
-    const a30SpiralLineOutwardOffset = a30SpiralLineVerticalDrop / Math.tan(a30SpiralLineAngle);
+    const a30SpiralLineOutwardOffset = a30SpiralLineVerticalDrop * Math.tan(a30SpiralLineAngleFromVertical);
     const a30SpiralLineRadialLength = Math.hypot(a30SpiralLineStart.x, a30SpiralLineStart.z);
     a30SpiralLineEnd.y = 0;
     a30SpiralLineEnd.x += (a30SpiralLineStart.x / a30SpiralLineRadialLength) * a30SpiralLineOutwardOffset;
