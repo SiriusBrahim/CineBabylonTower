@@ -395,6 +395,33 @@ function BronzeTowerModel() {
     );
     crownS2VerticalGuideLine.renderOrder = 13;
 
+    
+    // Her SÜ köşesini, 120-S2'nin düşey referans hattına kendi yüksekliğinde
+    // yatay (düşey hatta 90 derece) kırmızı çizgiyle bağla.
+    // 118-SÜ bağlantısı slot118ToCrownGuideLine ile zaten çizildi.
+    const slotToCrownS2HorizontalGuideLines: THREE.Line[] = [];
+    const horizontalConnectorSlots = [
+      ...SIDE_SLOT_LAYOUT,
+      ...SPIRAL_SLOT_LAYOUT.filter((slot) => slot.number !== 118)
+    ];
+
+    for (const slot of horizontalConnectorSlots) {
+      const slotUpperLeft = getSlotUpperLeft(slot);
+      const crownS2AtSlotHeight = crownWallMatchPoint.clone();
+      crownS2AtSlotHeight.y = slotUpperLeft.y;
+
+      const connectorGeometry = new THREE.BufferGeometry().setFromPoints([
+        slotUpperLeft,
+        crownS2AtSlotHeight
+      ]);
+      const connectorLine = new THREE.Line(
+        connectorGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      connectorLine.renderOrder = 12;
+      slotToCrownS2HorizontalGuideLines.push(connectorLine);
+    }
+
     type WallPathPoint = {
       x: number; y: number; z: number; halfHeight: number;
       rotationY: number; radialX: number; radialZ: number;
@@ -712,6 +739,7 @@ function BronzeTowerModel() {
       wallGeometry,
       wallGuideLine,
       crownS2VerticalGuideLine,
+      slotToCrownS2HorizontalGuideLines,
       slot118ToCrownGuideLine,
       crownPanelGeometry,
       crownPanelConnectorLine,
@@ -755,6 +783,9 @@ function BronzeTowerModel() {
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
       <primitive object={dims.wallGuideLine} />
       <primitive object={dims.crownS2VerticalGuideLine} />
+      {dims.slotToCrownS2HorizontalGuideLines.map((line, index) => (
+        <primitive key={`sü-to-120s2-${index}`} object={line} />
+      ))}
       <primitive object={dims.slot118ToCrownGuideLine} />
       <primitive object={dims.crownPanelConnectorLine} />
       <primitive object={dims.crownPanelBaseEdgeLine} />
