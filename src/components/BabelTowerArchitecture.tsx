@@ -926,11 +926,6 @@ function BronzeTowerModel() {
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
     );
     a44SuVerticalLine.renderOrder = 21;
-    const a45SuVerticalLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a45SuPoint, a45Su1Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a45SuVerticalLine.renderOrder = 21;
 
     // A44SÜ1 ve A45SÜ1 noktalarından bir slot yüksekliği (1.38 birim) yukarı çıkan dikmeler.
     const a44Su2Point = a44Su1Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
@@ -940,11 +935,6 @@ function BronzeTowerModel() {
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
     );
     a44Su1ToSu2VerticalLine.renderOrder = 23;
-    const a45Su1ToSu2VerticalLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a45Su1Point, a45Su2Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a45Su1ToSu2VerticalLine.renderOrder = 23;
 
     // A44SÜ2 ve A45SÜ2 üst uç noktalarını birleştiren fuşya çizgi.
     const a44Su2ToA45Su2FuchsiaLine = new THREE.Line(
@@ -969,8 +959,6 @@ function BronzeTowerModel() {
     };
     const a44Su2ToSu3VerticalLine = makeFuchsiaPost(a44Su2Point, a44Su3Point);
     const a44Su3ToSu4VerticalLine = makeFuchsiaPost(a44Su3Point, a44Su4Point);
-    const a45Su2ToSu3VerticalLine = makeFuchsiaPost(a45Su2Point, a45Su3Point);
-    const a45Su3ToSu4VerticalLine = makeFuchsiaPost(a45Su3Point, a45Su4Point);
 
     const makeFuchsiaBridge = (start: THREE.Vector3, end: THREE.Vector3) => {
       const line = new THREE.Line(
@@ -1450,7 +1438,6 @@ function BronzeTowerModel() {
       a44SuLabelPosition: a44SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a45SuLabelPosition: a45SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44SuVerticalLine,
-      a45SuVerticalLine,
       a44Su01ToSu02VerticalLine,
       z13ToZ14ParallelLine,
       z13LabelPosition: z13BasePoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1458,12 +1445,9 @@ function BronzeTowerModel() {
       a44Su01LabelPosition: a44Su01Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44Su02LabelPosition: a44Su02Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44Su1ToSu2VerticalLine,
-      a45Su1ToSu2VerticalLine,
       a44Su2ToA45Su2FuchsiaLine,
       a44Su2ToSu3VerticalLine,
       a44Su3ToSu4VerticalLine,
-      a45Su2ToSu3VerticalLine,
-      a45Su3ToSu4VerticalLine,
       a44Su3ToA45Su3FuchsiaLine,
       a44Su4ToA45Su4FuchsiaLine,
       a44Su1ToA45Su1FuchsiaLine,
@@ -1539,14 +1523,10 @@ function BronzeTowerModel() {
       <primitive object={dims.a44SuVerticalLine} />
       <primitive object={dims.a44Su01ToSu02VerticalLine} />
       <primitive object={dims.z13ToZ14ParallelLine} />
-      <primitive object={dims.a45SuVerticalLine} />
       <primitive object={dims.a44Su1ToSu2VerticalLine} />
-      <primitive object={dims.a45Su1ToSu2VerticalLine} />
        <primitive object={dims.a44Su2ToA45Su2FuchsiaLine} />
        <primitive object={dims.a44Su2ToSu3VerticalLine} />
        <primitive object={dims.a44Su3ToSu4VerticalLine} />
-       <primitive object={dims.a45Su2ToSu3VerticalLine} />
-       <primitive object={dims.a45Su3ToSu4VerticalLine} />
        <primitive object={dims.a44Su3ToA45Su3FuchsiaLine} />
        <primitive object={dims.a44Su4ToA45Su4FuchsiaLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
@@ -1564,8 +1544,8 @@ function BronzeTowerModel() {
         ["Z10", dims.a45Su3LabelPosition],
         ["Z11", dims.a44Su4LabelPosition],
         ["Z12", dims.a45Su4LabelPosition],
-        ["Z13", dims.z13LabelPosition],
-        ["Z14", dims.z14LabelPosition],
+        ["Z12", dims.z13LabelPosition],
+        ["Z12", dims.z14LabelPosition],
       ] as [string, THREE.Vector3][]).map(([name, position]) => (
         <Text key={name} position={position} fontSize={0.075} color="#ff00ff"
           outlineColor="#090b12" outlineWidth={0.007} anchorX="left"
