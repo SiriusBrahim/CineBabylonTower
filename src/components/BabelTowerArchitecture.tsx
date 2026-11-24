@@ -915,6 +915,15 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide,
       depthWrite: true
     });
+    // 117-SÜ → 118-SÜ ve 120'117-SÜ → 120'118-SÜ arasındaki alanı
+    // komşu yeşil panellerden ayırmak için geçici turuncu renklendir.
+    const upperBridgeHighlightMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff8c00,
+      transparent: false,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
     // 120-S1 → 120-S2 → 118-SÜ → 119-SÜ tepe paneli için ayırt edici fuşya.
     const crownPanelMaterial = new THREE.MeshBasicMaterial({
       color: 0xff00d4,
@@ -1110,8 +1119,12 @@ function BronzeTowerModel() {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
 
-      // A30-SÜ → 118-SÜ arasındaki paneller opak yeşil oluşturulur.
-      const panel = new THREE.Mesh(geometry, upperBridgeGreenMaterial);
+      // 117-SÜ–118-SÜ paneli (120'117-SÜ–120'118-SÜ karşılığı) turuncu;
+      // diğer üst köprü panelleri mevcut opak yeşil rengini korur.
+      const panelMaterial = i === 148
+        ? upperBridgeHighlightMaterial
+        : upperBridgeGreenMaterial;
+      const panel = new THREE.Mesh(geometry, panelMaterial);
       panel.renderOrder = 8;
       upperBridgeFacePanels.push(panel);
     }
