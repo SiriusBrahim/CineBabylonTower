@@ -530,40 +530,9 @@ function BronzeTowerModel() {
       slotSideFacePanels.push(sideFacePanel);
     }
 
-    // Taban noktalarını kule yolundaki sırayla birbirine bağla:
-    // A30 → A29 → ... → A → 1 → 2 → ... → 119.
+    // Taban noktaları arasındaki 0.044 birimlik prizma bağlantıları kaldırıldı.
+    // Taban noktaları ve diğer kılavuz çizgileri korunur.
     const slotBaseToBaseGuideLines: THREE.Mesh[] = [];
-    const upperLeftSlotsInPathOrder = [
-      ...SIDE_SLOT_LAYOUT.slice().reverse(),
-      ...SPIRAL_SLOT_LAYOUT
-    ];
-    const orderedBasePoints = upperLeftSlotsInPathOrder.map((slot) => {
-      const point = getSlotUpperLeft(slot);
-      point.y = 0;
-      return point;
-    });
-    const baseConnectorMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      depthTest: false
-    });
-
-    for (let i = 1; i < orderedBasePoints.length; i++) {
-      const start = orderedBasePoints[i - 1];
-      const end = orderedBasePoints[i];
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const length = direction.length();
-      const connectorMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.044, length, 0.044),
-        baseConnectorMaterial
-      );
-      connectorMesh.position.copy(start).add(end).multiplyScalar(0.5);
-      connectorMesh.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        direction.normalize()
-      );
-      connectorMesh.renderOrder = 15;
-      slotBaseToBaseGuideLines.push(connectorMesh);
-    }
 
     // 119-SÜ-0 ve A30-SÜ-0 noktalarını 120-S2 dikmesine,
     // dikmenin 0 yüksekliğindeki taban noktasında bağla.
