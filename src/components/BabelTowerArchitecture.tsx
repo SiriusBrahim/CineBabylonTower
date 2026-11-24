@@ -514,6 +514,10 @@ function BronzeTowerModel() {
     crownS2AtZeroHeight.y = 0;
 
     for (const slot of sideFaceSlots) {
+      // 119-SÜ ile 120-S2 arasındaki eski tabanlı dikdörtgen kaldırılır;
+      // bu alanın yerine 120-S1 bağlantılı yeni duvar oluşturulur.
+      if ("number" in slot && slot.number === 119) continue;
+
       const slotUpperPoint = getSlotUpperLeft(slot);
       const slotBasePoint = slotUpperPoint.clone();
       slotBasePoint.y = 0;
@@ -538,6 +542,33 @@ function BronzeTowerModel() {
       sideFacePanel.renderOrder = 6;
       slotSideFacePanels.push(sideFacePanel);
     }
+
+    // Yeni 119-120 duvarı: 120-S1 → 119-SÜ → 119-SÜ-0 → 120-S1-0.
+    // Eski 119-SÜ → 120-S2 → 119-SÜ-0 → 120-S2-0 panelinin yerine geçer.
+    const slot119UpperLeft = getSlotUpperLeft(
+      SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119)!
+    );
+    const slot119BaseLeft = slot119UpperLeft.clone();
+    slot119BaseLeft.y = 0;
+    const crownS1AtZeroHeight = crownLowerLeftGuidePoint.clone();
+    crownS1AtZeroHeight.y = 0;
+    const slot119ToCrownS1WallGeometry = new THREE.BufferGeometry();
+    slot119ToCrownS1WallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      crownLowerLeftGuidePoint.x, crownLowerLeftGuidePoint.y, crownLowerLeftGuidePoint.z,
+      slot119UpperLeft.x, slot119UpperLeft.y, slot119UpperLeft.z,
+      slot119BaseLeft.x, slot119BaseLeft.y, slot119BaseLeft.z,
+      crownS1AtZeroHeight.x, crownS1AtZeroHeight.y, crownS1AtZeroHeight.z
+    ], 3));
+    slot119ToCrownS1WallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    slot119ToCrownS1WallGeometry.computeVertexNormals();
+
+    const slot119ToCrownS1WallMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8f3030,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
 
     // Taban noktaları arasındaki 0.044 birimlik prizma bağlantıları kaldırıldı.
     // Taban noktaları ve diğer kılavuz çizgileri korunur.
@@ -981,6 +1012,8 @@ function BronzeTowerModel() {
       slotUpperLeftToBaseGuideLines,
       slotFrontFacePanels,
       slotSideFacePanels,
+      slot119ToCrownS1WallGeometry,
+      slot119ToCrownS1WallMaterial,
       slotFrontFaceMaterial,
       slotBaseToBaseGuideLines,
       slotBaseToCrownS2GuideLines,
@@ -1028,6 +1061,11 @@ function BronzeTowerModel() {
       {dims.slotSideFacePanels.map((panel, index) => (
         <primitive key={`slot-side-face-panel-${index}`} object={panel} />
       ))}
+      <mesh
+        geometry={dims.slot119ToCrownS1WallGeometry}
+        material={dims.slot119ToCrownS1WallMaterial}
+        renderOrder={9}
+      />
       <mesh
         geometry={dims.a30A29BaseFaceGeometry}
         material={dims.slotFrontFaceMaterial}
