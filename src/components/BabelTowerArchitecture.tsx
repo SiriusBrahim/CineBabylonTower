@@ -483,6 +483,62 @@ function BronzeTowerModel() {
       wallToCrownConnectors.push({ left, right, fill });
     }
 
+    // A29-A30 arasındaki sağ kenarı, ortak tabana kadar inen yekpare bir
+    // duvarla kapat. Aynı panelin karşılığı 120. slot destek duvarında da oluşur.
+    const a29 = SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A29");
+    const a30 = SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A30");
+    if (!a29 || !a30) throw new Error("A29 veya A30 yerleşimi bulunamadı.");
+
+    const getSideSlotUpperRight = (slot: typeof a29) => new THREE.Vector3(
+      posterWidth * 0.5,
+      slot.height * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
+    ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
+
+    const a29UpperRight = getSideSlotUpperRight(a29);
+    const a30UpperRight = getSideSlotUpperRight(a30);
+    const a29BaseRight = a29UpperRight.clone();
+    const a30BaseRight = a30UpperRight.clone();
+    a29BaseRight.y = firstSlotBaseY;
+    a30BaseRight.y = firstSlotBaseY;
+
+    const sideSeriesRightWallGeometry = new THREE.BufferGeometry();
+    sideSeriesRightWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      a29UpperRight.x, a29UpperRight.y, a29UpperRight.z,
+      a29BaseRight.x, a29BaseRight.y, a29BaseRight.z,
+      a30BaseRight.x, a30BaseRight.y, a30BaseRight.z,
+      a30UpperRight.x, a30UpperRight.y, a30UpperRight.z
+    ], 3));
+    sideSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    sideSeriesRightWallGeometry.computeVertexNormals();
+
+    const a29CrownJoinRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      a29.y + a29.height * 0.5,
+      0.075 * 0.5
+    );
+    const a30CrownJoinRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      a30.y + a30.height * 0.5,
+      0.075 * 0.5
+    );
+    const a29CrownBaseRight = a29CrownJoinRight.clone();
+    const a30CrownBaseRight = a30CrownJoinRight.clone();
+    a29CrownBaseRight.y = firstSlotBaseY;
+    a30CrownBaseRight.y = firstSlotBaseY;
+
+    const crownSeriesRightWallGeometry = new THREE.BufferGeometry();
+    crownSeriesRightWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      a29CrownJoinRight.x, a29CrownJoinRight.y, a29CrownJoinRight.z,
+      a29CrownBaseRight.x, a29CrownBaseRight.y, a29CrownBaseRight.z,
+      a30CrownBaseRight.x, a30CrownBaseRight.y, a30CrownBaseRight.z,
+      a30CrownJoinRight.x, a30CrownJoinRight.y, a30CrownJoinRight.z
+    ], 3));
+    crownSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    crownSeriesRightWallGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
@@ -495,6 +551,8 @@ function BronzeTowerModel() {
       wallRightConnectorGeometry,
       wallConnectorFillGeometry,
       wallToCrownConnectors,
+      sideSeriesRightWallGeometry,
+      crownSeriesRightWallGeometry,
     };
   }, []);
 
@@ -538,6 +596,8 @@ function BronzeTowerModel() {
           <mesh geometry={connector.fill} material={wallMaterial} />
         </group>
       ))}
+      <mesh geometry={dims.sideSeriesRightWallGeometry} material={wallMaterial} />
+      <mesh geometry={dims.crownSeriesRightWallGeometry} material={wallMaterial} />
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
       <mesh
         geometry={aSlotGeometry}
