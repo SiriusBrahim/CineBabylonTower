@@ -1382,11 +1382,6 @@ function BronzeTowerModel() {
         material={dims.blueFrontFaceMaterial}
         renderOrder={10}
       />
-      <mesh
-        geometry={dims.a30ToCrownWallGeometry}
-        material={dims.blueFrontFaceMaterial}
-        renderOrder={11}
-      />
       {dims.upperBridgeFacePanels.map((panel, index) => (
         <primitive key={`upper-bridge-face-${index}`} object={panel} />
       ))}
@@ -1405,14 +1400,8 @@ function BronzeTowerModel() {
         material={dims.blueFrontFaceMaterial}
         renderOrder={10}
       />
-      <primitive object={dims.a30SpiralGuideLine} />
-      <primitive object={dims.a30SpiralBottomLine} />
-      <primitive object={dims.a44ToCrownS2GuideLine} />
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
-      ))}
-      {dims.a31ToA43CrownS2GuideLines.map((line, index) => (
-        <primitive key={`a31-a43-crown-s2-guide-${index}`} object={line} />
       ))}
       {dims.wallGuideLabels.map((label) => (
         <Text
