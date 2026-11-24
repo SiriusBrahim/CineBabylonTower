@@ -182,6 +182,24 @@ function BronzeTowerModel() {
       SPIRAL_SLOT_LAYOUT[0].z - (posterWidth + 0.04)
     );
     const aSlotRotation = new THREE.Euler(0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0);
+    const descendingSideSlots: { position: THREE.Vector3; height: number }[] = [];
+
+    // A slotundan sağa doğru A1-A30 yuvaları aynı taban kotunda,
+    // her adımda 0.033448 daha düşük yükseklikte oluşturulur.
+    for (let index = 1; index <= 30; index++) {
+      const height = aSlotHeight - index * 0.033448;
+      const position = new THREE.Vector3(
+        aSlotPosition.x,
+        aSlotBaseY + height * 0.5,
+        aSlotPosition.z - index * (posterWidth + 0.04)
+      );
+      descendingSideSlots.push({ position, height });
+      slotLabels.push({
+        position: position.clone().add(new THREE.Vector3(0, 0, 0.045)),
+        rotation: aSlotRotation.clone(),
+        number: `A${index}`
+      });
+    }
 
     for (const layout of SPIRAL_SLOT_LAYOUT) {
       const slotCenter = new THREE.Vector3(layout.x, layout.y, layout.z);
@@ -437,6 +455,7 @@ function BronzeTowerModel() {
       slots,
       slotLabels,
       aSlotPosition,
+      descendingSideSlots,
       wallGeometry,
       crownWallGeometry,
       crownWallPosition,
@@ -494,6 +513,16 @@ function BronzeTowerModel() {
         position={dims.aSlotPosition}
         rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
       />
+      {dims.descendingSideSlots.map((slot, index) => (
+        <mesh
+          key={`A${index + 1}`}
+          position={slot.position}
+          rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
+          material={slotMaterial}
+        >
+          <boxGeometry args={[0.92, slot.height, 0.075]} />
+        </mesh>
+      ))}
       {dims.slotLabels.map((label) => (
         <Text
           key={label.number}
