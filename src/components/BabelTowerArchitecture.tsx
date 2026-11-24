@@ -471,7 +471,7 @@ function BronzeTowerModel() {
     const a30A29EnclosedFaceMaterial = new THREE.MeshBasicMaterial({
       color: 0x8f3030,
       transparent: true,
-      opacity: 0.5,
+      opacity: 1,
       side: THREE.DoubleSide,
       depthWrite: false
     });
