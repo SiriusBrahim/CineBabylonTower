@@ -912,7 +912,6 @@ function BronzeTowerModel() {
     // A30-SÜ'den 118-SÜ'ye kadar tüm üst yüzeyler opak yeşil.
     // Sabit nokta koordinatları ve upperBridgePairHeights değerleri korunur.
     const upperBridgeGreenMaterial = topGreenMaterial;
-    const upperBridgeHighlightMaterial = topGreenMaterial;
     const crownPanelMaterial = topGreenMaterial;
     const upperBridgeFacePanels: THREE.Mesh[] = [];
     const upperBridgeSlots = [
