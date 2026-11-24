@@ -295,6 +295,7 @@ function BronzeTowerModel() {
     const slot118UpperLeftGuidePoint = getSlotUpperLeft(slot118Layout);
     const slot119UpperLeftGuidePoint = getSlotUpperLeft(slot119Layout);
     const crownWallMatchPoint = crownLowerRightGuidePoint.clone();
+    crownWallMatchPoint.y = slot118UpperLeftGuidePoint.y;
 
     const wallGuideLinePoints = [
       ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
