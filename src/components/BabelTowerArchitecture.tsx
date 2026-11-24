@@ -266,9 +266,20 @@ function BronzeTowerModel() {
       new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
     ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
 
+    const crownLowerLeftGuidePoint = new THREE.Vector3(
+      -posterWidth * 0.5,
+      -posterHeight * 0.5,
+      0.075 * 0.5
+    ).add(new THREE.Vector3(
+      CROWN_SLOT_POSITION.x,
+      CROWN_SLOT_POSITION.y,
+      CROWN_SLOT_POSITION.z
+    ));
+
     const wallGuideLinePoints = [
       ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
-      ...SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft)
+      ...SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft),
+      crownLowerLeftGuidePoint
     ];
     const wallGuideLineGeometry = new THREE.BufferGeometry().setFromPoints(
       wallGuideLinePoints
