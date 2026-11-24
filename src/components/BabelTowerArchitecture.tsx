@@ -289,6 +289,22 @@ function BronzeTowerModel() {
       0.075 * 0.5
     ).add(crownPosition);
 
+    // Sağ bağlantı duvarının üst kenarı 119. slotun sağ üst
+    // köşesinden 120. slotun sağ alt köşesine uzanır.
+    const lastSpiralUpperRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      posterHeight * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(lastSpiralRotation).add(
+      new THREE.Vector3(lastSpiralLayout.x, lastSpiralLayout.y, lastSpiralLayout.z)
+    );
+
+    const crownLowerRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      -posterHeight * 0.5,
+      0.075 * 0.5
+    ).add(crownPosition);
+
     const connectorBottomStart = lastSpiralUpperLeft.clone();
     connectorBottomStart.y = firstSlotBaseY;
     const connectorBottomEnd = crownLowerLeft.clone();
@@ -304,6 +320,21 @@ function BronzeTowerModel() {
     wallConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     wallConnectorGeometry.computeVertexNormals();
 
+    const rightConnectorBottomStart = lastSpiralUpperRight.clone();
+    rightConnectorBottomStart.y = firstSlotBaseY;
+    const rightConnectorBottomEnd = crownLowerRight.clone();
+    rightConnectorBottomEnd.y = firstSlotBaseY;
+
+    const wallRightConnectorGeometry = new THREE.BufferGeometry();
+    wallRightConnectorGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      lastSpiralUpperRight.x, lastSpiralUpperRight.y, lastSpiralUpperRight.z,
+      rightConnectorBottomStart.x, rightConnectorBottomStart.y, rightConnectorBottomStart.z,
+      rightConnectorBottomEnd.x, rightConnectorBottomEnd.y, rightConnectorBottomEnd.z,
+      crownLowerRight.x, crownLowerRight.y, crownLowerRight.z
+    ], 3));
+    wallRightConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    wallRightConnectorGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
@@ -311,6 +342,7 @@ function BronzeTowerModel() {
       crownWallGeometry,
       crownWallPosition,
       wallConnectorGeometry,
+      wallRightConnectorGeometry,
     };
   }, []);
 
@@ -344,6 +376,7 @@ function BronzeTowerModel() {
         position={dims.crownWallPosition}
       />
       <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
+      <mesh geometry={dims.wallRightConnectorGeometry} material={wallMaterial} />
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
       {dims.slotLabels.map((label) => (
         <Text
