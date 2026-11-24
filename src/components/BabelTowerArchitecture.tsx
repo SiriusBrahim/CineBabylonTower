@@ -1436,6 +1436,8 @@ function BronzeTowerModel() {
       a30SpiralGuideLine,
       a30SpiralBottomLine,
       a44ToA45FuchsiaLine,
+      a44SuLabelPosition: a44SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a45SuLabelPosition: a45SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44SuVerticalLine,
       a45SuVerticalLine,
       a44Su01ToSu02VerticalLine,
@@ -1534,45 +1536,26 @@ function BronzeTowerModel() {
        <primitive object={dims.a44Su4ToA45Su4FuchsiaLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
       {([
-        ["A44SÜ01", dims.a44Su01LabelPosition],
-        ["A44SÜ02", dims.a44Su02LabelPosition],
-        ["A44SÜ2", dims.a44Su2LabelPosition],
-        ["A45SÜ2", dims.a45Su2LabelPosition],
-        ["A44SÜ3", dims.a44Su3LabelPosition],
-        ["A45SÜ3", dims.a45Su3LabelPosition],
-        ["A44SÜ4", dims.a44Su4LabelPosition],
-        ["A45SÜ4", dims.a45Su4LabelPosition],
+        // Z etiketleri, tabandaki A44/A45 uçlarından başlayıp dikme seviyeleri boyunca sıralanır.
+        ["Z1", dims.a44SuLabelPosition],
+        ["Z2", dims.a45SuLabelPosition],
+        ["Z3", dims.a44Su01LabelPosition],
+        ["Z4", dims.a44Su02LabelPosition],
+        ["Z5", dims.a44Su1LabelPosition],
+        ["Z6", dims.a45Su1LabelPosition],
+        ["Z7", dims.a44Su2LabelPosition],
+        ["Z8", dims.a45Su2LabelPosition],
+        ["Z9", dims.a44Su3LabelPosition],
+        ["Z10", dims.a45Su3LabelPosition],
+        ["Z11", dims.a44Su4LabelPosition],
+        ["Z12", dims.a45Su4LabelPosition],
       ] as [string, THREE.Vector3][]).map(([name, position]) => (
-        <Text key={name} position={position} fontSize={0.13} color="#ff00ff"
-          outlineColor="#090b12" outlineWidth={0.012} anchorX="left"
+        <Text key={name} position={position} fontSize={0.075} color="#ff00ff"
+          outlineColor="#090b12" outlineWidth={0.007} anchorX="left"
           anchorY="middle" renderOrder={27}>
           {name}
         </Text>
       ))}
-      <Text
-        position={dims.a44Su1LabelPosition}
-        fontSize={0.13}
-        color="#ff00ff"
-        outlineColor="#090b12"
-        outlineWidth={0.012}
-        anchorX="left"
-        anchorY="middle"
-        renderOrder={22}
-      >
-        A44SÜ1
-      </Text>
-      <Text
-        position={dims.a45Su1LabelPosition}
-        fontSize={0.13}
-        color="#ff00ff"
-        outlineColor="#090b12"
-        outlineWidth={0.012}
-        anchorX="left"
-        anchorY="middle"
-        renderOrder={22}
-      >
-        A45SÜ1
-      </Text>
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
