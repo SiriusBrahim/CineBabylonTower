@@ -357,6 +357,12 @@ function BronzeTowerModel() {
       0
     );
 
+    // 119. slotun dönüşü, 119-120 bağlantı panellerinde kullanılır.
+    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
+    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
+    );
+
     // Bağlantı duvarının üst kenarı tam olarak 119. slotun sol üst
     // köşesinden 120. slotun sol alt köşesine uzanır.
     const lastSpiralUpperLeft = new THREE.Vector3(
