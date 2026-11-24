@@ -926,6 +926,36 @@ function BronzeTowerModel() {
     a30A29UpperFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     a30A29UpperFaceGeometry.computeVertexNormals();
 
+    // Deneme 5: Kullanıcının belirttiği sekiz noktalı çevrimi doldur.
+    // 120A30-SÜ-0 ve 120A29-SÜ-0 aynı koordinatta birleştiği için
+    // ortak taban noktası geometride tek vertex olarak tutulur.
+    const a30A29EnclosedFaceA30Base = getSlotUpperLeft(a30);
+    a30A29EnclosedFaceA30Base.y = 0;
+    const a30A29EnclosedFaceA29Base = getSlotUpperLeft(a29);
+    a30A29EnclosedFaceA29Base.y = 0;
+    const a30A29EnclosedFacePoints = [
+      getSlotUpperLeft(a30),
+      getSlotUpperLeft(a29),
+      a30A29EnclosedFaceA29Base,
+      a30A29EnclosedFaceA30Base,
+      a30CrownBaseRight.clone(),
+      a29CrownJoinRight.clone(),
+      a30CrownJoinRight.clone()
+    ];
+    const a30A29EnclosedFaceGeometry = new THREE.BufferGeometry();
+    a30A29EnclosedFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      a30A29EnclosedFacePoints.flatMap((point) => [point.x, point.y, point.z]),
+      3
+    ));
+    a30A29EnclosedFaceGeometry.setIndex([
+      0, 1, 2,
+      0, 2, 3,
+      0, 3, 4,
+      0, 4, 5,
+      0, 5, 6
+    ]);
+    a30A29EnclosedFaceGeometry.computeVertexNormals();
+
     // A30-SÜ-0'dan başlayıp 119-SÜ-0'a kadar tüm komşu taban
     // noktalarını 120-S2 taban noktasına bağlayan yüzeyleri doldur.
     // Her aralık, 0.044 yüksekliğinde üçgen bir yüzey olarak oluşturulur.
@@ -991,6 +1021,7 @@ function BronzeTowerModel() {
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
       a30A29UpperFaceGeometry,
+      a30A29EnclosedFaceGeometry,
     };
   }, []);
 
@@ -1027,6 +1058,11 @@ function BronzeTowerModel() {
         geometry={dims.a30A29UpperFaceGeometry}
         material={dims.slotFrontFaceMaterial}
         renderOrder={8}
+      />
+      <mesh
+        geometry={dims.a30A29EnclosedFaceGeometry}
+        material={dims.slotFrontFaceMaterial}
+        renderOrder={9}
       />
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
