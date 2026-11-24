@@ -217,7 +217,6 @@ function BronzeTowerModel() {
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
     const aSlotLayout = SIDE_SLOT_LAYOUT[0];
     const aSlotPosition = new THREE.Vector3(aSlotLayout.x, aSlotLayout.y, aSlotLayout.z);
-    const aSlotRotation = new THREE.Euler(0, aSlotLayout.rotationY, 0);
     const descendingSideSlots = SIDE_SLOT_LAYOUT.slice(1).map((slot) => ({
       position: new THREE.Vector3(slot.x, slot.y, slot.z),
       height: slot.height,
