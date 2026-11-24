@@ -924,10 +924,10 @@ function BronzeTowerModel() {
     // Deneme 7.1: A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ paneli yeşil.
     const deneme71GreenMaterial = new THREE.MeshBasicMaterial({
       color: 0x00c853,
-      transparent: true,
+      transparent: false,
       opacity: 1,
       side: THREE.DoubleSide,
-      depthWrite: false
+      depthWrite: true
     });
     const upperBridgeFacePanels: THREE.Mesh[] = [];
     const upperBridgeSlots = [
