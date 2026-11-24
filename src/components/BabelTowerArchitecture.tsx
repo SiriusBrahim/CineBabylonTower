@@ -254,28 +254,62 @@ function BronzeTowerModel() {
       });
     }
 
-    // Ana spiral boyunca yükselen, tek parça helisel duvar yüzeyi.
-    // Slot ölçüleri/mesh'leri kullanılmaz; sabit koordinatlar yalnızca
-    // duvarın izlediği merkez hattını ve yönünü tanımlar.
+    // Tek parça spiral duvarın alt ucu A30-120 sağ bağlantısına,
+    // üst ucu 119-120 sol bağlantısına oturur.
+    // İzlenen hat: A30 -> A29 ... -> A -> 1 -> 2 ... -> 119.
     const wallPositions: number[] = [];
     const wallIndices: number[] = [];
-    const wallHalfHeight = posterHeight * 0.5;
     const wallInset = 0.085;
     const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
 
-    for (let i = 0; i < SPIRAL_SLOT_LAYOUT.length; i++) {
-      const layout = SPIRAL_SLOT_LAYOUT[i];
-      const center = new THREE.Vector3(layout.x, layout.y, layout.z);
-      const radial = new THREE.Vector3(layout.x, 0, layout.z).normalize();
-      center.addScaledVector(radial, -wallInset);
+    type WallPathPoint = {
+      x: number; y: number; z: number; halfHeight: number;
+      rotationY: number; radialX: number; radialZ: number;
+    };
 
-      // Duvarın alt sınırı mevcut ilk taban kotundan başlar;
-      // üst sınır ise spiral merkez hattını kesintisiz takip eder.
+    const wallPath: WallPathPoint[] = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse().map((slot) => ({
+        x: slot.x, y: slot.y, z: slot.z,
+        halfHeight: slot.height * 0.5,
+        rotationY: slot.rotationY,
+        radialX: slot.x, radialZ: slot.z
+      })),
+      ...SPIRAL_SLOT_LAYOUT.map((slot) => ({
+        x: slot.x, y: slot.y, z: slot.z,
+        halfHeight: posterHeight * 0.5,
+        rotationY: slot.rotationY,
+        radialX: slot.x, radialZ: slot.z
+      }))
+    ];
+
+    for (let i = 0; i < wallPath.length; i++) {
+      const point = wallPath[i];
+      const radial = new THREE.Vector3(point.radialX, 0, point.radialZ).normalize();
+      const center = new THREE.Vector3(point.x, point.y, point.z)
+        .addScaledVector(radial, -wallInset);
+
       const top = center.clone();
       const bottom = center.clone();
-      top.y += wallHalfHeight;
+      top.y += point.halfHeight;
       bottom.y = firstSlotBaseY;
 
+      // Alt/üst uçları mevcut bağlantı panellerinin gerçek kenarlarına hizala.
+      if (i === 0) {
+        const a30 = SIDE_SLOT_LAYOUT[SIDE_SLOT_LAYOUT.length - 1];
+        const a30Rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a30.rotationY, 0));
+        top.copy(new THREE.Vector3(posterWidth * 0.5, a30.height * 0.5, 0.075 * 0.5)
+          .applyQuaternion(a30Rotation)
+          .add(new THREE.Vector3(a30.x, a30.y, a30.z)));
+      } else if (i === wallPath.length - 1) {
+        const last = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
+        const lastRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, last.rotationY, 0));
+        top.copy(new THREE.Vector3(-posterWidth * 0.5, posterHeight * 0.5, 0.075 * 0.5)
+          .applyQuaternion(lastRotation)
+          .add(new THREE.Vector3(last.x, last.y, last.z)));
+      }
+
+      bottom.x = top.x;
+      bottom.z = top.z;
       wallPositions.push(
         top.x, top.y, top.z,
         bottom.x, bottom.y, bottom.z
