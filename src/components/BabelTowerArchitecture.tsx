@@ -507,6 +507,7 @@ function BronzeTowerModel() {
       depthWrite: false
     });
     for (let i = 1; i < frontFacePoints.length; i++) {
+      if (i > lastBlueFrontFaceIndex) continue;
       const previous = frontFacePoints[i - 1];
       const current = frontFacePoints[i];
       const panelGeometry = new THREE.BufferGeometry();
@@ -519,13 +520,8 @@ function BronzeTowerModel() {
       panelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
       panelGeometry.computeVertexNormals();
 
-      const panelMesh = new THREE.Mesh(
-        panelGeometry,
-        i <= lastBlueFrontFaceIndex
-          ? blueFrontFaceMaterial
-          : slotFrontFaceMaterial
-      );
-      panelMesh.renderOrder = i <= lastBlueFrontFaceIndex ? 10 : 5;
+      const panelMesh = new THREE.Mesh(panelGeometry, blueFrontFaceMaterial);
+      panelMesh.renderOrder = 10;
       slotFrontFacePanels.push(panelMesh);
     }
 
@@ -1214,6 +1210,8 @@ function BronzeTowerModel() {
       wallRightConnectorGeometry,
       wallConnectorFillGeometry,
       wallToCrownConnectors,
+      // SIDE_SLOT_LAYOUT son elemanı A30'dur; .left yüzeyi A30-SÜ → 120A30-SÜ duvarıdır.
+      a30ToCrownWallGeometry: wallToCrownConnectors[wallToCrownConnectors.length - 1].left,
       sideSeriesRightWallGeometry,
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
@@ -1238,16 +1236,9 @@ function BronzeTowerModel() {
 
   return (
     <group>
-      <primitive object={dims.wallGuideLine} />
-      <primitive object={dims.crownS2VerticalGuideLine} />
-      {dims.slotToCrownS2HorizontalGuideLines.map((line, index) => (
-        <primitive key={`sü-to-120s2-${index}`} object={line} />
-      ))}
+      {/* Sabit mavi yüzeyler: useMemo içinde bir kez oluşturulur, tekrar renderda üretilmez. */}
       {dims.slotFrontFacePanels.map((panel, index) => (
-        <primitive key={`slot-front-face-panel-${index}`} object={panel} />
-      ))}
-      {dims.slotSideFacePanels.map((panel, index) => (
-        <primitive key={`slot-side-face-panel-${index}`} object={panel} />
+        <primitive key={`blue-front-face-panel-${index}`} object={panel} />
       ))}
       <mesh
         geometry={dims.slot119ToCrownS1WallGeometry}
@@ -1255,14 +1246,9 @@ function BronzeTowerModel() {
         renderOrder={10}
       />
       <mesh
-        geometry={dims.crownSeriesRightWallGeometry}
+        geometry={dims.a30ToCrownWallGeometry}
         material={dims.blueFrontFaceMaterial}
-        renderOrder={10}
-      />
-      <mesh
-        geometry={dims.a30A29BaseFaceGeometry}
-        material={dims.slotFrontFaceMaterial}
-        renderOrder={7}
+        renderOrder={11}
       />
       {dims.upperBridgeFacePanels.map((panel, index) => (
         <primitive key={`upper-bridge-face-${index}`} object={panel} />
@@ -1272,23 +1258,6 @@ function BronzeTowerModel() {
         material={dims.crownPanelMaterial}
         renderOrder={9}
       />
-      <mesh
-        geometry={dims.a30A29EnclosedFaceGeometry}
-        material={dims.a30A29EnclosedFaceMaterial}
-        renderOrder={9}
-      />
-      {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
-        <primitive key={`sü-to-base-${index}`} object={line} />
-      ))}
-      {dims.slotBaseToBaseGuideLines.map((line, index) => (
-        <primitive key={`base-point-link-${index}`} object={line} />
-      ))}
-      {dims.slotBaseToCrownS2GuideLines.map((line, index) => (
-        <primitive key={`base-to-120s2-link-${index}`} object={line} />
-      ))}
-      <primitive object={dims.slot118ToCrownGuideLine} />
-      <primitive object={dims.crownPanelConnectorLine} />
-      <primitive object={dims.crownPanelBaseEdgeLine} />
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
