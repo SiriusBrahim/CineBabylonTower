@@ -347,6 +347,71 @@ function BronzeTowerModel() {
     wallConnectorFillGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     wallConnectorFillGeometry.computeVertexNormals();
 
+
+    // 118. slot ile 120. slotun destek duvarı arasında ikinci dikey
+    // bağlantı oluşturulur. 120. duvara bağlantı yüksekliği 118. slotun
+    // tavan seviyesi olan Y=7.9305869479007041 olarak sabitlenir.
+    const slot118 = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118)!;
+    const slot118Rotation = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(0, slot118.rotationY, 0)
+    );
+    const slot118UpperLeft = new THREE.Vector3(
+      -posterWidth * 0.5,
+      posterHeight * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(slot118Rotation).add(
+      new THREE.Vector3(slot118.x, slot118.y, slot118.z)
+    );
+    const slot118UpperRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      posterHeight * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(slot118Rotation).add(
+      new THREE.Vector3(slot118.x, slot118.y, slot118.z)
+    );
+
+    const crownWallJoinY = slot118.y + posterHeight * 0.5;
+    const crownWallJoinLeft = new THREE.Vector3(-posterWidth * 0.5, crownWallJoinY, 0.075 * 0.5);
+    const crownWallJoinRight = new THREE.Vector3(posterWidth * 0.5, crownWallJoinY, 0.075 * 0.5);
+
+    const slot118LeftBottom = slot118UpperLeft.clone();
+    slot118LeftBottom.y = firstSlotBaseY;
+    const crownLeftBottom = crownWallJoinLeft.clone();
+    crownLeftBottom.y = firstSlotBaseY;
+    const wall118LeftConnectorGeometry = new THREE.BufferGeometry();
+    wall118LeftConnectorGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      slot118UpperLeft.x, slot118UpperLeft.y, slot118UpperLeft.z,
+      slot118LeftBottom.x, slot118LeftBottom.y, slot118LeftBottom.z,
+      crownLeftBottom.x, crownLeftBottom.y, crownLeftBottom.z,
+      crownWallJoinLeft.x, crownWallJoinLeft.y, crownWallJoinLeft.z
+    ], 3));
+    wall118LeftConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    wall118LeftConnectorGeometry.computeVertexNormals();
+
+    const slot118RightBottom = slot118UpperRight.clone();
+    slot118RightBottom.y = firstSlotBaseY;
+    const crownRightBottom = crownWallJoinRight.clone();
+    crownRightBottom.y = firstSlotBaseY;
+    const wall118RightConnectorGeometry = new THREE.BufferGeometry();
+    wall118RightConnectorGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      slot118UpperRight.x, slot118UpperRight.y, slot118UpperRight.z,
+      slot118RightBottom.x, slot118RightBottom.y, slot118RightBottom.z,
+      crownRightBottom.x, crownRightBottom.y, crownRightBottom.z,
+      crownWallJoinRight.x, crownWallJoinRight.y, crownWallJoinRight.z
+    ], 3));
+    wall118RightConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    wall118RightConnectorGeometry.computeVertexNormals();
+
+    const wall118ConnectorFillGeometry = new THREE.BufferGeometry();
+    wall118ConnectorFillGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      slot118UpperLeft.x, slot118UpperLeft.y, slot118UpperLeft.z,
+      slot118UpperRight.x, slot118UpperRight.y, slot118UpperRight.z,
+      crownWallJoinRight.x, crownWallJoinRight.y, crownWallJoinRight.z,
+      crownWallJoinLeft.x, crownWallJoinLeft.y, crownWallJoinLeft.z
+    ], 3));
+    wall118ConnectorFillGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    wall118ConnectorFillGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
@@ -356,6 +421,9 @@ function BronzeTowerModel() {
       wallConnectorGeometry,
       wallRightConnectorGeometry,
       wallConnectorFillGeometry,
+      wall118LeftConnectorGeometry,
+      wall118RightConnectorGeometry,
+      wall118ConnectorFillGeometry,
     };
   }, []);
 
@@ -391,6 +459,9 @@ function BronzeTowerModel() {
       <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
       <mesh geometry={dims.wallRightConnectorGeometry} material={wallMaterial} />
       <mesh geometry={dims.wallConnectorFillGeometry} material={wallMaterial} />
+      <mesh geometry={dims.wall118LeftConnectorGeometry} material={wallMaterial} />
+      <mesh geometry={dims.wall118RightConnectorGeometry} material={wallMaterial} />
+      <mesh geometry={dims.wall118ConnectorFillGeometry} material={wallMaterial} />
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
       {dims.slotLabels.map((label) => (
         <Text
