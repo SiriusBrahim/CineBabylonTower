@@ -1256,8 +1256,8 @@ function BronzeTowerModel() {
       />
       <mesh
         geometry={dims.crownS1S2ToBaseWallGeometry}
-        material={dims.crownPanelMaterial}
-        renderOrder={9}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
       />
       {dims.wallGuideLabels.map((label) => (
         <Text
