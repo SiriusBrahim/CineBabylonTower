@@ -921,6 +921,14 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide,
       depthWrite: false
     });
+    // Deneme 7.1: A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ paneli yeşil.
+    const deneme71GreenMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00c853,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
     const upperBridgeFacePanels: THREE.Mesh[] = [];
     const upperBridgeSlots = [
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
@@ -1106,7 +1114,10 @@ function BronzeTowerModel() {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
 
-      const panel = new THREE.Mesh(geometry, upperBridgeFaceMaterial);
+      const panel = new THREE.Mesh(
+        geometry,
+        i === 1 ? deneme71GreenMaterial : upperBridgeFaceMaterial
+      );
       panel.renderOrder = 8;
       upperBridgeFacePanels.push(panel);
     }
