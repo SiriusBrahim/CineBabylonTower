@@ -924,6 +924,13 @@ function BronzeTowerModel() {
     );
     a45Su1ToSu2VerticalLine.renderOrder = 23;
 
+    // A44SÜ2 ve A45SÜ2 üst uç noktalarını birleştiren fuşya çizgi.
+    const a44Su2ToA45Su2FuchsiaLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a44Su2Point, a45Su2Point]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a44Su2ToA45Su2FuchsiaLine.renderOrder = 24;
+
     const a44Su1ToA45Su1FuchsiaLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([a44Su1Point, a45Su1Point]),
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
@@ -1392,6 +1399,7 @@ function BronzeTowerModel() {
       a45SuVerticalLine,
       a44Su1ToSu2VerticalLine,
       a45Su1ToSu2VerticalLine,
+      a44Su2ToA45Su2FuchsiaLine,
       a44Su1ToA45Su1FuchsiaLine,
       a44Su1LabelPosition: a44Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a45Su1LabelPosition: a45Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1460,6 +1468,7 @@ function BronzeTowerModel() {
       <primitive object={dims.a45SuVerticalLine} />
       <primitive object={dims.a44Su1ToSu2VerticalLine} />
       <primitive object={dims.a45Su1ToSu2VerticalLine} />
+       <primitive object={dims.a44Su2ToA45Su2FuchsiaLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
       <Text
         position={dims.a44Su1LabelPosition}
