@@ -506,15 +506,6 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide,
       depthWrite: false
     });
-    // 118-SÜ ile 119-SÜ arasındaki son ön duvar için opak mavi materyal.
-    const slot119To118BlueMaterial = new THREE.MeshBasicMaterial({
-      color: 0x1565ff,
-      transparent: false,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: true
-    });
-
     for (let i = 1; i < frontFacePoints.length; i++) {
       const previous = frontFacePoints[i - 1];
       const current = frontFacePoints[i];
@@ -530,13 +521,11 @@ function BronzeTowerModel() {
 
       const panelMesh = new THREE.Mesh(
         panelGeometry,
-        i === 149
-          ? slot119To118BlueMaterial
-          : i <= lastBlueFrontFaceIndex
-            ? blueFrontFaceMaterial
-            : slotFrontFaceMaterial
+        i <= lastBlueFrontFaceIndex
+          ? blueFrontFaceMaterial
+          : slotFrontFaceMaterial
       );
-      panelMesh.renderOrder = i === 149 || i <= lastBlueFrontFaceIndex ? 10 : 5;
+      panelMesh.renderOrder = i <= lastBlueFrontFaceIndex ? 10 : 5;
       slotFrontFacePanels.push(panelMesh);
     }
 
@@ -935,6 +924,14 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide,
       depthWrite: true
     });
+    // 120-S1 → 120-S2 → 118-SÜ → 119-SÜ tepe paneli için ayırt edici fuşya.
+    const crownPanelMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff00d4,
+      transparent: false,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
     const upperBridgeFacePanels: THREE.Mesh[] = [];
     const upperBridgeSlots = [
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
@@ -1226,6 +1223,7 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       upperBridgeFacePanels,
       upperBridgeGreenMaterial,
+      crownPanelMaterial,
       a30A29EnclosedFaceGeometry,
       a30A29EnclosedFaceMaterial,
     };
@@ -1270,7 +1268,7 @@ function BronzeTowerModel() {
       ))}
       <mesh
         geometry={dims.crownPanelGeometry}
-        material={dims.upperBridgeGreenMaterial}
+        material={dims.crownPanelMaterial}
         renderOrder={9}
       />
       <mesh
