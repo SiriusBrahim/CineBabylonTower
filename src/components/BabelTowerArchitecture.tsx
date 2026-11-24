@@ -912,9 +912,9 @@ function BronzeTowerModel() {
       ...SPIRAL_SLOT_LAYOUT
     ];
 
-    const getCrownJoinAtSlotHeight = (slot: typeof a30) => new THREE.Vector3(
+    const getCrownJoinAtSlotHeight = (slot: { y: number; height?: number }) => new THREE.Vector3(
       posterWidth * 0.5,
-      slot.y + slot.height * 0.5,
+      slot.y + (slot.height ?? posterHeight) * 0.5,
       0.075 * 0.5
     );
 
