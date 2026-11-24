@@ -381,6 +381,20 @@ function BronzeTowerModel() {
     const wallInset = 0.085;
     const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
 
+    // 120-S2 noktasından ortak taban seviyesine dikey kırmızı referans çizgisi.
+    // Diğer slot köşeleri ileride bu düşey hat üzerindeki noktalara bağlanacaktır.
+    const crownS2BasePoint = crownWallMatchPoint.clone();
+    crownS2BasePoint.y = firstSlotBaseY;
+    const crownS2VerticalGuideGeometry = new THREE.BufferGeometry().setFromPoints([
+      crownWallMatchPoint,
+      crownS2BasePoint
+    ]);
+    const crownS2VerticalGuideLine = new THREE.Line(
+      crownS2VerticalGuideGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    crownS2VerticalGuideLine.renderOrder = 13;
+
     type WallPathPoint = {
       x: number; y: number; z: number; halfHeight: number;
       rotationY: number; radialX: number; radialZ: number;
@@ -697,6 +711,7 @@ function BronzeTowerModel() {
       descendingSideSlots,
       wallGeometry,
       wallGuideLine,
+      crownS2VerticalGuideLine,
       slot118ToCrownGuideLine,
       crownPanelGeometry,
       crownPanelConnectorLine,
@@ -739,6 +754,7 @@ function BronzeTowerModel() {
     <group>
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
       <primitive object={dims.wallGuideLine} />
+      <primitive object={dims.crownS2VerticalGuideLine} />
       <primitive object={dims.slot118ToCrownGuideLine} />
       <primitive object={dims.crownPanelConnectorLine} />
       <primitive object={dims.crownPanelBaseEdgeLine} />
