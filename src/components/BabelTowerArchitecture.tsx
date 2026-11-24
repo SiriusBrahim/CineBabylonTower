@@ -419,36 +419,6 @@ function BronzeTowerModel() {
       wallToCrownConnectors.push({ left, right, fill });
     }
 
-    // 1. slotun sağında, hayalî komşu slot genişliğinde; yüksekliği dışa
-    // doğru doğrusal azalarak Y=0 seviyesinde sıfırlanan duvar.
-    const firstSlotLayout = SPIRAL_SLOT_LAYOUT[0];
-    const firstSlotRotation = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(0, firstSlotLayout.rotationY, 0)
-    );
-    const firstSlotPosition = new THREE.Vector3(
-      firstSlotLayout.x, firstSlotLayout.y, firstSlotLayout.z
-    );
-    const rightTaperStartTop = new THREE.Vector3(
-      posterWidth * 0.5,
-      firstSlotLayout.y + posterHeight * 0.5,
-      0.075 * 0.5
-    ).applyQuaternion(firstSlotRotation).add(firstSlotPosition);
-    const rightTaperStartBase = new THREE.Vector3(
-      posterWidth * 0.5, 0, 0.075 * 0.5
-    ).applyQuaternion(firstSlotRotation).add(firstSlotPosition);
-    const rightTaperEndBase = new THREE.Vector3(
-      posterWidth * 1.5, 0, 0.075 * 0.5
-    ).applyQuaternion(firstSlotRotation).add(firstSlotPosition);
-
-    const slotOneRightTaperWallGeometry = new THREE.BufferGeometry();
-    slotOneRightTaperWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-      rightTaperStartTop.x, rightTaperStartTop.y, rightTaperStartTop.z,
-      rightTaperStartBase.x, rightTaperStartBase.y, rightTaperStartBase.z,
-      rightTaperEndBase.x, rightTaperEndBase.y, rightTaperEndBase.z
-    ], 3));
-    slotOneRightTaperWallGeometry.setIndex([0, 1, 2]);
-    slotOneRightTaperWallGeometry.computeVertexNormals();
-
     return {
       slots,
       slotLabels,
@@ -459,7 +429,6 @@ function BronzeTowerModel() {
       wallRightConnectorGeometry,
       wallConnectorFillGeometry,
       wallToCrownConnectors,
-      slotOneRightTaperWallGeometry,
     };
   }, []);
 
@@ -495,7 +464,6 @@ function BronzeTowerModel() {
       <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
       <mesh geometry={dims.wallRightConnectorGeometry} material={wallMaterial} />
       <mesh geometry={dims.wallConnectorFillGeometry} material={wallMaterial} />
-      <mesh geometry={dims.slotOneRightTaperWallGeometry} material={wallMaterial} />
       {dims.wallToCrownConnectors.map((connector, index) => (
         <group key={index}>
           <mesh geometry={connector.left} material={wallMaterial} />
