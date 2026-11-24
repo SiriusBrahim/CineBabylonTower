@@ -496,13 +496,18 @@ function BronzeTowerModel() {
       return { upperPoint, basePoint };
     });
 
-    // Deneme 6.1: A30-SÜ'den 30-SÜ'ye kadar olan ön yüzeyler
-    // mavi ve %100 opak gösterilir.
+    // Deneme 6.1: Mevcut ön yüzey panellerinden A30-SÜ–30-SÜ
+    // aralığındaki sabit 60 panel mavi materyalle renklendirilir.
     const lastBlueFrontFaceIndex = 60; // A30...A, ardından 1-SÜ...30-SÜ
+    const blueFrontFaceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x1565ff,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
 
     for (let i = 1; i < frontFacePoints.length; i++) {
-      if (i <= lastBlueFrontFaceIndex) continue;
-
       const previous = frontFacePoints[i - 1];
       const current = frontFacePoints[i];
       const panelGeometry = new THREE.BufferGeometry();
@@ -515,35 +520,14 @@ function BronzeTowerModel() {
       panelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
       panelGeometry.computeVertexNormals();
 
-      const panelMesh = new THREE.Mesh(panelGeometry, slotFrontFaceMaterial);
-      panelMesh.renderOrder = 5;
+      const panelMesh = new THREE.Mesh(
+        panelGeometry,
+        i <= lastBlueFrontFaceIndex ? blueFrontFaceMaterial : slotFrontFaceMaterial
+      );
+      panelMesh.renderOrder = i <= lastBlueFrontFaceIndex ? 10 : 5;
       slotFrontFacePanels.push(panelMesh);
     }
 
-    const blueFrontFaceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x1565ff,
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const blueFrontFacePanels: THREE.Mesh[] = [];
-    for (let i = 1; i <= lastBlueFrontFaceIndex; i++) {
-      const previous = frontFacePoints[i - 1];
-      const current = frontFacePoints[i];
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.Float32BufferAttribute([
-        previous.upperPoint.x, previous.upperPoint.y, previous.upperPoint.z,
-        previous.basePoint.x, previous.basePoint.y, previous.basePoint.z,
-        current.basePoint.x, current.basePoint.y, current.basePoint.z,
-        current.upperPoint.x, current.upperPoint.y, current.upperPoint.z
-      ], 3));
-      geometry.setIndex([0, 1, 2, 0, 2, 3]);
-      geometry.computeVertexNormals();
-      const panel = new THREE.Mesh(geometry, blueFrontFaceMaterial);
-      panel.renderOrder = 10;
-      blueFrontFacePanels.push(panel);
-    }
 
     // Yan yüzeyleri aynı dörtgen mantığıyla tüm SÜ noktalarından
     // 120-S2 düşey hattına kadar doldur:
@@ -1047,8 +1031,6 @@ function BronzeTowerModel() {
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
       slotFrontFacePanels,
-      a30A29BlueFaceGeometry,
-      a30A29BlueFaceMaterial,
       slotSideFacePanels,
       slot119ToCrownS1WallGeometry,
       slot119ToCrownS1WallMaterial,
@@ -1110,9 +1092,6 @@ function BronzeTowerModel() {
         material={dims.slotFrontFaceMaterial}
         renderOrder={7}
       />
-      {dims.blueFrontFacePanels.map((panel, index) => (
-        <primitive key={`blue-front-face-panel-${index}`} object={panel} />
-      ))}
       {dims.upperBridgeFacePanels.map((panel, index) => (
         <primitive key={`upper-bridge-face-${index}`} object={panel} />
       ))}
