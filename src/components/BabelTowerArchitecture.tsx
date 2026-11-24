@@ -455,6 +455,46 @@ function BronzeTowerModel() {
       slotUpperLeftToBaseGuideLines.push(verticalLine);
     }
 
+    // Komşu SÜ noktaları ile bunların y=0 izdüşümleri arasındaki
+    // ön yüzeyleri dörtgen paneller halinde doldur:
+    // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ ve aynı düzen tüm hat boyunca.
+    const slotFrontFacePanels: THREE.Mesh[] = [];
+    const slotFrontFaceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8f3030,
+      transparent: true,
+      opacity: 0.28,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const frontFaceSlotsInPathOrder = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
+    ];
+    const frontFacePoints = frontFaceSlotsInPathOrder.map((slot) => {
+      const upperPoint = getSlotUpperLeft(slot);
+      const basePoint = upperPoint.clone();
+      basePoint.y = 0;
+      return { upperPoint, basePoint };
+    });
+
+    for (let i = 1; i < frontFacePoints.length; i++) {
+      const previous = frontFacePoints[i - 1];
+      const current = frontFacePoints[i];
+      const panelGeometry = new THREE.BufferGeometry();
+      panelGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        previous.basePoint.x, previous.basePoint.y, previous.basePoint.z,
+        current.basePoint.x, current.basePoint.y, current.basePoint.z,
+        current.upperPoint.x, current.upperPoint.y, current.upperPoint.z,
+        previous.upperPoint.x, previous.upperPoint.y, previous.upperPoint.z
+      ], 3));
+      panelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+      panelGeometry.computeVertexNormals();
+
+      const panelMesh = new THREE.Mesh(panelGeometry, slotFrontFaceMaterial);
+      panelMesh.renderOrder = 5;
+      slotFrontFacePanels.push(panelMesh);
+    }
+
     // Taban noktalarını kule yolundaki sırayla birbirine bağla:
     // A30 → A29 → ... → A → 1 → 2 → ... → 119.
     const slotBaseToBaseGuideLines: THREE.Mesh[] = [];
@@ -845,6 +885,7 @@ function BronzeTowerModel() {
       crownS2VerticalGuideLine,
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
+      slotFrontFacePanels,
       slotBaseToBaseGuideLines,
       slotBaseToCrownS2GuideLines,
       slot118ToCrownGuideLine,
@@ -880,6 +921,9 @@ function BronzeTowerModel() {
       <primitive object={dims.crownS2VerticalGuideLine} />
       {dims.slotToCrownS2HorizontalGuideLines.map((line, index) => (
         <primitive key={`sü-to-120s2-${index}`} object={line} />
+      ))}
+      {dims.slotFrontFacePanels.map((panel, index) => (
+        <primitive key={`slot-front-face-panel-${index}`} object={panel} />
       ))}
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
