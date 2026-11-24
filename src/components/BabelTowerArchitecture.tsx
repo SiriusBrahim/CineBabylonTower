@@ -243,70 +243,7 @@ function BronzeTowerModel() {
     wallGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wallPositions, 3));
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
-    // 1. slotun ön yüzü prizmanın ilk yüzüdür.
-    // Prizmanın boyuna kenarları, 52. slot hizasındaki duvarın yerel
-    // teğet düzlemine 90 derece olacak şekilde duvar düzlemine uzatılır.
-    const firstCenter = slotCenters[0];
-    const firstTheta = Math.atan2(firstCenter.z, firstCenter.x);
-    const firstRotation = new THREE.Euler(0, -firstTheta + Math.PI / 2, 0);
-    const firstRight = new THREE.Vector3(1, 0, 0).applyEuler(firstRotation).normalize();
-    const firstFront = new THREE.Vector3(Math.cos(firstTheta), 0, Math.sin(firstTheta));
-    const halfWidth = posterWidth * 0.5;
-    const halfHeight = posterHeight * 0.5;
-    const firstFaceCenter = firstCenter.clone().addScaledVector(firstFront, 0.075 * 0.5 + 0.003);
 
-    // 52. slot çevresindeki duvarın yatay teğet doğrultusu.
-    const wallBefore = slotCenters[50].clone();
-    const wallAfter = slotCenters[52].clone();
-    const beforeRadial = new THREE.Vector3(wallBefore.x, 0, wallBefore.z).normalize();
-    const afterRadial = new THREE.Vector3(wallAfter.x, 0, wallAfter.z).normalize();
-    wallBefore.addScaledVector(beforeRadial, -0.085);
-    wallAfter.addScaledVector(afterRadial, -0.085);
-    const wallTangent = wallAfter.sub(wallBefore).normalize();
-    const wallUp = new THREE.Vector3(0, 1, 0);
-    const wallNormal = new THREE.Vector3().crossVectors(wallTangent, wallUp).normalize();
-
-    // Normali, 1. slotun bulunduğu taraftan duvara doğru yönlendir.
-    if (wallNormal.dot(firstFaceCenter.clone().sub(slotCenters[51])) > 0) {
-      wallNormal.negate();
-    }
-
-    // Duvarın 52. slot hizasındaki yerel düzlemi.
-    const targetSlot = slotCenters[51];
-    const targetRadial = new THREE.Vector3(targetSlot.x, 0, targetSlot.z).normalize();
-    const wallPlanePoint = targetSlot.clone().addScaledVector(targetRadial, -0.085);
-
-    // Başlangıç yüzünün merkezinden duvar düzlemine, duvar normalinde dik izdüşüm.
-    const denominator = wallNormal.dot(wallNormal);
-    const extrusionDistance = wallPlanePoint.clone().sub(firstFaceCenter).dot(wallNormal) / denominator;
-    const prismTranslation = wallNormal.clone().multiplyScalar(extrusionDistance);
-
-    const baseCorners = [
-      firstFaceCenter.clone().addScaledVector(firstRight, -halfWidth).add(new THREE.Vector3(0, -halfHeight, 0)),
-      firstFaceCenter.clone().addScaledVector(firstRight, halfWidth).add(new THREE.Vector3(0, -halfHeight, 0)),
-      firstFaceCenter.clone().addScaledVector(firstRight, halfWidth).add(new THREE.Vector3(0, halfHeight, 0)),
-      firstFaceCenter.clone().addScaledVector(firstRight, -halfWidth).add(new THREE.Vector3(0, halfHeight, 0))
-    ];
-    const prismCorners = [
-      ...baseCorners,
-      ...baseCorners.map((corner) => corner.clone().add(prismTranslation))
-    ];
-    const prismEdges = [
-      [0, 1], [1, 2], [2, 3], [3, 0],
-      [4, 5], [5, 6], [6, 7], [7, 4],
-      [0, 4], [1, 5], [2, 6], [3, 7]
-    ];
-    const prismLinePositions: number[] = [];
-    prismEdges.forEach(([a, b]) => {
-      prismLinePositions.push(
-        prismCorners[a].x, prismCorners[a].y, prismCorners[a].z,
-        prismCorners[b].x, prismCorners[b].y, prismCorners[b].z
-      );
-    });
-    const prismGeometry = new THREE.BufferGeometry();
-    prismGeometry.setAttribute("position", new THREE.Float32BufferAttribute(prismLinePositions, 3));
-    prismGeometry.computeBoundingBox();
-    prismGeometry.computeBoundingSphere();
 
 
     const crownPosition = new THREE.Vector3(
@@ -374,7 +311,6 @@ function BronzeTowerModel() {
       crownWallGeometry,
       crownWallPosition,
       wallConnectorGeometry,
-      prismGeometry
     };
   }, []);
 
@@ -387,12 +323,6 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
-  const prismMaterial = useMemo(() => new THREE.LineBasicMaterial({
-    color: "#ff2020",
-    transparent: true,
-    opacity: 0.78,
-    depthWrite: false
-  }), []);
   const wallMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: "#168cff",
     metalness: 0.18,
@@ -431,7 +361,6 @@ function BronzeTowerModel() {
           {label.number}
         </Text>
       ))}
-      <lineSegments geometry={dims.prismGeometry} material={prismMaterial} renderOrder={4} />
     </group>
   );
 }
