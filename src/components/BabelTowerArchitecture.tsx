@@ -574,41 +574,9 @@ function BronzeTowerModel() {
     // Taban noktaları ve diğer kılavuz çizgileri korunur.
     const slotBaseToBaseGuideLines: THREE.Mesh[] = [];
 
-    // 119-SÜ-0 ve A30-SÜ-0 noktalarını 120-S2 dikmesine,
-    // dikmenin 0 yüksekliğindeki taban noktasında bağla.
-    // Her bağlantı 0.044 birim kare kesitli kırmızı prizmadır.
+    // A30-SÜ-0 → 120A30-SÜ-0 ve 119-SÜ-0 → 120-S2-0
+    // arasındaki 0.044 birim kare kesitli prizma bağlantıları kaldırıldı.
     const slotBaseToCrownS2GuideLines: THREE.Mesh[] = [];
-    const crownS2ConnectorMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      depthTest: false
-    });
-    const crownS2PoleBasePoint = crownWallMatchPoint.clone();
-    crownS2PoleBasePoint.y = 0;
-    const crownS2ConnectorSlots = [
-      SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119),
-      SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A30")
-    ];
-    if (crownS2ConnectorSlots.some((slot) => !slot)) {
-      throw new Error("119 veya A30 yerleşimi bulunamadı.");
-    }
-
-    for (const slot of crownS2ConnectorSlots) {
-      const basePoint = getSlotUpperLeft(slot!);
-      basePoint.y = 0;
-      const direction = new THREE.Vector3().subVectors(crownS2PoleBasePoint, basePoint);
-      const length = direction.length();
-      const connectorMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.044, length, 0.044),
-        crownS2ConnectorMaterial
-      );
-      connectorMesh.position.copy(basePoint).add(crownS2PoleBasePoint).multiplyScalar(0.5);
-      connectorMesh.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        direction.normalize()
-      );
-      connectorMesh.renderOrder = 16;
-      slotBaseToCrownS2GuideLines.push(connectorMesh);
-    }
 
     type WallPathPoint = {
       x: number; y: number; z: number; halfHeight: number;
