@@ -495,6 +495,38 @@ function BronzeTowerModel() {
       slotFrontFacePanels.push(panelMesh);
     }
 
+    // Yan yüzey denemesi:
+    // A30-SÜ-0 → A30-SÜ → 120A30-SÜ → 120A30-SÜ-0.
+    // 120A30-SÜ, 120-S2 düşey hattının A30-SÜ yüksekliğindeki noktasıdır.
+    const a30SideSlot = SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A30");
+    if (!a30SideSlot) throw new Error("A30 yerleşimi bulunamadı.");
+
+    const a30SideUpperPoint = getSlotUpperLeft(a30SideSlot);
+    const a30SideBasePoint = a30SideUpperPoint.clone();
+    a30SideBasePoint.y = 0;
+
+    const crownS2AtA30Height = crownWallMatchPoint.clone();
+    crownS2AtA30Height.y = a30SideUpperPoint.y;
+
+    const crownS2AtZeroHeight = crownWallMatchPoint.clone();
+    crownS2AtZeroHeight.y = 0;
+
+    const slotSideFaceGeometry = new THREE.BufferGeometry();
+    slotSideFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      a30SideBasePoint.x, a30SideBasePoint.y, a30SideBasePoint.z,
+      a30SideUpperPoint.x, a30SideUpperPoint.y, a30SideUpperPoint.z,
+      crownS2AtA30Height.x, crownS2AtA30Height.y, crownS2AtA30Height.z,
+      crownS2AtZeroHeight.x, crownS2AtZeroHeight.y, crownS2AtZeroHeight.z
+    ], 3));
+    slotSideFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    slotSideFaceGeometry.computeVertexNormals();
+
+    const slotSideFacePanel = new THREE.Mesh(
+      slotSideFaceGeometry,
+      slotFrontFaceMaterial
+    );
+    slotSideFacePanel.renderOrder = 6;
+
     // Taban noktalarını kule yolundaki sırayla birbirine bağla:
     // A30 → A29 → ... → A → 1 → 2 → ... → 119.
     const slotBaseToBaseGuideLines: THREE.Mesh[] = [];
@@ -886,6 +918,7 @@ function BronzeTowerModel() {
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
       slotFrontFacePanels,
+      slotSideFacePanel,
       slotBaseToBaseGuideLines,
       slotBaseToCrownS2GuideLines,
       slot118ToCrownGuideLine,
@@ -925,6 +958,7 @@ function BronzeTowerModel() {
       {dims.slotFrontFacePanels.map((panel, index) => (
         <primitive key={`slot-front-face-panel-${index}`} object={panel} />
       ))}
+      <primitive object={dims.slotSideFacePanel} />
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
       ))}
