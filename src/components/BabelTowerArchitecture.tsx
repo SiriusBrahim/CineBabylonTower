@@ -159,8 +159,6 @@ function BronzeTowerModel() {
     const strutDirection = strutEnd.clone().sub(strutStart);
     const strutLength = strutDirection.length();
     const strutGeometry = new THREE.CylinderGeometry(0.025, 0.025, strutLength, 12);
-    strutGeometry.translate(0, strutLength * 0.5, 0);
-    strutGeometry.rotateX(Math.PI / 2);
     strutGeometry.computeBoundingBox();
     strutGeometry.computeBoundingSphere();
     const strutQuaternion = new THREE.Quaternion().setFromUnitVectors(
