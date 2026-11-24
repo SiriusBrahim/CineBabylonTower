@@ -908,16 +908,8 @@ function BronzeTowerModel() {
     );
     a44Su01ToSu02VerticalLine.renderOrder = 25;
 
-    // Z3-Z4'ün sağında 0.92 birim ileride, Z1-Z2 ve Z11-Z12 doğruları
-    // üzerinde uçları bulunan, Z3-Z4 ile aynı uzunlukta paralel dikme.
-    const z3ToZ4RightDirection = a45SuPoint.clone().sub(a44SuPoint).setY(0).normalize();
-    const z13BasePoint = a44Su01Point.clone().addScaledVector(z3ToZ4RightDirection, 0.92).setY(0);
-    const z14TopPoint = z13BasePoint.clone().setY((0.1 + posterHeight + 0.1 + 0.1));
-    const z13ToZ14ParallelLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([z13BasePoint, z14TopPoint]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    z13ToZ14ParallelLine.renderOrder = 25;
+    // Etiket koordinatlarının ortak sağ yönü: A44SÜ → A45SÜ doğrultusu.
+    const zRightDirection = a45SuPoint.clone().sub(a44SuPoint).setY(0).normalize();
 
     const a44Su1Point = a44SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
     const a45Su1Point = a45SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
@@ -976,6 +968,38 @@ function BronzeTowerModel() {
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
     );
     a44Su1ToA45Su1FuchsiaLine.renderOrder = 22;
+
+    // Kullanıcının yeni Z1-Z15 koordinat tarifine göre noktaları baştan üret.
+    const z1Point = a44SuPoint.clone();
+    const z2Point = z1Point.clone().addScaledVector(zRightDirection, 0.1);
+    const z3Point = z2Point.clone().addScaledVector(zRightDirection, 0.92);
+    const z4Point = a44Su1Point.clone();
+    const z5Point = z4Point.clone().addScaledVector(zRightDirection, 0.1);
+    const z6Point = z5Point.clone().addScaledVector(zRightDirection, 0.92);
+    const z7Point = a44Su2Point.clone();
+    const z8Point = z7Point.clone().addScaledVector(zRightDirection, 0.1);
+    const z9Point = z8Point.clone().addScaledVector(zRightDirection, 0.92);
+    const z10Point = a44Su3Point.clone();
+    const z11Point = z10Point.clone().addScaledVector(zRightDirection, 0.1);
+    const z12Point = z11Point.clone().addScaledVector(zRightDirection, 0.92);
+    const z13Point = a44Su4Point.clone();
+    const z14Point = z13Point.clone().addScaledVector(zRightDirection, 0.1);
+    const z15Point = z14Point.clone().addScaledVector(zRightDirection, 0.92);
+
+    const makeZConnection = (start: THREE.Vector3, end: THREE.Vector3) => {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([start, end]),
+        new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+      );
+      line.renderOrder = 28;
+      return line;
+    };
+    // Eksik bağlantılar: Z3-Z2, Z5-Z6, Z7-Z8, Z9-Z10 ve Z4-Z12.
+    const z3ToZ2Line = makeZConnection(z3Point, z2Point);
+    const z5ToZ6Line = makeZConnection(z5Point, z6Point);
+    const z7ToZ8Line = makeZConnection(z7Point, z8Point);
+    const z9ToZ10Line = makeZConnection(z9Point, z10Point);
+    const z4ToZ12Line = makeZConnection(z4Point, z12Point);
 
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
@@ -1439,9 +1463,26 @@ function BronzeTowerModel() {
       a45SuLabelPosition: a45SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44SuVerticalLine,
       a44Su01ToSu02VerticalLine,
-      z13ToZ14ParallelLine,
-      z13LabelPosition: z13BasePoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z14LabelPosition: z14TopPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z3ToZ2Line,
+      z5ToZ6Line,
+      z7ToZ8Line,
+      z9ToZ10Line,
+      z4ToZ12Line,
+      z1LabelPosition: z1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z2LabelPosition: z2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z3LabelPosition: z3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z4LabelPosition: z4Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z5LabelPosition: z5Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z6LabelPosition: z6Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z7LabelPosition: z7Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z8LabelPosition: z8Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z9LabelPosition: z9Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z10LabelPosition: z10Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z11LabelPosition: z11Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z12LabelPosition: z12Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z13LabelPosition: z13Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z14LabelPosition: z14Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z15LabelPosition: z15Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44Su01LabelPosition: a44Su01Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44Su02LabelPosition: a44Su02Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44Su1ToSu2VerticalLine,
@@ -1522,7 +1563,11 @@ function BronzeTowerModel() {
       <primitive object={dims.a44ToA45FuchsiaLine} />
       <primitive object={dims.a44SuVerticalLine} />
       <primitive object={dims.a44Su01ToSu02VerticalLine} />
-      <primitive object={dims.z13ToZ14ParallelLine} />
+      <primitive object={dims.z3ToZ2Line} />
+      <primitive object={dims.z5ToZ6Line} />
+      <primitive object={dims.z7ToZ8Line} />
+      <primitive object={dims.z9ToZ10Line} />
+      <primitive object={dims.z4ToZ12Line} />
       <primitive object={dims.a44Su1ToSu2VerticalLine} />
        <primitive object={dims.a44Su2ToA45Su2FuchsiaLine} />
        <primitive object={dims.a44Su2ToSu3VerticalLine} />
@@ -1531,21 +1576,22 @@ function BronzeTowerModel() {
        <primitive object={dims.a44Su4ToA45Su4FuchsiaLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
       {([
-        // Z etiketleri, tabandaki A44/A45 uçlarından başlayıp dikme seviyeleri boyunca sıralanır.
-        ["Z1", dims.a44SuLabelPosition],
-        ["Z2", dims.a45SuLabelPosition],
-        ["Z3", dims.a44Su01LabelPosition],
-        ["Z4", dims.a44Su02LabelPosition],
-        ["Z5", dims.a44Su1LabelPosition],
-        ["Z6", dims.a45Su1LabelPosition],
-        ["Z7", dims.a44Su2LabelPosition],
-        ["Z8", dims.a45Su2LabelPosition],
-        ["Z9", dims.a44Su3LabelPosition],
-        ["Z10", dims.a45Su3LabelPosition],
-        ["Z11", dims.a44Su4LabelPosition],
-        ["Z12", dims.a45Su4LabelPosition],
-        ["Z12", dims.z13LabelPosition],
-        ["Z12", dims.z14LabelPosition],
+        // Z1-Z15 etiketleri kullanıcının tarif ettiği sıra ve koordinatlara göre tekil atanır.
+        ["Z1", dims.z1LabelPosition],
+        ["Z2", dims.z2LabelPosition],
+        ["Z3", dims.z3LabelPosition],
+        ["Z4", dims.z4LabelPosition],
+        ["Z5", dims.z5LabelPosition],
+        ["Z6", dims.z6LabelPosition],
+        ["Z7", dims.z7LabelPosition],
+        ["Z8", dims.z8LabelPosition],
+        ["Z9", dims.z9LabelPosition],
+        ["Z10", dims.z10LabelPosition],
+        ["Z11", dims.z11LabelPosition],
+        ["Z12", dims.z12LabelPosition],
+        ["Z13", dims.z13LabelPosition],
+        ["Z14", dims.z14LabelPosition],
+        ["Z15", dims.z15LabelPosition],
       ] as [string, THREE.Vector3][]).map(([name, position]) => (
         <Text key={name} position={position} fontSize={0.075} color="#ff00ff"
           outlineColor="#090b12" outlineWidth={0.007} anchorX="left"
