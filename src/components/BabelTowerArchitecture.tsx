@@ -910,6 +910,25 @@ function BronzeTowerModel() {
     crownSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     crownSeriesRightWallGeometry.computeVertexNormals();
 
+    // Deneme 3: A30-SÜ-0 → A29-SÜ-0 → 120A29-SÜ-0 → 120A30-SÜ-0
+    // dikdörtgenini taban düzleminden 0.044 birim yukarı taşıyarak doldur.
+    const a30A29BaseFacePoints = [
+      getSlotUpperLeft(a30),
+      getSlotUpperLeft(a29),
+      a29CrownBaseRight.clone(),
+      a30CrownBaseRight.clone()
+    ];
+    a30A29BaseFacePoints.forEach((point) => {
+      point.y = 0.044;
+    });
+    const a30A29BaseFaceGeometry = new THREE.BufferGeometry();
+    a30A29BaseFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      a30A29BaseFacePoints.flatMap((point) => [point.x, point.y, point.z]),
+      3
+    ));
+    a30A29BaseFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    a30A29BaseFaceGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
@@ -937,6 +956,7 @@ function BronzeTowerModel() {
       wallToCrownConnectors,
       sideSeriesRightWallGeometry,
       crownSeriesRightWallGeometry,
+      a30A29BaseFaceGeometry,
     };
   }, []);
 
@@ -964,6 +984,11 @@ function BronzeTowerModel() {
       {dims.slotSideFacePanels.map((panel, index) => (
         <primitive key={`slot-side-face-panel-${index}`} object={panel} />
       ))}
+      <mesh
+        geometry={dims.a30A29BaseFaceGeometry}
+        material={slotFrontFaceMaterial}
+        renderOrder={7}
+      />
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
       ))}
