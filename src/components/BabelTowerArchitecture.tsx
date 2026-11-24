@@ -201,13 +201,34 @@ function BronzeTowerModel() {
     // sabit kalır; üst kenar ise ilgili slotun tabanını izler. Böylece duvarın
     // yüksekliği her slotta 1. slota göre biriken gerçek yükselme kadar artar.
     const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
+
+    // Spiral duvarının son üst noktası, 119. slotun sol alt köşesine
+    // sabitlenir; böylece 118-119 arasında duvar kesintisiz devam eder.
+    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
+    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
+    );
+    const lastSpiralLowerLeft = new THREE.Vector3(
+      -posterWidth * 0.5,
+      -posterHeight * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(lastSpiralRotation).add(
+      new THREE.Vector3(lastSpiralLayout.x, lastSpiralLayout.y, lastSpiralLayout.z)
+    );
+
     for (let i = 1; i < slotCenters.length; i++) {
       const current = slotCenters[i];
       const radial = new THREE.Vector3(current.x, 0, current.z).normalize();
       const wallCenter = current.clone().addScaledVector(radial, -0.085);
-      const top = wallCenter.clone();
-      top.y -= wallTopOffset;
+      const top = i === slotCenters.length - 1
+        ? lastSpiralLowerLeft.clone()
+        : wallCenter.clone();
+      if (i !== slotCenters.length - 1) top.y -= wallTopOffset;
       const bottom = wallCenter.clone();
+      if (i === slotCenters.length - 1) {
+        bottom.x = lastSpiralLowerLeft.x;
+        bottom.z = lastSpiralLowerLeft.z;
+      }
       bottom.y = firstSlotBaseY;
 
       wallPositions.push(top.x, top.y, top.z, bottom.x, bottom.y, bottom.z);
@@ -317,10 +338,6 @@ function BronzeTowerModel() {
 
     // Bağlantı duvarının üst kenarı tam olarak 119. slotun sol üst
     // köşesinden 120. slotun sol alt köşesine uzanır.
-    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
-    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
-    );
     const lastSpiralUpperLeft = new THREE.Vector3(
       -posterWidth * 0.5,
       posterHeight * 0.5,
