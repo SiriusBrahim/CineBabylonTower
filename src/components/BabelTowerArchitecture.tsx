@@ -457,7 +457,7 @@ function BronzeTowerModel() {
 
     // Taban noktalarını kule yolundaki sırayla birbirine bağla:
     // A30 → A29 → ... → A → 1 → 2 → ... → 119.
-    const slotBaseToBaseGuideLines: THREE.Line[] = [];
+    const slotBaseToBaseGuideLines: THREE.Mesh[] = [];
     const upperLeftSlotsInPathOrder = [
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
       ...SPIRAL_SLOT_LAYOUT
@@ -467,18 +467,27 @@ function BronzeTowerModel() {
       point.y = 0;
       return point;
     });
+    const baseConnectorMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      depthTest: false
+    });
 
     for (let i = 1; i < orderedBasePoints.length; i++) {
-      const connectorGeometry = new THREE.BufferGeometry().setFromPoints([
-        orderedBasePoints[i - 1],
-        orderedBasePoints[i]
-      ]);
-      const connectorLine = new THREE.Line(
-        connectorGeometry,
-        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      const start = orderedBasePoints[i - 1];
+      const end = orderedBasePoints[i];
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+      const connectorMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.022, 0.022, length, 8),
+        baseConnectorMaterial
       );
-      connectorLine.renderOrder = 15;
-      slotBaseToBaseGuideLines.push(connectorLine);
+      connectorMesh.position.copy(start).add(end).multiplyScalar(0.5);
+      connectorMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.normalize()
+      );
+      connectorMesh.renderOrder = 15;
+      slotBaseToBaseGuideLines.push(connectorMesh);
     }
 
     type WallPathPoint = {
