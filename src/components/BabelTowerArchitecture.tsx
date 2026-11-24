@@ -920,6 +920,20 @@ function BronzeTowerModel() {
     );
     a30SpiralBottomLine.renderOrder = 16;
 
+    // A44-SÜ'nün 120-S2 dikmesi üzerindeki karşılık noktası.
+    // A44-SÜ yüksekliği 0 olduğundan 120'44-SÜ, 120-S2 ekseninin Y=0 izdüşümüdür.
+    const a44ToCrownS2BasePoint = crownWallMatchPoint.clone();
+    a44ToCrownS2BasePoint.y = 0;
+    const a44UpperPoint = a30SpiralLinePoints[a30SpiralLinePoints.length - 1];
+    const a44ToCrownS2GuideLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        a44UpperPoint,
+        a44ToCrownS2BasePoint
+      ]),
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    a44ToCrownS2GuideLine.renderOrder = 17;
+
     // Mavi duvar, üst ve alt spiral sınırların ardışık noktaları
     // arasında ayrı dörtgen paneller oluşturularak doldurulur.
     const a30A44WallGeometry = new THREE.BufferGeometry();
@@ -1290,6 +1304,7 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
       a30SpiralBottomLine,
+      a44ToCrownS2GuideLine,
       a30A44WallGeometry,
       upperBridgeFacePanels,
       upperBridgeGreenMaterial,
@@ -1349,6 +1364,7 @@ function BronzeTowerModel() {
       />
       <primitive object={dims.a30SpiralGuideLine} />
       <primitive object={dims.a30SpiralBottomLine} />
+      <primitive object={dims.a44ToCrownS2GuideLine} />
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
