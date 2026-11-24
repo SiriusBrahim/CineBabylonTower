@@ -934,6 +934,19 @@ function BronzeTowerModel() {
     );
     a44ToCrownS2GuideLine.renderOrder = 17;
 
+    // A31-SÜ ... A43-SÜ noktalarının 120-S2 dikmesi üzerindeki
+    // karşılıkları aynı yükseklikte oluşturulur ve her çift kırmızı çizgiyle bağlanır.
+    const a31ToA43CrownS2GuideLines = a30SpiralLinePoints.slice(1, -1).map((upperPoint) => {
+      const correspondingPoint = crownWallMatchPoint.clone();
+      correspondingPoint.y = upperPoint.y;
+      const guideLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([upperPoint, correspondingPoint]),
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      guideLine.renderOrder = 17;
+      return guideLine;
+    });
+
     // Mavi duvar, üst ve alt spiral sınırların ardışık noktaları
     // arasında ayrı dörtgen paneller oluşturularak doldurulur.
     const a30A44WallGeometry = new THREE.BufferGeometry();
@@ -1305,6 +1318,7 @@ function BronzeTowerModel() {
       a30SpiralGuideLine,
       a30SpiralBottomLine,
       a44ToCrownS2GuideLine,
+      a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
       upperBridgeFacePanels,
       upperBridgeGreenMaterial,
@@ -1365,6 +1379,9 @@ function BronzeTowerModel() {
       <primitive object={dims.a30SpiralGuideLine} />
       <primitive object={dims.a30SpiralBottomLine} />
       <primitive object={dims.a44ToCrownS2GuideLine} />
+      {dims.a31ToA43CrownS2GuideLines.map((line, index) => (
+        <primitive key={`a31-a43-crown-s2-guide-${index}`} object={line} />
+      ))}
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
