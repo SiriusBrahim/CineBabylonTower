@@ -926,13 +926,6 @@ function BronzeTowerModel() {
 
     // A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ
     // dörtgeni ve aynı düzende hat boyunca devam eden tüm komşu alanlar.
-    const upperBridgeFaceMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8f3030,
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
     // A30-SÜ'den 118-SÜ'ye kadar tüm üst yüzeyler opak yeşil.
     // Sabit nokta koordinatları ve upperBridgePairHeights değerleri korunur.
     const upperBridgeGreenMaterial = new THREE.MeshBasicMaterial({
@@ -1104,6 +1097,8 @@ function BronzeTowerModel() {
     ];
 
     for (let i = 1; i < upperBridgeSlots.length; i++) {
+      // 118-SÜ → 119-SÜ aralığının eski kırmızı üst paneli kaldırıldı.
+      if (i === 149) continue;
       const previousSlot = upperBridgeSlots[i - 1];
       const currentSlot = upperBridgeSlots[i];
       const previousUpperPoint = getSlotUpperLeft(previousSlot);
@@ -1127,14 +1122,8 @@ function BronzeTowerModel() {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
 
-      // i=1..148: A30-SÜ → 118-SÜ aralığındaki yeşil paneller.
-      // 118-SÜ → 119-SÜ aralığı ayrı 120-S1/120-S2 yüzeyiyle kapatılır;
-      // eski kırmızı panel burada oluşturulmaz.
-      if (i === 149) continue;
-      const panel = new THREE.Mesh(
-        geometry,
-        i <= 148 ? upperBridgeGreenMaterial : upperBridgeFaceMaterial
-      );
+      // A30-SÜ → 118-SÜ arasındaki paneller opak yeşil oluşturulur.
+      const panel = new THREE.Mesh(geometry, upperBridgeGreenMaterial);
       panel.renderOrder = 8;
       upperBridgeFacePanels.push(panel);
     }
@@ -1236,7 +1225,6 @@ function BronzeTowerModel() {
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
       upperBridgeFacePanels,
-      upperBridgeFaceMaterial,
       upperBridgeGreenMaterial,
       a30A29EnclosedFaceGeometry,
       a30A29EnclosedFaceMaterial,
