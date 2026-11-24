@@ -254,6 +254,22 @@ function BronzeTowerModel() {
       });
     }
 
+    // Geçici kontrol çizgisi: 119 sol üst köşesinden 118 sol üst köşesine.
+    const slot119 = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119)!;
+    const slot118 = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118)!;
+    const getSlotUpperLeft = (slot: typeof slot119) => new THREE.Vector3(
+      -posterWidth * 0.5,
+      posterHeight * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
+    ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
+
+    const wallGuideLineGeometry = new THREE.BufferGeometry().setFromPoints([
+      getSlotUpperLeft(slot119),
+      getSlotUpperLeft(slot118)
+    ]);
+
     // Tek parça spiral duvarın alt ucu A30-120 sağ bağlantısına,
     // üst ucu 119-120 sol bağlantısına oturur.
     // İzlenen hat: A30 -> A29 ... -> A -> 1 -> 2 ... -> 119.
@@ -577,6 +593,7 @@ function BronzeTowerModel() {
       aSlotPosition,
       descendingSideSlots,
       wallGeometry,
+      wallGuideLineGeometry,
       crownWallGeometry,
       crownWallPosition,
       wallConnectorGeometry,
@@ -613,6 +630,9 @@ function BronzeTowerModel() {
   return (
     <group>
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
+      <line geometry={dims.wallGuideLineGeometry}>
+        <lineBasicMaterial color="#ff0000" depthTest={false} />
+      </line>
       <mesh
         geometry={dims.crownWallGeometry}
         material={wallMaterial}
