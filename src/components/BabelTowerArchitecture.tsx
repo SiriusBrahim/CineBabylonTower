@@ -88,27 +88,31 @@ function BronzeTowerModel() {
       y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
-    // Yol her slotun yerel sağ kenarından başlar ve spiral duvarın iç yüzeyine kadar uzanır.
-    // Yüzey, posterin alt kenarının hemen altında tutulur; poster ön yüzünü kapatmaz.
+    // Yol, posterin yerel sağ-alt köşesinden başlayıp spiral duvarın iç yüzeyine ulaşır.
+    // Poster altından küçük bir düşey boşluk bırakılır; böylece poster yüzeyi kapanmaz.
     const roadPositions: number[] = [];
     const roadIndices: number[] = [];
-    const roadClearance = 0.055;
-    const slotSideClearance = 0.035;
+    const roadClearance = 0.035;
+    const slotSideClearance = 0.025;
     const wallInset = 0.085;
+    const posterDepth = 0.075;
 
     for (let i = 0; i < slotCenters.length; i++) {
       const center = slotCenters[i];
-      const radial = new THREE.Vector3(center.x, 0, center.z).normalize();
-      const slotRotation = new THREE.Euler(0, -(Math.atan2(center.z, center.x)) + Math.PI / 2, 0);
+      const theta = Math.atan2(center.z, center.x);
+      const slotRotation = new THREE.Euler(0, -theta + Math.PI / 2, 0);
+      const radial = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
+      const frontNormal = radial.clone();
       const slotRight = new THREE.Vector3(1, 0, 0)
         .applyEuler(slotRotation)
         .normalize();
 
-      // İç kenar: posterin yerel sağ kenarının hemen dışında.
+      // Yolun iç kenarı posterin sağ-alt köşesinin hemen dışındadır.
       const innerEdge = center.clone()
-        .addScaledVector(slotRight, posterWidth * 0.5 + slotSideClearance);
+        .addScaledVector(slotRight, posterWidth * 0.5 + slotSideClearance)
+        .addScaledVector(frontNormal, posterDepth * 0.5 + 0.012);
 
-      // Dış kenar: aynı slot hizasında duvarın yüzeyine kadar.
+      // Yolun dış kenarı, mavi spiral duvarın merkez hattına oturur.
       const outerEdge = center.clone().addScaledVector(radial, -wallInset);
       const roadY = center.y - posterHeight * 0.5 - roadClearance;
       innerEdge.y = roadY;
