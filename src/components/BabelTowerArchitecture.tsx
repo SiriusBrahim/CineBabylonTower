@@ -588,13 +588,8 @@ function BronzeTowerModel() {
     slot119ToCrownS1WallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     slot119ToCrownS1WallGeometry.computeVertexNormals();
 
-    const slot119ToCrownS1WallMaterial = new THREE.MeshBasicMaterial({
-      color: 0x8f3030,
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    // 119-SÜ–120-S1 duvarı diğer mavi ön duvarlarla aynı materyali kullanır.
+    const slot119ToCrownS1WallMaterial = blueFrontFaceMaterial;
 
     // Taban noktaları arasındaki 0.044 birimlik prizma bağlantıları kaldırıldı.
     // Taban noktaları ve diğer kılavuz çizgileri korunur.
@@ -1204,6 +1199,7 @@ function BronzeTowerModel() {
       slotSideFacePanels,
       slot119ToCrownS1WallGeometry,
       slot119ToCrownS1WallMaterial,
+      blueFrontFaceMaterial,
       slotFrontFaceMaterial,
       slotBaseToBaseGuideLines,
       slotBaseToCrownS2GuideLines,
@@ -1255,8 +1251,13 @@ function BronzeTowerModel() {
       ))}
       <mesh
         geometry={dims.slot119ToCrownS1WallGeometry}
-        material={dims.slot119ToCrownS1WallMaterial}
-        renderOrder={9}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
+      />
+      <mesh
+        geometry={dims.crownSeriesRightWallGeometry}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
       />
       <mesh
         geometry={dims.a30A29BaseFaceGeometry}
