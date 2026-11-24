@@ -1368,47 +1368,40 @@ function BronzeTowerModel() {
     emissiveIntensity: 0.12
   }), [accent]);
 
-  // Bağımsız fuşya kemer denemesi: 1. slotla aynı yönelimde,
+  // Bağımsız slot ölçü çizimi: 1. slotla aynı yönelimde,
   // 120. slotun merkez yüksekliğinde ve kulenin dışında gösterilir.
-  const archTestGeometry = useMemo(() => {
-    const innerRadius = 0.18;
-    const outerRadius = 0.23;
-    const outerCenterY = 0.10;
-    const railX = 0.92 * 0.5 - 0.10;
-    const slotBottomY = -1.38 * 0.5;
-    const points: THREE.Vector3[] = [];
-    const addSegment = (a: THREE.Vector3, b: THREE.Vector3) => {
-      points.push(a, b);
-    };
-    const addUpperSemicircle = (radius: number, centerY: number) => {
-      const segments = 48;
-      for (let i = 0; i < segments; i++) {
-        const a0 = Math.PI * i / segments;
-        const a1 = Math.PI * (i + 1) / segments;
-        addSegment(
-          new THREE.Vector3(radius * Math.cos(a0), centerY + radius * Math.sin(a0), 0),
-          new THREE.Vector3(radius * Math.cos(a1), centerY + radius * Math.sin(a1), 0)
-        );
-      }
-    };
-
-    addUpperSemicircle(innerRadius, 0);
-    addUpperSemicircle(outerRadius, outerCenterY);
-
-    // Slot yanlarından 0.10 içerdeki iki paralel dikey çizgi.
-    addSegment(new THREE.Vector3(-railX, slotBottomY, 0), new THREE.Vector3(-railX, outerCenterY, 0));
-    addSegment(new THREE.Vector3(railX, slotBottomY, 0), new THREE.Vector3(railX, outerCenterY, 0));
-
-    // Paralellerin üst uçları dış yarım çember uçlarına,
-    // alt uçları slotun alt köşelerine bağlanır.
-    addSegment(new THREE.Vector3(-railX, outerCenterY, 0), new THREE.Vector3(-outerRadius, outerCenterY, 0));
-    addSegment(new THREE.Vector3(railX, outerCenterY, 0), new THREE.Vector3(outerRadius, outerCenterY, 0));
-    addSegment(new THREE.Vector3(-railX, slotBottomY, 0), new THREE.Vector3(-0.46, slotBottomY, 0));
-    addSegment(new THREE.Vector3(railX, slotBottomY, 0), new THREE.Vector3(0.46, slotBottomY, 0));
-
+  // Sarı çizgiler slot sınırını, fuşya çizgiler yanlardan 0.10 içeri alınmış
+  // ve slot yan kenarlarına paralel iki dikey hattı gösterir.
+  const slotOutlineGeometry = useMemo(() => {
+    const halfWidth = 0.92 * 0.5;
+    const halfHeight = 1.38 * 0.5;
+    const points = [
+      new THREE.Vector3(-halfWidth, -halfHeight, 0),
+      new THREE.Vector3(halfWidth, -halfHeight, 0),
+      new THREE.Vector3(halfWidth, halfHeight, 0),
+      new THREE.Vector3(-halfWidth, halfHeight, 0),
+      new THREE.Vector3(-halfWidth, -halfHeight, 0)
+    ];
     return new THREE.BufferGeometry().setFromPoints(points);
   }, []);
-  const archTestMaterial = useMemo(() => new THREE.LineBasicMaterial({
+  const slotOutlineMaterial = useMemo(() => new THREE.LineBasicMaterial({
+    color: "#ffff00",
+    depthTest: false,
+    depthWrite: false
+  }), []);
+  const innerParallelLinesGeometry = useMemo(() => {
+    const halfWidth = 0.92 * 0.5;
+    const halfHeight = 1.38 * 0.5;
+    const inset = 0.10;
+    const innerX = halfWidth - inset;
+    return new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-innerX, -halfHeight, 0),
+      new THREE.Vector3(-innerX, halfHeight, 0),
+      new THREE.Vector3(innerX, -halfHeight, 0),
+      new THREE.Vector3(innerX, halfHeight, 0)
+    ]);
+  }, []);
+  const innerParallelLinesMaterial = useMemo(() => new THREE.LineBasicMaterial({
     color: "#ff00cc",
     depthTest: false,
     depthWrite: false
@@ -1416,13 +1409,20 @@ function BronzeTowerModel() {
 
   return (
     <group>
-      {/* Kule dışında, 120. slot yüksekliğinde bağımsız fuşya kemer ölçü denemesi. */}
-      <lineSegments
-        geometry={archTestGeometry}
-        material={archTestMaterial}
+      {/* Kule dışında, 120. slot yüksekliğinde sarı slot sınırı ve fuşya paraleller. */}
+      <line
+        geometry={slotOutlineGeometry}
+        material={slotOutlineMaterial}
         position={[14.5, 8.72150815736696, 0]}
         rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
         renderOrder={30}
+      />
+      <lineSegments
+        geometry={innerParallelLinesGeometry}
+        material={innerParallelLinesMaterial}
+        position={[14.5, 8.72150815736696, 0]}
+        rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
+        renderOrder={31}
       />
       {/* Sabit mavi yüzeyler: useMemo içinde bir kez oluşturulur, tekrar renderda üretilmez. */}
       {dims.slotFrontFacePanels.map((panel, index) => (
