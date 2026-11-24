@@ -897,8 +897,8 @@ function BronzeTowerModel() {
     );
     a44ToA45FuchsiaLine.renderOrder = 20;
 
-    // A44SÜ0'dan 120 dikmesine doğru 0.10 birim radyal ileride A44SÜ01.
-    const a44Su01Point = new THREE.Vector3(-6.735623149365033, 0, 9.444745742280706);
+    // Spiralin son parçasının ilerleme yönüne göre sağında, teğete dik 0.10 birim ötede A44SÜ01.
+    const a44Su01Point = new THREE.Vector3(-6.730739326046385, 0, 9.448731541916962);
     // A44SÜ01 üzerinden, A44SÜ4 ile aynı yüksekliğe (1.68) kadar 90° dikme.
     const a44Su02Point = a44Su01Point.clone().setY(0.1 + posterHeight + 0.1 + 0.1);
     const a44Su01ToSu02VerticalLine = new THREE.Line(
