@@ -90,7 +90,7 @@ function BronzeTowerModel() {
 
     // 99. slotun devamına aynı ölçülerde A-E slotlarını ekle.
     // Mevcut 1-99 slotlarının konumları ve merkezdeki 100. slot değişmez.
-    const extensionLabels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"];
+    const extensionLabels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
     for (let extensionIndex = 0; extensionIndex < extensionLabels.length; extensionIndex++) {
       const i = totalSlots + extensionIndex;
       const radius = baseRadius - i * radialStep;
