@@ -460,7 +460,7 @@ function BronzeTowerModel() {
 
     // 120. slotun altından ana duvar tabanına kadar inen, slotla aynı
     // genişlikte ve aynı dikey düzlemde bir destek duvarı.
-    const crownWallTopY = crownPosition.y - posterHeight * 0.5 - 0.003;
+    const crownWallTopY = crownWallMatchPoint.y - 0.003;
     const crownWallHeight = crownWallTopY - firstSlotBaseY;
     const crownWallGeometry = new THREE.BoxGeometry(posterWidth, crownWallHeight, 0.075);
     const crownWallPosition = new THREE.Vector3(
