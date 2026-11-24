@@ -887,7 +887,8 @@ function BronzeTowerModel() {
       new THREE.Vector3(-7.518807, 0.028288, 8.895625), // A43-SÜ
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
-    // A44-SÜ'den A30-SÜ-0 izdüşümüne kadar kırmızı hattı devam ettir.
+    // Kırmızı spiral A30-SÜ'den A31...A44 noktalarından geçerek
+    // A30-SÜ-0'a ulaşır. Alt kenar ayrıca belirgin bir çizgi olarak çizilir.
     const a30SpiralBasePoint = getSlotUpperLeft(a30);
     a30SpiralBasePoint.y = 0;
     a30SpiralLinePoints.push(a30SpiralBasePoint);
@@ -897,16 +898,29 @@ function BronzeTowerModel() {
     );
     a30SpiralGuideLine.renderOrder = 15;
 
-    // A30-SÜ → A30-SÜ-0 → A44-SÜ üçgenini ortak mavi duvar materyaliyle kapat.
+    const a44SpiralPoint = a30SpiralLinePoints[a30SpiralLinePoints.length - 2];
+    const a30SpiralBottomLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a44SpiralPoint, a30SpiralBasePoint]),
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    a30SpiralBottomLine.renderOrder = 16;
+
+    // Mavi duvarın dış sınırı A30-SÜ → A31...A44-SÜ spiralini,
+    // alt sınırı A44-SÜ → A30-SÜ-0 doğrultusunu takip eder.
+    // A30-SÜ-0 ile A30-SÜ arasındaki kenar duvarı kapatır.
     const a30A44WallGeometry = new THREE.BufferGeometry();
-    a30A44WallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-      getSlotUpperLeft(a30).x, getSlotUpperLeft(a30).y, getSlotUpperLeft(a30).z,
-      a30SpiralBasePoint.x, a30SpiralBasePoint.y, a30SpiralBasePoint.z,
-      a30SpiralLinePoints[a30SpiralLinePoints.length - 2].x,
-      a30SpiralLinePoints[a30SpiralLinePoints.length - 2].y,
-      a30SpiralLinePoints[a30SpiralLinePoints.length - 2].z
-    ], 3));
-    a30A44WallGeometry.setIndex([0, 1, 2]);
+    const a30A44WallPositions = a30SpiralLinePoints.flatMap((point) => [
+      point.x, point.y, point.z
+    ]);
+    const a30A44WallIndices: number[] = [];
+    for (let i = 1; i < a30SpiralLinePoints.length - 1; i++) {
+      a30A44WallIndices.push(0, i, i + 1);
+    }
+    a30A44WallGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(a30A44WallPositions, 3)
+    );
+    a30A44WallGeometry.setIndex(a30A44WallIndices);
     a30A44WallGeometry.computeVertexNormals();
     const a29BaseRight = a29UpperRight.clone();
     const a30BaseRight = a30UpperRight.clone();
@@ -1249,6 +1263,7 @@ function BronzeTowerModel() {
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
+      a30SpiralBottomLine,
       a30A44WallGeometry,
       upperBridgeFacePanels,
       upperBridgeGreenMaterial,
@@ -1307,6 +1322,7 @@ function BronzeTowerModel() {
         renderOrder={10}
       />
       <primitive object={dims.a30SpiralGuideLine} />
+      <primitive object={dims.a30SpiralBottomLine} />
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
