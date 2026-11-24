@@ -163,6 +163,47 @@ const SPIRAL_SLOT_LAYOUT: {
   { number: 119, x: 0.61263509454030396, y: 7.3415081573669605, z: 2.9575265404580819, rotationY: -18.645300268324178, theta: 20.216096595119076 }
 ];
 
+const SIDE_SLOT_LAYOUT: {
+  label: string;
+  x: number;
+  y: number;
+  z: number;
+  rotationY: number;
+  height: number;
+}[] = [
+  { label: "A", x: 9.272887932375056, y: 0.793276000000000, z: -0.960000000000000, rotationY: 1.673956436765213, height: 1.346552 },
+  { label: "A1", x: 9.175890109762918, y: 0.776552000000000, z: -1.924020156673127, rotationY: 1.777484054806221, height: 1.313104 },
+  { label: "A2", x: 8.978385673307381, y: 0.759828000000000, z: -2.878155881131681, rotationY: 1.881011672847229, height: 1.279656 },
+  { label: "A3", x: 8.681393908272895, y: 0.743104000000000, z: -3.811900251952214, rotationY: 1.984539290888238, height: 1.246208 },
+  { label: "A4", x: 8.287035250166813, y: 0.726380000000000, z: -4.714853027643913, rotationY: 2.088066908929246, height: 1.212760 },
+  { label: "A5", x: 7.798519927787811, y: 0.709656000000000, z: -5.576836314230333, rotationY: 2.191594526970254, height: 1.179312 },
+  { label: "A6", x: 7.220124431434641, y: 0.692932000000000, z: -6.388009001725506, rotationY: 2.295122145011263, height: 1.145864 },
+  { label: "A7", x: 6.557155942134528, y: 0.676208000000000, z: -7.138978685738691, rotationY: 2.398649763052271, height: 1.112416 },
+  { label: "A8", x: 5.815904993318950, y: 0.659484000000000, z: -7.820909805683569, rotationY: 2.502177381093279, height: 1.078968 },
+  { label: "A9", x: 5.003586770208685, y: 0.642760000000000, z: -8.425626760642963, rotationY: 2.605704999134288, height: 1.045520 },
+  { label: "A10", x: 4.128271582753094, y: 0.626036000000000, z: -8.945710807649451, rotationY: 2.709232617175296, height: 1.012072 },
+  { label: "A11", x: 3.198805173806763, y: 0.609312000000000, z: -9.374589604625635, rotationY: 2.812760235216304, height: 0.978624 },
+  { label: "A12", x: 2.224719643866286, y: 0.592588000000000, z: -9.706618330966796, rotationY: 2.916287853257312, height: 0.945176 },
+  { label: "A13", x: 1.216135885734460, y: 0.575864000000000, z: -9.937151402072100, rotationY: 3.019815471298321, height: 0.911728 },
+  { label: "A14", x: 0.183658525604876, y: 0.559140000000000, z: -10.062603889219185, rotationY: 3.123343089339329, height: 0.878280 },
+  { label: "A15", x: -0.861735539968392, y: 0.542416000000000, z: -10.080501862073426, rotationY: 3.226870707380337, height: 0.844832 },
+  { label: "A16", x: -1.908813840065251, y: 0.525692000000000, z: -9.989520986739658, rotationY: 3.330398325421346, height: 0.811384 },
+  { label: "A17", x: -2.946209017822284, y: 0.508968000000000, z: -9.789512836394763, rotationY: 3.433925943462354, height: 0.777936 },
+  { label: "A18", x: -3.962542214549413, y: 0.492244000000000, z: -9.481518502872829, rotationY: 3.537453561503362, height: 0.744488 },
+  { label: "A19", x: -4.946547810540478, y: 0.475520000000000, z: -9.067769234706308, rotationY: 3.640981179544371, height: 0.711040 },
+  { label: "A20", x: -5.887198155840519, y: 0.458796000000000, z: -8.551673968576695, rotationY: 3.744508797585379, height: 0.677592 },
+  { label: "A21", x: -6.773826911462636, y: 0.442072000000000, z: -7.937793765354224, rotationY: 3.848036415626387, height: 0.644144 },
+  { label: "A22", x: -7.596249624018953, y: 0.425348000000000, z: -7.231803307322696, rotationY: 3.951564033667395, height: 0.610696 },
+  { label: "A23", x: -8.344880174550312, y: 0.408624000000000, z: -6.440439758179623, rotationY: 4.055091651708404, height: 0.577248 },
+  { label: "A24", x: -9.010841775442897, y: 0.391900000000000, z: -5.571439430352001, rotationY: 4.158619269749412, height: 0.543800 },
+  { label: "A25", x: -9.586071237471764, y: 0.375176000000000, z: -4.633462843461793, rotationY: 4.262146887790420, height: 0.510352 },
+  { label: "A26", x: -10.063415291804564, y: 0.358452000000000, z: -3.636008891827323, rotationY: 4.365674505831429, height: 0.476904 },
+  { label: "A27", x: -10.436717828660978, y: 0.341728000000000, z: -2.589318966157784, rotationY: 4.469202123872437, height: 0.443456 },
+  { label: "A28", x: -10.700897004519106, y: 0.325004000000000, z: -1.504271993610752, rotationY: 4.572729741913445, height: 0.410008 },
+  { label: "A29", x: -10.852011272399277, y: 0.308280000000000, z: -0.392271469740287, rotationY: 4.676257359954453, height: 0.376560 },
+  { label: "A30", x: -10.887313503802105, y: 0.291556000000000, z: 0.734874345734934, rotationY: 4.779784977995462, height: 0.343112 }
+];
+
 const CROWN_SLOT_POSITION = { x: 0, y: 8.72150815736696, z: 0, rotationY: 0 };
 
 function BronzeTowerModel() {
@@ -174,46 +215,22 @@ function BronzeTowerModel() {
     const slots: THREE.Matrix4[] = [];
     const slotCenters: THREE.Vector3[] = [];
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
-    const aSlotHeight = 1.346552;
-    const aSlotBaseY = SPIRAL_SLOT_LAYOUT[0].y - posterHeight * 0.5;
-    const aSlotPosition = new THREE.Vector3(
-      SPIRAL_SLOT_LAYOUT[0].x,
-      aSlotBaseY + aSlotHeight * 0.5,
-      SPIRAL_SLOT_LAYOUT[0].z - (posterWidth + 0.04)
-    );
-    const aSlotTheta = Math.atan2(aSlotPosition.z, aSlotPosition.x);
-    const aSlotRotation = new THREE.Euler(0, Math.PI * 0.5 - aSlotTheta, 0);
-    const aSlotFront = new THREE.Vector3(Math.cos(aSlotTheta), 0, Math.sin(aSlotTheta));
-    const descendingSideSlots: {
-      position: THREE.Vector3;
-      height: number;
-      rotationY: number;
-    }[] = [];
+    const aSlotLayout = SIDE_SLOT_LAYOUT[0];
+    const aSlotPosition = new THREE.Vector3(aSlotLayout.x, aSlotLayout.y, aSlotLayout.z);
+    const aSlotRotation = new THREE.Euler(0, aSlotLayout.rotationY, 0);
+    const descendingSideSlots = SIDE_SLOT_LAYOUT.slice(1).map((slot) => ({
+      position: new THREE.Vector3(slot.x, slot.y, slot.z),
+      height: slot.height,
+      rotationY: slot.rotationY
+    }));
 
-    // A1-A30, A slotundan itibaren ana spiralın ters yönünde kıvrılarak ilerler.
-    // Açısal ve radyal adım, ana spiralin ilk iki slotundan alınır.
-    const sideAngleStep = SPIRAL_SLOT_LAYOUT[1].theta - SPIRAL_SLOT_LAYOUT[0].theta;
-    const firstRadius = Math.hypot(SPIRAL_SLOT_LAYOUT[0].x, SPIRAL_SLOT_LAYOUT[0].z);
-    const secondRadius = Math.hypot(SPIRAL_SLOT_LAYOUT[1].x, SPIRAL_SLOT_LAYOUT[1].z);
-    const sideRadiusStep = firstRadius - secondRadius;
-    const aSlotRadius = Math.hypot(aSlotPosition.x, aSlotPosition.z);
-
-    for (let index = 1; index <= 30; index++) {
-      const height = aSlotHeight - index * 0.033448;
-      const theta = aSlotTheta - index * sideAngleStep;
-      const radius = aSlotRadius + index * sideRadiusStep;
-      const rotationY = Math.PI * 0.5 - theta;
-      const position = new THREE.Vector3(
-        Math.cos(theta) * radius,
-        aSlotBaseY + height * 0.5,
-        Math.sin(theta) * radius
-      );
-      descendingSideSlots.push({ position, height, rotationY });
-      const frontNormal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
+    for (const slot of SIDE_SLOT_LAYOUT) {
+      const position = new THREE.Vector3(slot.x, slot.y, slot.z);
+      const frontNormal = new THREE.Vector3(Math.cos(Math.PI * 0.5 - slot.rotationY), 0, Math.sin(Math.PI * 0.5 - slot.rotationY));
       slotLabels.push({
         position: position.clone().addScaledVector(frontNormal, 0.045),
-        rotation: new THREE.Euler(0, rotationY, 0),
-        number: `A${index}`
+        rotation: new THREE.Euler(0, slot.rotationY, 0),
+        number: slot.label
       });
     }
 
@@ -398,25 +415,31 @@ function BronzeTowerModel() {
       fill: THREE.BufferGeometry;
     }[] = [];
 
-    for (const slot of SPIRAL_SLOT_LAYOUT.filter((item) => item.number >= 1 && item.number <= 118)) {
+    const connectorSlots = [
+      ...SPIRAL_SLOT_LAYOUT.filter((item) => item.number >= 1 && item.number <= 118).map((slot) => ({ ...slot, height: posterHeight })),
+      ...SIDE_SLOT_LAYOUT
+    ];
+
+    for (const slot of connectorSlots) {
+      const slotHalfHeight = slot.height * 0.5;
       const slotRotation = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(0, slot.rotationY, 0)
       );
       const slotPosition = new THREE.Vector3(slot.x, slot.y, slot.z);
       const slotUpperLeft = new THREE.Vector3(
         -posterWidth * 0.5,
-        posterHeight * 0.5,
+        slotHalfHeight,
         0.075 * 0.5
       ).applyQuaternion(slotRotation).add(slotPosition);
       const slotUpperRight = new THREE.Vector3(
         posterWidth * 0.5,
-        posterHeight * 0.5,
+        slotHalfHeight,
         0.075 * 0.5
       ).applyQuaternion(slotRotation).add(slotPosition);
 
       // Her bağlantı, ilgili slotun tavan yüksekliğinde 120. slotun
       // destek duvarına ulaşır; 120. slotun alt köşeleri kullanılmaz.
-      const joinY = slot.y + posterHeight * 0.5;
+      const joinY = slot.y + slotHalfHeight;
       const crownJoinLeft = new THREE.Vector3(-posterWidth * 0.5, joinY, 0.075 * 0.5);
       const crownJoinRight = new THREE.Vector3(posterWidth * 0.5, joinY, 0.075 * 0.5);
 
@@ -460,12 +483,6 @@ function BronzeTowerModel() {
 
       wallToCrownConnectors.push({ left, right, fill });
     }
-
-    slotLabels.push({
-      position: aSlotPosition.clone().addScaledVector(aSlotFront, 0.045),
-      rotation: aSlotRotation.clone(),
-      number: "A"
-    });
 
     return {
       slots,
@@ -527,7 +544,7 @@ function BronzeTowerModel() {
         geometry={aSlotGeometry}
         material={slotMaterial}
         position={dims.aSlotPosition}
-        rotation={[0, Math.PI * 0.5 - Math.atan2(dims.aSlotPosition.z, dims.aSlotPosition.x), 0]}
+        rotation={[0, SIDE_SLOT_LAYOUT[0].rotationY, 0]}
       />
       {dims.descendingSideSlots.map((slot, index) => (
         <mesh
