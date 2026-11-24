@@ -888,105 +888,30 @@ function BronzeTowerModel() {
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
 
-    // A44-SÜ ile A45-SÜ arasındaki fuşya bağlantı ve 0.10 birimlik dikmeler.
-    const a44SuPoint = a30SpiralLinePoints[a30SpiralLinePoints.length - 1];
-    const a45SuPoint = new THREE.Vector3(-6.021561, 0, 10.093715);
-    const a44ToA45FuchsiaLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44SuPoint, a45SuPoint]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a44ToA45FuchsiaLine.renderOrder = 20;
-
-    // A44SÜ-A45SÜ bağlantısı üzerinde, A44SÜ'den A45SÜ yönüne 0.10 birim ileride A44SÜ01.
-    const a44ToA45Direction = a45SuPoint.clone().sub(a44SuPoint).setY(0).normalize();
-    const a44Su01Point = a44SuPoint.clone().addScaledVector(a44ToA45Direction, 0.1).setY(0);
-    // A44SÜ01 üzerinden, A44SÜ4 ile aynı yüksekliğe (1.68) kadar 90° dikme.
-    const a44Su02Point = a44Su01Point.clone().setY(0.1 + posterHeight + 0.1 + 0.1);
-    const a44Su01ToSu02VerticalLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44Su01Point, a44Su02Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a44Su01ToSu02VerticalLine.renderOrder = 25;
-
-    // Etiket koordinatlarının ortak sağ yönü: A44SÜ → A45SÜ doğrultusu.
-    const zRightDirection = a45SuPoint.clone().sub(a44SuPoint).setY(0).normalize();
-
-    const a44Su1Point = a44SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const a45Su1Point = a45SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const a44SuVerticalLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44SuPoint, a44Su1Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a44SuVerticalLine.renderOrder = 21;
-
-    // A44SÜ1 ve A45SÜ1 noktalarından bir slot yüksekliği (1.38 birim) yukarı çıkan dikmeler.
-    const a44Su2Point = a44Su1Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
-    const a45Su2Point = a45Su1Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
-    const a44Su1ToSu2VerticalLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44Su1Point, a44Su2Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a44Su1ToSu2VerticalLine.renderOrder = 23;
-
-    // A44SÜ2 ve A45SÜ2 üst uç noktalarını birleştiren fuşya çizgi.
-    const a44Su2ToA45Su2FuchsiaLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44Su2Point, a45Su2Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a44Su2ToA45Su2FuchsiaLine.renderOrder = 24;
-
-    // A44SÜ2/A45SÜ2 üzerinden 0.10 birimlik üçüncü ve dördüncü seviyeler.
-    const a44Su3Point = a44Su2Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const a44Su4Point = a44Su3Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const a45Su3Point = a45Su2Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const a45Su4Point = a45Su3Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-
-    const makeFuchsiaPost = (start: THREE.Vector3, end: THREE.Vector3) => {
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([start, end]),
-        new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-      );
-      line.renderOrder = 25;
-      return line;
-    };
-    const a44Su2ToSu3VerticalLine = makeFuchsiaPost(a44Su2Point, a44Su3Point);
-    const a44Su3ToSu4VerticalLine = makeFuchsiaPost(a44Su3Point, a44Su4Point);
-
-    const makeFuchsiaBridge = (start: THREE.Vector3, end: THREE.Vector3) => {
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([start, end]),
-        new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-      );
-      line.renderOrder = 26;
-      return line;
-    };
-    const a44Su3ToA45Su3FuchsiaLine = makeFuchsiaBridge(a44Su3Point, a45Su3Point);
-    const a44Su4ToA45Su4FuchsiaLine = makeFuchsiaBridge(a44Su4Point, a45Su4Point);
-
-    const a44Su1ToA45Su1FuchsiaLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a44Su1Point, a45Su1Point]),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-    );
-    a44Su1ToA45Su1FuchsiaLine.renderOrder = 22;
-
-    // Kullanıcının yeni Z1-Z15 koordinat tarifine göre noktaları baştan üret.
-    const z1Point = a44SuPoint.clone();
+    // Z1-Z15 noktaları kullanıcının tarif ettiği mesafe ve yönlerle kurulur.
+    const z1Point = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
+    const zRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
+      .sub(z1Point).setY(0).normalize();
     const z2Point = z1Point.clone().addScaledVector(zRightDirection, 0.1);
     const z3Point = z2Point.clone().addScaledVector(zRightDirection, 0.92);
-    const z4Point = a44Su1Point.clone();
+
+    const z4Point = z1Point.clone().add(new THREE.Vector3(0, 0.1, 0));
     const z5Point = z4Point.clone().addScaledVector(zRightDirection, 0.1);
     const z6Point = z5Point.clone().addScaledVector(zRightDirection, 0.92);
-    const z7Point = a44Su2Point.clone();
+
+    const z7Point = z4Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
     const z8Point = z7Point.clone().addScaledVector(zRightDirection, 0.1);
     const z9Point = z8Point.clone().addScaledVector(zRightDirection, 0.92);
-    const z10Point = a44Su3Point.clone();
+
+    const z10Point = z7Point.clone().add(new THREE.Vector3(0, 0.1, 0));
     const z11Point = z10Point.clone().addScaledVector(zRightDirection, 0.1);
     const z12Point = z11Point.clone().addScaledVector(zRightDirection, 0.92);
-    const z13Point = a44Su4Point.clone();
+
+    const z13Point = z10Point.clone().add(new THREE.Vector3(0, 0.1, 0));
     const z14Point = z13Point.clone().addScaledVector(zRightDirection, 0.1);
     const z15Point = z14Point.clone().addScaledVector(zRightDirection, 0.92);
 
-    const makeZConnection = (start: THREE.Vector3, end: THREE.Vector3) => {
+    const makeZLine = (start: THREE.Vector3, end: THREE.Vector3) => {
       const line = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([start, end]),
         new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
@@ -994,12 +919,16 @@ function BronzeTowerModel() {
       line.renderOrder = 28;
       return line;
     };
-    // Eksik bağlantılar: Z3-Z2, Z5-Z6, Z7-Z8, Z9-Z10 ve Z4-Z12.
-    const z3ToZ2Line = makeZConnection(z3Point, z2Point);
-    const z5ToZ6Line = makeZConnection(z5Point, z6Point);
-    const z7ToZ8Line = makeZConnection(z7Point, z8Point);
-    const z9ToZ10Line = makeZConnection(z9Point, z10Point);
-    const z4ToZ12Line = makeZConnection(z4Point, z12Point);
+
+    // Beş yatay sıra ve üç kesintisiz dikey hat.
+    const z1ToZ3Line = makeZLine(z1Point, z3Point);
+    const z4ToZ6Line = makeZLine(z4Point, z6Point);
+    const z7ToZ9Line = makeZLine(z7Point, z9Point);
+    const z10ToZ12Line = makeZLine(z10Point, z12Point);
+    const z13ToZ15Line = makeZLine(z13Point, z15Point);
+    const z1ToZ13Line = makeZLine(z1Point, z13Point);
+    const z2ToZ14Line = makeZLine(z2Point, z14Point);
+    const z3ToZ15Line = makeZLine(z3Point, z15Point);
 
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
@@ -1458,16 +1387,14 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
       a30SpiralBottomLine,
-      a44ToA45FuchsiaLine,
-      a44SuLabelPosition: a44SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a45SuLabelPosition: a45SuPoint.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44SuVerticalLine,
-      a44Su01ToSu02VerticalLine,
-      z3ToZ2Line,
-      z5ToZ6Line,
-      z7ToZ8Line,
-      z9ToZ10Line,
-      z4ToZ12Line,
+      z1ToZ3Line,
+      z4ToZ6Line,
+      z7ToZ9Line,
+      z10ToZ12Line,
+      z13ToZ15Line,
+      z1ToZ13Line,
+      z2ToZ14Line,
+      z3ToZ15Line,
       z1LabelPosition: z1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z2LabelPosition: z2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z3LabelPosition: z3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1483,23 +1410,6 @@ function BronzeTowerModel() {
       z13LabelPosition: z13Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z14LabelPosition: z14Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z15LabelPosition: z15Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44Su01LabelPosition: a44Su01Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44Su02LabelPosition: a44Su02Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44Su1ToSu2VerticalLine,
-      a44Su2ToA45Su2FuchsiaLine,
-      a44Su2ToSu3VerticalLine,
-      a44Su3ToSu4VerticalLine,
-      a44Su3ToA45Su3FuchsiaLine,
-      a44Su4ToA45Su4FuchsiaLine,
-      a44Su1ToA45Su1FuchsiaLine,
-      a44Su1LabelPosition: a44Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a45Su1LabelPosition: a45Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44Su2LabelPosition: a44Su2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a45Su2LabelPosition: a45Su2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44Su3LabelPosition: a44Su3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a45Su3LabelPosition: a45Su3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a44Su4LabelPosition: a44Su4Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      a45Su4LabelPosition: a45Su4Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1560,21 +1470,14 @@ function BronzeTowerModel() {
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
-      <primitive object={dims.a44ToA45FuchsiaLine} />
-      <primitive object={dims.a44SuVerticalLine} />
-      <primitive object={dims.a44Su01ToSu02VerticalLine} />
-      <primitive object={dims.z3ToZ2Line} />
-      <primitive object={dims.z5ToZ6Line} />
-      <primitive object={dims.z7ToZ8Line} />
-      <primitive object={dims.z9ToZ10Line} />
-      <primitive object={dims.z4ToZ12Line} />
-      <primitive object={dims.a44Su1ToSu2VerticalLine} />
-       <primitive object={dims.a44Su2ToA45Su2FuchsiaLine} />
-       <primitive object={dims.a44Su2ToSu3VerticalLine} />
-       <primitive object={dims.a44Su3ToSu4VerticalLine} />
-       <primitive object={dims.a44Su3ToA45Su3FuchsiaLine} />
-       <primitive object={dims.a44Su4ToA45Su4FuchsiaLine} />
-      <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
+      <primitive object={dims.z1ToZ3Line} />
+      <primitive object={dims.z4ToZ6Line} />
+      <primitive object={dims.z7ToZ9Line} />
+      <primitive object={dims.z10ToZ12Line} />
+      <primitive object={dims.z13ToZ15Line} />
+      <primitive object={dims.z1ToZ13Line} />
+      <primitive object={dims.z2ToZ14Line} />
+      <primitive object={dims.z3ToZ15Line} />
       {([
         // Z1-Z15 etiketleri kullanıcının tarif ettiği sıra ve koordinatlara göre tekil atanır.
         ["Z1", dims.z1LabelPosition],
