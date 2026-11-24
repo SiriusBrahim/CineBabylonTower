@@ -392,6 +392,21 @@ function BronzeTowerModel() {
     const wallInset = 0.085;
     const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
 
+    // 120-S1–120-S2 üst kenarından ortak tabana inen kapalı dikey duvar.
+    const crownS1S2BaseLeft = crownLowerLeftGuidePoint.clone();
+    crownS1S2BaseLeft.y = firstSlotBaseY;
+    const crownS1S2BaseRight = crownWallMatchPoint.clone();
+    crownS1S2BaseRight.y = firstSlotBaseY;
+    const crownS1S2ToBaseWallGeometry = new THREE.BufferGeometry();
+    crownS1S2ToBaseWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      crownLowerLeftGuidePoint.x, crownLowerLeftGuidePoint.y, crownLowerLeftGuidePoint.z,
+      crownWallMatchPoint.x, crownWallMatchPoint.y, crownWallMatchPoint.z,
+      crownS1S2BaseRight.x, crownS1S2BaseRight.y, crownS1S2BaseRight.z,
+      crownS1S2BaseLeft.x, crownS1S2BaseLeft.y, crownS1S2BaseLeft.z
+    ], 3));
+    crownS1S2ToBaseWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    crownS1S2ToBaseWallGeometry.computeVertexNormals();
+
     // 120-S2 noktasından ortak taban seviyesine dikey kırmızı referans çizgisi.
     // Diğer slot köşeleri ileride bu düşey hat üzerindeki noktalara bağlanacaktır.
     const crownS2BasePoint = crownWallMatchPoint.clone();
@@ -1214,6 +1229,7 @@ function BronzeTowerModel() {
       slotBaseToCrownS2GuideLines,
       slot118ToCrownGuideLine,
       crownPanelGeometry,
+      crownS1S2ToBaseWallGeometry,
       crownPanelConnectorLine,
       crownPanelBaseEdgeLine,
       wallGuideLabels,
@@ -1268,6 +1284,11 @@ function BronzeTowerModel() {
       ))}
       <mesh
         geometry={dims.crownPanelGeometry}
+        material={dims.crownPanelMaterial}
+        renderOrder={9}
+      />
+      <mesh
+        geometry={dims.crownS1S2ToBaseWallGeometry}
         material={dims.crownPanelMaterial}
         renderOrder={9}
       />
