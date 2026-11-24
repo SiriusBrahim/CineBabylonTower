@@ -220,6 +220,8 @@ function BronzeTowerModel() {
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
     const aSlotLayout = SIDE_SLOT_LAYOUT[0];
     const aSlotPosition = new THREE.Vector3(aSlotLayout.x, aSlotLayout.y, aSlotLayout.z);
+    const firstSlotLayout = SPIRAL_SLOT_LAYOUT[0];
+    const firstSlotPosition = new THREE.Vector3(firstSlotLayout.x, firstSlotLayout.y, firstSlotLayout.z);
     const descendingSideSlots = SIDE_SLOT_LAYOUT.slice(1).map((slot) => ({
       position: new THREE.Vector3(slot.x, slot.y, slot.z),
       height: slot.height,
@@ -1311,6 +1313,8 @@ function BronzeTowerModel() {
     return {
       slots,
       slotLabels,
+      firstSlotPosition,
+      firstSlotRotationY: firstSlotLayout.rotationY,
       aSlotPosition,
       descendingSideSlots,
       wallGeometry,
@@ -1360,6 +1364,26 @@ function BronzeTowerModel() {
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const aSlotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.346552, 0.075), []);
+  const firstSlotArchGeometry = useMemo(() => {
+    const outerRadius = 0.46;
+    const innerRadius = 0.36;
+    const archShape = new THREE.Shape();
+    archShape.moveTo(-outerRadius, 0);
+    archShape.absarc(0, 0, outerRadius, Math.PI, 0, false);
+    archShape.lineTo(innerRadius, 0);
+    archShape.absarc(0, 0, innerRadius, 0, Math.PI, true);
+    archShape.closePath();
+    return new THREE.ExtrudeGeometry(archShape, {
+      depth: 0.075,
+      bevelEnabled: false,
+      curveSegments: 32
+    });
+  }, []);
+  const firstSlotArchMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: BRONZE_TOWER.accentColor,
+    metalness: 0.72,
+    roughness: 0.3
+  }), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: "#ffffff",
     metalness: 0.68,
@@ -1370,6 +1394,23 @@ function BronzeTowerModel() {
 
   return (
     <group>
+      {/* İlk slot ve üstündeki yarım daire iç kemer. */}
+      <mesh
+        geometry={slotGeometry}
+        material={slotMaterial}
+        position={dims.firstSlotPosition}
+        rotation={[0, dims.firstSlotRotationY, 0]}
+      />
+      <mesh
+        geometry={firstSlotArchGeometry}
+        material={firstSlotArchMaterial}
+        position={[
+          dims.firstSlotPosition.x,
+          dims.firstSlotPosition.y + 1.38 * 0.5,
+          dims.firstSlotPosition.z - 0.075 * 0.5
+        ]}
+        rotation={[0, dims.firstSlotRotationY, 0]}
+      />
       {/* Sabit mavi yüzeyler: useMemo içinde bir kez oluşturulur, tekrar renderda üretilmez. */}
       {dims.slotFrontFacePanels.map((panel, index) => (
         <primitive key={`blue-front-face-panel-${index}`} object={panel} />
