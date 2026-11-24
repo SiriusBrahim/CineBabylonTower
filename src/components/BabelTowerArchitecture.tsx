@@ -931,6 +931,36 @@ function BronzeTowerModel() {
     );
     a44Su2ToA45Su2FuchsiaLine.renderOrder = 24;
 
+    // A44SÜ2/A45SÜ2 üzerinden 0.10 birimlik üçüncü ve dördüncü seviyeler.
+    const a44Su3Point = a44Su2Point.clone().add(new THREE.Vector3(0, 0.1, 0));
+    const a44Su4Point = a44Su3Point.clone().add(new THREE.Vector3(0, 0.1, 0));
+    const a45Su3Point = a45Su2Point.clone().add(new THREE.Vector3(0, 0.1, 0));
+    const a45Su4Point = a45Su3Point.clone().add(new THREE.Vector3(0, 0.1, 0));
+
+    const makeFuchsiaPost = (start: THREE.Vector3, end: THREE.Vector3) => {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([start, end]),
+        new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+      );
+      line.renderOrder = 25;
+      return line;
+    };
+    const a44Su2ToSu3VerticalLine = makeFuchsiaPost(a44Su2Point, a44Su3Point);
+    const a44Su3ToSu4VerticalLine = makeFuchsiaPost(a44Su3Point, a44Su4Point);
+    const a45Su2ToSu3VerticalLine = makeFuchsiaPost(a45Su2Point, a45Su3Point);
+    const a45Su3ToSu4VerticalLine = makeFuchsiaPost(a45Su3Point, a45Su4Point);
+
+    const makeFuchsiaBridge = (start: THREE.Vector3, end: THREE.Vector3) => {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([start, end]),
+        new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+      );
+      line.renderOrder = 26;
+      return line;
+    };
+    const a44Su3ToA45Su3FuchsiaLine = makeFuchsiaBridge(a44Su3Point, a45Su3Point);
+    const a44Su4ToA45Su4FuchsiaLine = makeFuchsiaBridge(a44Su4Point, a45Su4Point);
+
     const a44Su1ToA45Su1FuchsiaLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([a44Su1Point, a45Su1Point]),
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
@@ -1400,9 +1430,21 @@ function BronzeTowerModel() {
       a44Su1ToSu2VerticalLine,
       a45Su1ToSu2VerticalLine,
       a44Su2ToA45Su2FuchsiaLine,
+      a44Su2ToSu3VerticalLine,
+      a44Su3ToSu4VerticalLine,
+      a45Su2ToSu3VerticalLine,
+      a45Su3ToSu4VerticalLine,
+      a44Su3ToA45Su3FuchsiaLine,
+      a44Su4ToA45Su4FuchsiaLine,
       a44Su1ToA45Su1FuchsiaLine,
       a44Su1LabelPosition: a44Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a45Su1LabelPosition: a45Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a44Su2LabelPosition: a44Su2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a45Su2LabelPosition: a45Su2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a44Su3LabelPosition: a44Su3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a45Su3LabelPosition: a45Su3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a44Su4LabelPosition: a44Su4Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a45Su4LabelPosition: a45Su4Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1469,7 +1511,27 @@ function BronzeTowerModel() {
       <primitive object={dims.a44Su1ToSu2VerticalLine} />
       <primitive object={dims.a45Su1ToSu2VerticalLine} />
        <primitive object={dims.a44Su2ToA45Su2FuchsiaLine} />
+       <primitive object={dims.a44Su2ToSu3VerticalLine} />
+       <primitive object={dims.a44Su3ToSu4VerticalLine} />
+       <primitive object={dims.a45Su2ToSu3VerticalLine} />
+       <primitive object={dims.a45Su3ToSu4VerticalLine} />
+       <primitive object={dims.a44Su3ToA45Su3FuchsiaLine} />
+       <primitive object={dims.a44Su4ToA45Su4FuchsiaLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
+      {([
+        ["A44SÜ2", dims.a44Su2LabelPosition],
+        ["A45SÜ2", dims.a45Su2LabelPosition],
+        ["A44SÜ3", dims.a44Su3LabelPosition],
+        ["A45SÜ3", dims.a45Su3LabelPosition],
+        ["A44SÜ4", dims.a44Su4LabelPosition],
+        ["A45SÜ4", dims.a45Su4LabelPosition],
+      ] as [string, THREE.Vector3][]).map(([name, position]) => (
+        <Text key={name} position={position} fontSize={0.13} color="#ff00ff"
+          outlineColor="#090b12" outlineWidth={0.012} anchorX="left"
+          anchorY="middle" renderOrder={27}>
+          {name}
+        </Text>
+      ))}
       <Text
         position={dims.a44Su1LabelPosition}
         fontSize={0.13}
