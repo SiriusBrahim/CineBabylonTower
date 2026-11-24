@@ -490,6 +490,40 @@ function BronzeTowerModel() {
       slotBaseToBaseGuideLines.push(connectorMesh);
     }
 
+    // 119-SÜ-0 ve A30-SÜ-0 taban noktalarını doğrudan 120-S2'ye bağla.
+    // Bağlantılar, taban noktalarından 120-S2'nin gerçek koordinatına uzanan
+    // 0.044 birim kare kesitli kırmızı prizmalardır.
+    const slotBaseToCrownS2GuideLines: THREE.Mesh[] = [];
+    const crownS2ConnectorMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      depthTest: false
+    });
+    const crownS2ConnectorSlots = [
+      SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119),
+      SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A30")
+    ];
+    if (crownS2ConnectorSlots.some((slot) => !slot)) {
+      throw new Error("119 veya A30 yerleşimi bulunamadı.");
+    }
+
+    for (const slot of crownS2ConnectorSlots) {
+      const basePoint = getSlotUpperLeft(slot!);
+      basePoint.y = 0;
+      const direction = new THREE.Vector3().subVectors(crownWallMatchPoint, basePoint);
+      const length = direction.length();
+      const connectorMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.044, length, 0.044),
+        crownS2ConnectorMaterial
+      );
+      connectorMesh.position.copy(basePoint).add(crownWallMatchPoint).multiplyScalar(0.5);
+      connectorMesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.normalize()
+      );
+      connectorMesh.renderOrder = 16;
+      slotBaseToCrownS2GuideLines.push(connectorMesh);
+    }
+
     type WallPathPoint = {
       x: number; y: number; z: number; halfHeight: number;
       rotationY: number; radialX: number; radialZ: number;
@@ -810,6 +844,7 @@ function BronzeTowerModel() {
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
       slotBaseToBaseGuideLines,
+      slotBaseToCrownS2GuideLines,
       slot118ToCrownGuideLine,
       crownPanelGeometry,
       crownPanelConnectorLine,
@@ -849,6 +884,9 @@ function BronzeTowerModel() {
       ))}
       {dims.slotBaseToBaseGuideLines.map((line, index) => (
         <primitive key={`base-point-link-${index}`} object={line} />
+      ))}
+      {dims.slotBaseToCrownS2GuideLines.map((line, index) => (
+        <primitive key={`base-to-120s2-link-${index}`} object={line} />
       ))}
       <primitive object={dims.slot118ToCrownGuideLine} />
       <primitive object={dims.crownPanelConnectorLine} />
