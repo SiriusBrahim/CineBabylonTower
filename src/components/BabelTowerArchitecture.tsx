@@ -887,11 +887,27 @@ function BronzeTowerModel() {
       new THREE.Vector3(-7.518807, 0.028288, 8.895625), // A43-SÜ
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
+    // A44-SÜ'den A30-SÜ-0 izdüşümüne kadar kırmızı hattı devam ettir.
+    const a30SpiralBasePoint = getSlotUpperLeft(a30);
+    a30SpiralBasePoint.y = 0;
+    a30SpiralLinePoints.push(a30SpiralBasePoint);
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
       new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
     );
     a30SpiralGuideLine.renderOrder = 15;
+
+    // A30-SÜ → A30-SÜ-0 → A44-SÜ üçgenini ortak mavi duvar materyaliyle kapat.
+    const a30A44WallGeometry = new THREE.BufferGeometry();
+    a30A44WallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      getSlotUpperLeft(a30).x, getSlotUpperLeft(a30).y, getSlotUpperLeft(a30).z,
+      a30SpiralBasePoint.x, a30SpiralBasePoint.y, a30SpiralBasePoint.z,
+      a30SpiralLinePoints[a30SpiralLinePoints.length - 2].x,
+      a30SpiralLinePoints[a30SpiralLinePoints.length - 2].y,
+      a30SpiralLinePoints[a30SpiralLinePoints.length - 2].z
+    ], 3));
+    a30A44WallGeometry.setIndex([0, 1, 2]);
+    a30A44WallGeometry.computeVertexNormals();
     const a29BaseRight = a29UpperRight.clone();
     const a30BaseRight = a30UpperRight.clone();
     a29BaseRight.y = firstSlotBaseY;
@@ -1233,6 +1249,7 @@ function BronzeTowerModel() {
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
+      a30A44WallGeometry,
       upperBridgeFacePanels,
       upperBridgeGreenMaterial,
       crownPanelMaterial,
@@ -1281,6 +1298,11 @@ function BronzeTowerModel() {
       />
       <mesh
         geometry={dims.crownS1S2ToBaseWallGeometry}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
+      />
+      <mesh
+        geometry={dims.a30A44WallGeometry}
         material={dims.blueFrontFaceMaterial}
         renderOrder={10}
       />
