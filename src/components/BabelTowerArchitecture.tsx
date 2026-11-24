@@ -276,6 +276,16 @@ function BronzeTowerModel() {
       CROWN_SLOT_POSITION.z
     ));
 
+    // 118-SÜ noktasının 120. destek duvarındaki aynı yükseklikteki karşılığı.
+    const slot118Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118);
+    if (!slot118Layout) throw new Error("118. slot yerleşimi bulunamadı.");
+    const slot118UpperLeftGuidePoint = getSlotUpperLeft(slot118Layout);
+    const crownWallMatchPoint = new THREE.Vector3(
+      -posterWidth * 0.5,
+      slot118Layout.y + posterHeight * 0.5,
+      0.075 * 0.5
+    );
+
     const wallGuideLinePoints = [
       ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
       ...SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft),
@@ -289,6 +299,31 @@ function BronzeTowerModel() {
       new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
     );
     wallGuideLine.renderOrder = 10;
+
+    const slot118ToCrownGuideGeometry = new THREE.BufferGeometry().setFromPoints([
+      slot118UpperLeftGuidePoint,
+      crownWallMatchPoint
+    ]);
+    const slot118ToCrownGuideLine = new THREE.Line(
+      slot118ToCrownGuideGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    slot118ToCrownGuideLine.renderOrder = 11;
+
+    // Her köşe noktası 3D görünümde isimlendirilir.
+    // Slot köşeleri: <slot adı>-SÜ; 120. duvar noktaları: 120-S1 / 120-S2.
+    const wallGuideLabels = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse().map((slot) => ({
+        name: `${slot.label}-SÜ`,
+        position: getSlotUpperLeft(slot)
+      })),
+      ...SPIRAL_SLOT_LAYOUT.map((slot) => ({
+        name: `${slot.number}-SÜ`,
+        position: getSlotUpperLeft(slot)
+      })),
+      { name: "120-S1", position: crownLowerLeftGuidePoint },
+      { name: "120-S2", position: crownWallMatchPoint }
+    ];
 
     // Tek parça spiral duvarın alt ucu A30-120 sağ bağlantısına,
     // üst ucu 119-120 sol bağlantısına oturur.
@@ -614,6 +649,8 @@ function BronzeTowerModel() {
       descendingSideSlots,
       wallGeometry,
       wallGuideLine,
+      slot118ToCrownGuideLine,
+      wallGuideLabels,
       crownWallGeometry,
       crownWallPosition,
       wallConnectorGeometry,
@@ -651,6 +688,22 @@ function BronzeTowerModel() {
     <group>
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
       <primitive object={dims.wallGuideLine} />
+      <primitive object={dims.slot118ToCrownGuideLine} />
+      {dims.wallGuideLabels.map((label) => (
+        <Text
+          key={label.name}
+          position={label.position.clone().add(new THREE.Vector3(0.08, 0.06, 0.04))}
+          fontSize={0.13}
+          color="#ff4b4b"
+          outlineColor="#090b12"
+          outlineWidth={0.012}
+          anchorX="left"
+          anchorY="middle"
+          renderOrder={12}
+        >
+          {label.name}
+        </Text>
+      ))}
       <mesh
         geometry={dims.crownWallGeometry}
         material={wallMaterial}
