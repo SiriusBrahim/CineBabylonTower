@@ -941,6 +941,7 @@ function BronzeTowerModel() {
       slotUpperLeftToBaseGuideLines,
       slotFrontFacePanels,
       slotSideFacePanels,
+      slotFrontFaceMaterial,
       slotBaseToBaseGuideLines,
       slotBaseToCrownS2GuideLines,
       slot118ToCrownGuideLine,
@@ -986,7 +987,7 @@ function BronzeTowerModel() {
       ))}
       <mesh
         geometry={dims.a30A29BaseFaceGeometry}
-        material={slotFrontFaceMaterial}
+        material={dims.slotFrontFaceMaterial}
         renderOrder={7}
       />
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
