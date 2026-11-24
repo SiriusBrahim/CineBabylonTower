@@ -910,6 +910,22 @@ function BronzeTowerModel() {
     crownSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     crownSeriesRightWallGeometry.computeVertexNormals();
 
+    // Deneme 4: A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ
+    // dörtgenini üst seviyede doldur.
+    const a30A29UpperFacePoints = [
+      getSlotUpperLeft(a30),
+      getSlotUpperLeft(a29),
+      a29CrownJoinRight.clone(),
+      a30CrownJoinRight.clone()
+    ];
+    const a30A29UpperFaceGeometry = new THREE.BufferGeometry();
+    a30A29UpperFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      a30A29UpperFacePoints.flatMap((point) => [point.x, point.y, point.z]),
+      3
+    ));
+    a30A29UpperFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    a30A29UpperFaceGeometry.computeVertexNormals();
+
     // A30-SÜ-0'dan başlayıp 119-SÜ-0'a kadar tüm komşu taban
     // noktalarını 120-S2 taban noktasına bağlayan yüzeyleri doldur.
     // Her aralık, 0.044 yüksekliğinde üçgen bir yüzey olarak oluşturulur.
@@ -974,6 +990,7 @@ function BronzeTowerModel() {
       sideSeriesRightWallGeometry,
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
+      a30A29UpperFaceGeometry,
     };
   }, []);
 
@@ -1005,6 +1022,11 @@ function BronzeTowerModel() {
         geometry={dims.a30A29BaseFaceGeometry}
         material={dims.slotFrontFaceMaterial}
         renderOrder={7}
+      />
+      <mesh
+        geometry={dims.a30A29UpperFaceGeometry}
+        material={dims.slotFrontFaceMaterial}
+        renderOrder={8}
       />
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
