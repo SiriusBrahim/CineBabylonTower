@@ -54,7 +54,6 @@ function BronzeTowerModel() {
 
     const slots: THREE.Matrix4[] = [];
     const slotCenters: THREE.Vector3[] = [];
-    const roadCenters: THREE.Vector3[] = [];
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number }[] = [];
     let theta = 0;
     let y = posterHeight / 2 + 0.12;
@@ -81,14 +80,6 @@ function BronzeTowerModel() {
         number: i + 1
       });
 
-      // Yol, posterlerin iç tarafındaki boşluğu izleyerek aynı spiral yükselişi takip eder.
-      const roadRadius = radius - 0.82;
-      roadCenters.push(new THREE.Vector3(
-        roadRadius * Math.cos(theta),
-        y + posterHeight * 0.58 + 0.12,
-        roadRadius * Math.sin(theta)
-      ));
-
       // Yatay ilerleme: her adımın yay uzunluğu arcStep olarak korunur.
       theta += arcStep / radius;
 
@@ -97,23 +88,38 @@ function BronzeTowerModel() {
       y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
-    // Yol yüzeyini merkez hattı boyunca genişliği sabit bir şerit olarak üret.
+    // Yol her slotun yerel sağ kenarından başlar ve spiral duvarın iç yüzeyine kadar uzanır.
+    // Yüzey, posterin alt kenarının hemen altında tutulur; poster ön yüzünü kapatmaz.
     const roadPositions: number[] = [];
     const roadIndices: number[] = [];
-    const roadHalfWidth = 0.38;
+    const roadClearance = 0.055;
+    const slotSideClearance = 0.035;
+    const wallInset = 0.085;
 
-    for (let i = 0; i < roadCenters.length; i++) {
-      const previous = roadCenters[Math.max(0, i - 1)];
-      const next = roadCenters[Math.min(roadCenters.length - 1, i + 1)];
-      const tangent = next.clone().sub(previous).normalize();
-      const radial = new THREE.Vector3(roadCenters[i].x, 0, roadCenters[i].z).normalize();
-      const side = radial.addScaledVector(tangent, -radial.dot(tangent)).normalize();
-      const left = roadCenters[i].clone().addScaledVector(side, roadHalfWidth);
-      const right = roadCenters[i].clone().addScaledVector(side, -roadHalfWidth);
+    for (let i = 0; i < slotCenters.length; i++) {
+      const center = slotCenters[i];
+      const radial = new THREE.Vector3(center.x, 0, center.z).normalize();
+      const slotRotation = new THREE.Euler(0, -(Math.atan2(center.z, center.x)) + Math.PI / 2, 0);
+      const slotRight = new THREE.Vector3(1, 0, 0)
+        .applyEuler(slotRotation)
+        .normalize();
 
-      roadPositions.push(left.x, left.y, left.z, right.x, right.y, right.z);
+      // İç kenar: posterin yerel sağ kenarının hemen dışında.
+      const innerEdge = center.clone()
+        .addScaledVector(slotRight, posterWidth * 0.5 + slotSideClearance);
 
-      if (i < roadCenters.length - 1) {
+      // Dış kenar: aynı slot hizasında duvarın yüzeyine kadar.
+      const outerEdge = center.clone().addScaledVector(radial, -wallInset);
+      const roadY = center.y - posterHeight * 0.5 - roadClearance;
+      innerEdge.y = roadY;
+      outerEdge.y = roadY;
+
+      roadPositions.push(
+        innerEdge.x, innerEdge.y, innerEdge.z,
+        outerEdge.x, outerEdge.y, outerEdge.z
+      );
+
+      if (i < slotCenters.length - 1) {
         const a = i * 2;
         roadIndices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
       }
