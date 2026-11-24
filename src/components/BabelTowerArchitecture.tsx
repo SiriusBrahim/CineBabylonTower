@@ -909,6 +909,21 @@ function BronzeTowerModel() {
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
     );
     a45SuVerticalLine.renderOrder = 21;
+
+    // A44SÜ1 ve A45SÜ1 noktalarından bir slot yüksekliği (1.38 birim) yukarı çıkan dikmeler.
+    const a44Su2Point = a44Su1Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
+    const a45Su2Point = a45Su1Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
+    const a44Su1ToSu2VerticalLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a44Su1Point, a44Su2Point]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a44Su1ToSu2VerticalLine.renderOrder = 23;
+    const a45Su1ToSu2VerticalLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a45Su1Point, a45Su2Point]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a45Su1ToSu2VerticalLine.renderOrder = 23;
+
     const a44Su1ToA45Su1FuchsiaLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([a44Su1Point, a45Su1Point]),
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
@@ -1375,6 +1390,8 @@ function BronzeTowerModel() {
       a44ToA45FuchsiaLine,
       a44SuVerticalLine,
       a45SuVerticalLine,
+      a44Su1ToSu2VerticalLine,
+      a45Su1ToSu2VerticalLine,
       a44Su1ToA45Su1FuchsiaLine,
       a44Su1LabelPosition: a44Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a45Su1LabelPosition: a45Su1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1441,6 +1458,8 @@ function BronzeTowerModel() {
       <primitive object={dims.a44ToA45FuchsiaLine} />
       <primitive object={dims.a44SuVerticalLine} />
       <primitive object={dims.a45SuVerticalLine} />
+      <primitive object={dims.a44Su1ToSu2VerticalLine} />
+      <primitive object={dims.a45Su1ToSu2VerticalLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
       <Text
         position={dims.a44Su1LabelPosition}
