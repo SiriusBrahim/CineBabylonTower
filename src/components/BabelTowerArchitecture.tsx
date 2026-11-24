@@ -275,9 +275,18 @@ function BronzeTowerModel() {
       CROWN_SLOT_POSITION.y,
       CROWN_SLOT_POSITION.z
     ));
+    const crownLowerRightGuidePoint = new THREE.Vector3(
+      posterWidth * 0.5,
+      -posterHeight * 0.5,
+      0.075 * 0.5
+    ).add(new THREE.Vector3(
+      CROWN_SLOT_POSITION.x,
+      CROWN_SLOT_POSITION.y,
+      CROWN_SLOT_POSITION.z
+    ));
 
-    // 120-S1 -> 120-S2 doğrusu, 120-S1 altındaki dikey dikmeye
-    // 90 derece olacak şekilde yatay düzlemde konumlandırılır.
+    // 120-S2, 120. slotun ön sağ alt köşesine yerleştirilir;
+    // böylece 120-S1 -> 120-S2, alt kenar boyunca uzanır.
     const slot118Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118);
     const slot119Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119);
     if (!slot118Layout || !slot119Layout) {
@@ -285,11 +294,7 @@ function BronzeTowerModel() {
     }
     const slot118UpperLeftGuidePoint = getSlotUpperLeft(slot118Layout);
     const slot119UpperLeftGuidePoint = getSlotUpperLeft(slot119Layout);
-    const guideSegmentVector = slot118UpperLeftGuidePoint.clone()
-      .sub(slot119UpperLeftGuidePoint);
-    const crownWallMatchPoint = crownLowerLeftGuidePoint.clone().add(
-      new THREE.Vector3(guideSegmentVector.x, 0, guideSegmentVector.z)
-    );
+    const crownWallMatchPoint = crownLowerRightGuidePoint.clone();
 
     const wallGuideLinePoints = [
       ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
