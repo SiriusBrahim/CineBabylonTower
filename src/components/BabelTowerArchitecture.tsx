@@ -315,12 +315,40 @@ function BronzeTowerModel() {
       0
     );
 
+    // 119. slotun spiral duvarının son kenarını 120. slotun destek
+    // duvarının en yakın yan kenarına bağlayan geçiş yüzeyi.
+    const lastSpiralSlot = slotCenters[slotCenters.length - 1];
+    const lastSpiralRadial = new THREE.Vector3(
+      lastSpiralSlot.x, 0, lastSpiralSlot.z
+    ).normalize();
+    const lastSpiralWallPoint = lastSpiralSlot.clone()
+      .addScaledVector(lastSpiralRadial, -0.085);
+    const connectorTopStart = lastSpiralWallPoint.clone();
+    connectorTopStart.y -= wallTopOffset;
+    const connectorBottomStart = lastSpiralWallPoint.clone();
+    connectorBottomStart.y = firstSlotBaseY;
+
+    const crownSideX = posterWidth * 0.5;
+    const connectorTopEnd = new THREE.Vector3(crownSideX, crownWallTopY, 0);
+    const connectorBottomEnd = new THREE.Vector3(crownSideX, firstSlotBaseY, 0);
+
+    const wallConnectorGeometry = new THREE.BufferGeometry();
+    wallConnectorGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      connectorTopStart.x, connectorTopStart.y, connectorTopStart.z,
+      connectorBottomStart.x, connectorBottomStart.y, connectorBottomStart.z,
+      connectorBottomEnd.x, connectorBottomEnd.y, connectorBottomEnd.z,
+      connectorTopEnd.x, connectorTopEnd.y, connectorTopEnd.z
+    ], 3));
+    wallConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    wallConnectorGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
       wallGeometry,
       crownWallGeometry,
       crownWallPosition,
+      wallConnectorGeometry,
       prismGeometry
     };
   }, []);
@@ -360,6 +388,7 @@ function BronzeTowerModel() {
         material={wallMaterial}
         position={dims.crownWallPosition}
       />
+      <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
       {dims.slotLabels.map((label) => (
         <Text
