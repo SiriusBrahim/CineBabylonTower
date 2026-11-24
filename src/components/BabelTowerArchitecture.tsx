@@ -118,8 +118,8 @@ function BronzeTowerModel() {
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
     // 1. slotun ön yüzü prizmanın ilk yüzüdür.
-    // Aynı dört köşe, 52. slotun altındaki duvar noktasına taşınarak
-    // prizmanın karşı yüzü oluşturulur; 12 kenarın tamamı kırmızı çizilir.
+    // Prizmanın boyuna kenarları, 52. slot hizasındaki duvarın yerel
+    // teğet düzlemine 90 derece olacak şekilde duvar düzlemine uzatılır.
     const firstCenter = slotCenters[0];
     const firstTheta = Math.atan2(firstCenter.z, firstCenter.x);
     const firstRotation = new THREE.Euler(0, -firstTheta + Math.PI / 2, 0);
@@ -129,13 +129,32 @@ function BronzeTowerModel() {
     const halfHeight = posterHeight * 0.5;
     const firstFaceCenter = firstCenter.clone().addScaledVector(firstFront, 0.075 * 0.5 + 0.003);
 
+    // 52. slot çevresindeki duvarın yatay teğet doğrultusu.
+    const wallBefore = slotCenters[50].clone();
+    const wallAfter = slotCenters[52].clone();
+    const beforeRadial = new THREE.Vector3(wallBefore.x, 0, wallBefore.z).normalize();
+    const afterRadial = new THREE.Vector3(wallAfter.x, 0, wallAfter.z).normalize();
+    wallBefore.addScaledVector(beforeRadial, -0.085);
+    wallAfter.addScaledVector(afterRadial, -0.085);
+    const wallTangent = wallAfter.sub(wallBefore).normalize();
+    const wallUp = new THREE.Vector3(0, 1, 0);
+    const wallNormal = new THREE.Vector3().crossVectors(wallTangent, wallUp).normalize();
+
+    // Normali, 1. slotun bulunduğu taraftan duvara doğru yönlendir.
+    if (wallNormal.dot(firstFaceCenter.clone().sub(slotCenters[51])) > 0) {
+      wallNormal.negate();
+    }
+
+    // Duvarın 52. slot hizasındaki yerel düzlemi.
     const targetSlot = slotCenters[51];
     const targetRadial = new THREE.Vector3(targetSlot.x, 0, targetSlot.z).normalize();
-    const targetWallCenter = targetSlot.clone()
-      .addScaledVector(targetRadial, -0.085);
-    targetWallCenter.y = targetSlot.y - posterHeight * 0.5 - 0.025;
+    const wallPlanePoint = targetSlot.clone().addScaledVector(targetRadial, -0.085);
 
-    const prismTranslation = targetWallCenter.clone().sub(firstFaceCenter);
+    // Başlangıç yüzünün merkezinden duvar düzlemine, duvar normalinde dik izdüşüm.
+    const denominator = wallNormal.dot(wallNormal);
+    const extrusionDistance = wallPlanePoint.clone().sub(firstFaceCenter).dot(wallNormal) / denominator;
+    const prismTranslation = wallNormal.clone().multiplyScalar(extrusionDistance);
+
     const baseCorners = [
       firstFaceCenter.clone().addScaledVector(firstRight, -halfWidth).add(new THREE.Vector3(0, -halfHeight, 0)),
       firstFaceCenter.clone().addScaledVector(firstRight, halfWidth).add(new THREE.Vector3(0, -halfHeight, 0)),
