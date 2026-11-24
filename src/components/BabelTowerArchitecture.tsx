@@ -512,12 +512,12 @@ function BronzeTowerModel() {
     color: "#168cff",
     metalness: 0.18,
     roughness: 0.24,
-    transparent: true,
-    opacity: 0.34,
-    transmission: 0.12,
+    transparent: false,
+    opacity: 1,
+    transmission: 0,
     thickness: 0.35,
     side: THREE.DoubleSide,
-    depthWrite: false
+    depthWrite: true
   }), []);
 
   return (
