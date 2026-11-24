@@ -163,26 +163,12 @@ const SPIRAL_SLOT_LAYOUT: {
   { number: 119, x: 0.61263509454030396, y: 7.3415081573669605, z: 2.9575265404580819, rotationY: -18.645300268324178, theta: 20.216096595119076 }
 ];
 
-const TOWER_BODY_HEIGHT = 7.4441999143677124;
+const CROWN_SLOT_POSITION = { x: 0, y: 8.394199914367713, z: 0, rotationY: 0 };
 
 function BronzeTowerModel() {
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
-    const horizontalGap = 0.04;
-    const arcStep = posterWidth + horizontalGap;
-
-    const unitsByRing = [12, 11, 10];
-    const rowsPerRing = 3;
-    const totalSlots = unitsByRing.reduce((sum, units) => sum + units * rowsPerRing, 0);
-
-    // Babel silüeti için tabandan tepeye güçlü ve kontrollü daralma.
-    const taper = 0.56;
-    const turnGap = 0.65;
-    const baseRadius = (arcStep / (2 * Math.sin(Math.PI / unitsByRing[0]))) * 5.0;
-    const topRadius = baseRadius * (1 - taper);
-    const radialStep = (baseRadius - topRadius) / (totalSlots - 1);
-
     // Slotların konumları SPIRAL_SLOT_LAYOUT içinde sabit koordinatlar olarak tutulur.
     // Duvar ve diğer mimari parçalar aynı koordinat kaynağını kullanır.
     const slots: THREE.Matrix4[] = [];
@@ -302,8 +288,11 @@ function BronzeTowerModel() {
     prismGeometry.computeBoundingSphere();
 
 
-    const bodyHeight = TOWER_BODY_HEIGHT;
-    const crownPosition = new THREE.Vector3(0, bodyHeight + 0.95, 0);
+    const crownPosition = new THREE.Vector3(
+      CROWN_SLOT_POSITION.x,
+      CROWN_SLOT_POSITION.y,
+      CROWN_SLOT_POSITION.z
+    );
     slots.push(new THREE.Matrix4().compose(
       crownPosition,
       new THREE.Quaternion(),
@@ -332,10 +321,7 @@ function BronzeTowerModel() {
       wallGeometry,
       crownWallGeometry,
       crownWallPosition,
-      prismGeometry,
-      bodyHeight,
-      baseRadius,
-      topRadius
+      prismGeometry
     };
   }, []);
 
