@@ -117,35 +117,51 @@ function BronzeTowerModel() {
     wallGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wallPositions, 3));
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
-    // Test dikmesi: 1. slotun sağ üst köşesinden, 52. slotun
-    // hemen altındaki spiral duvarın üst kenarına sabit bağlantı.
+    // 1. slotun ön yüzü prizmanın ilk yüzüdür.
+    // Aynı dört köşe, 52. slotun altındaki duvar noktasına taşınarak
+    // prizmanın karşı yüzü oluşturulur; 12 kenarın tamamı kırmızı çizilir.
     const firstCenter = slotCenters[0];
     const firstTheta = Math.atan2(firstCenter.z, firstCenter.x);
     const firstRotation = new THREE.Euler(0, -firstTheta + Math.PI / 2, 0);
-    const firstRadial = new THREE.Vector3(Math.cos(firstTheta), 0, Math.sin(firstTheta));
     const firstRight = new THREE.Vector3(1, 0, 0).applyEuler(firstRotation).normalize();
-    const strutStart = firstCenter.clone()
-      .addScaledVector(firstRight, posterWidth * 0.5)
-      .add(new THREE.Vector3(0, posterHeight * 0.5, 0))
-      .addScaledVector(firstRadial, 0.075 / 2);
+    const firstFront = new THREE.Vector3(Math.cos(firstTheta), 0, Math.sin(firstTheta));
+    const halfWidth = posterWidth * 0.5;
+    const halfHeight = posterHeight * 0.5;
+    const firstFaceCenter = firstCenter.clone().addScaledVector(firstFront, 0.075 * 0.5 + 0.003);
 
-    // 52. slot = index 51. Duvarın üst kenarı slotun alt hizasındadır.
     const targetSlot = slotCenters[51];
     const targetRadial = new THREE.Vector3(targetSlot.x, 0, targetSlot.z).normalize();
-    const strutEnd = targetSlot.clone()
+    const targetWallCenter = targetSlot.clone()
       .addScaledVector(targetRadial, -0.085);
-    strutEnd.y = targetSlot.y - posterHeight * 0.5 - 0.025;
+    targetWallCenter.y = targetSlot.y - posterHeight * 0.5 - 0.025;
 
-    const strutDirection = strutEnd.clone().sub(strutStart);
-    const strutLength = strutDirection.length();
-    const strutGeometry = new THREE.CylinderGeometry(0.025, 0.025, strutLength, 12);
-    strutGeometry.computeBoundingBox();
-    strutGeometry.computeBoundingSphere();
-    const strutQuaternion = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      strutDirection.clone().normalize()
-    );
-    const strutPosition = strutStart.clone().add(strutEnd).multiplyScalar(0.5);
+    const prismTranslation = targetWallCenter.clone().sub(firstFaceCenter);
+    const baseCorners = [
+      firstFaceCenter.clone().addScaledVector(firstRight, -halfWidth).add(new THREE.Vector3(0, -halfHeight, 0)),
+      firstFaceCenter.clone().addScaledVector(firstRight, halfWidth).add(new THREE.Vector3(0, -halfHeight, 0)),
+      firstFaceCenter.clone().addScaledVector(firstRight, halfWidth).add(new THREE.Vector3(0, halfHeight, 0)),
+      firstFaceCenter.clone().addScaledVector(firstRight, -halfWidth).add(new THREE.Vector3(0, halfHeight, 0))
+    ];
+    const prismCorners = [
+      ...baseCorners,
+      ...baseCorners.map((corner) => corner.clone().add(prismTranslation))
+    ];
+    const prismEdges = [
+      [0, 1], [1, 2], [2, 3], [3, 0],
+      [4, 5], [5, 6], [6, 7], [7, 4],
+      [0, 4], [1, 5], [2, 6], [3, 7]
+    ];
+    const prismLinePositions: number[] = [];
+    prismEdges.forEach(([a, b]) => {
+      prismLinePositions.push(
+        prismCorners[a].x, prismCorners[a].y, prismCorners[a].z,
+        prismCorners[b].x, prismCorners[b].y, prismCorners[b].z
+      );
+    });
+    const prismGeometry = new THREE.BufferGeometry();
+    prismGeometry.setAttribute("position", new THREE.Float32BufferAttribute(prismLinePositions, 3));
+    prismGeometry.computeBoundingBox();
+    prismGeometry.computeBoundingSphere();
 
 
     const bodyHeight = y;
@@ -161,7 +177,7 @@ function BronzeTowerModel() {
       number: 100
     });
 
-    return { slots, slotLabels, wallGeometry, strutGeometry, strutPosition, strutQuaternion, bodyHeight, baseRadius, topRadius };
+    return { slots, slotLabels, wallGeometry, prismGeometry, bodyHeight, baseRadius, topRadius };
   }, []);
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
@@ -173,14 +189,11 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
-  const strutMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+  const prismMaterial = useMemo(() => new THREE.LineBasicMaterial({
     color: "#ff2020",
-    emissive: "#ff0000",
-    emissiveIntensity: 0.22,
     transparent: true,
-    opacity: 0.48,
-    depthWrite: false,
-    side: THREE.DoubleSide
+    opacity: 0.78,
+    depthWrite: false
   }), []);
   const wallMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: "#168cff",
@@ -214,13 +227,7 @@ function BronzeTowerModel() {
           {label.number}
         </Text>
       ))}
-      <mesh
-        geometry={dims.strutGeometry}
-        position={dims.strutPosition}
-        quaternion={dims.strutQuaternion}
-        material={strutMaterial}
-        renderOrder={4}
-      />
+      <lineSegments geometry={dims.prismGeometry} material={prismMaterial} renderOrder={4} />
     </group>
   );
 }
