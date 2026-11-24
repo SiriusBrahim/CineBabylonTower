@@ -868,19 +868,27 @@ function BronzeTowerModel() {
     const a29UpperRight = getSideSlotUpperRight(a29);
     const a30UpperRight = getSideSlotUpperRight(a30);
 
-    // Deneme 9.1: A30-SÜ'den merkezden dışarı doğru ilerlerken Y=0'a inen kırmızı doğru.
-    // 88.01° açı dikey eksene göredir; böylece doğru dışa doğru geniş bir radyal mesafe alır.
-    const a30SpiralLineStart = getSlotUpperLeft(a30);
-    const a30SpiralLineEnd = a30SpiralLineStart.clone();
-    const a30SpiralLineAngleFromVertical = THREE.MathUtils.degToRad(88.01);
-    const a30SpiralLineVerticalDrop = a30SpiralLineStart.y;
-    const a30SpiralLineOutwardOffset = a30SpiralLineVerticalDrop * Math.tan(a30SpiralLineAngleFromVertical);
-    const a30SpiralLineRadialLength = Math.hypot(a30SpiralLineStart.x, a30SpiralLineStart.z);
-    a30SpiralLineEnd.y = 0;
-    a30SpiralLineEnd.x += (a30SpiralLineStart.x / a30SpiralLineRadialLength) * a30SpiralLineOutwardOffset;
-    a30SpiralLineEnd.z += (a30SpiralLineStart.z / a30SpiralLineRadialLength) * a30SpiralLineOutwardOffset;
+    // Deneme 9.2: Kırmızı kılavuz, A30-SÜ'den başlayıp hesaplanan A31-SÜ...A44-SÜ
+    // noktalarının tamamından geçer. A44-SÜ, Y=0 taban noktasını temsil eder.
+    const a30SpiralLinePoints = [
+      getSlotUpperLeft(a30),
+      new THREE.Vector3(-10.890838, 0.429664, -1.630302), // A31-SÜ
+      new THREE.Vector3(-11.044312, 0.396216, -0.678389), // A32-SÜ
+      new THREE.Vector3(-11.114468, 0.362768, 0.282966), // A33-SÜ
+      new THREE.Vector3(-11.101256, 0.329320, 1.246445), // A34-SÜ
+      new THREE.Vector3(-11.005266, 0.295872, 2.204831), // A35-SÜ
+      new THREE.Vector3(-10.827707, 0.262424, 3.151063), // A36-SÜ
+      new THREE.Vector3(-10.570380, 0.228976, 4.078282), // A37-SÜ
+      new THREE.Vector3(-10.235651, 0.195528, 4.979888), // A38-SÜ
+      new THREE.Vector3(-9.826415, 0.162080, 5.849575), // A39-SÜ
+      new THREE.Vector3(-9.346062, 0.128632, 6.681377), // A40-SÜ
+      new THREE.Vector3(-8.798441, 0.095184, 7.469704), // A41-SÜ
+      new THREE.Vector3(-8.187811, 0.061736, 8.209371), // A42-SÜ
+      new THREE.Vector3(-7.518807, 0.028288, 8.895625), // A43-SÜ
+      new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
+    ];
     const a30SpiralGuideLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a30SpiralLineStart, a30SpiralLineEnd]),
+      new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
       new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
     );
     a30SpiralGuideLine.renderOrder = 15;
