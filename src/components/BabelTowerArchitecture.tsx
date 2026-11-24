@@ -897,6 +897,16 @@ function BronzeTowerModel() {
     );
     a44ToA45FuchsiaLine.renderOrder = 20;
 
+    // A44SÜ0'dan 120 dikmesine doğru 0.10 birim radyal ileride A44SÜ01.
+    const a44Su01Point = new THREE.Vector3(-6.735623149365033, 0, 9.444745742280706);
+    // A44SÜ01 üzerinden, A44SÜ4 ile aynı yüksekliğe (1.68) kadar 90° dikme.
+    const a44Su02Point = a44Su01Point.clone().setY(0.1 + posterHeight + 0.1 + 0.1);
+    const a44Su01ToSu02VerticalLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a44Su01Point, a44Su02Point]),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a44Su01ToSu02VerticalLine.renderOrder = 25;
+
     const a44Su1Point = a44SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
     const a45Su1Point = a45SuPoint.clone().add(new THREE.Vector3(0, 0.1, 0));
     const a44SuVerticalLine = new THREE.Line(
@@ -1427,6 +1437,9 @@ function BronzeTowerModel() {
       a44ToA45FuchsiaLine,
       a44SuVerticalLine,
       a45SuVerticalLine,
+      a44Su01ToSu02VerticalLine,
+      a44Su01LabelPosition: a44Su01Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      a44Su02LabelPosition: a44Su02Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44Su1ToSu2VerticalLine,
       a45Su1ToSu2VerticalLine,
       a44Su2ToA45Su2FuchsiaLine,
@@ -1507,6 +1520,7 @@ function BronzeTowerModel() {
       ))}
       <primitive object={dims.a44ToA45FuchsiaLine} />
       <primitive object={dims.a44SuVerticalLine} />
+      <primitive object={dims.a44Su01ToSu02VerticalLine} />
       <primitive object={dims.a45SuVerticalLine} />
       <primitive object={dims.a44Su1ToSu2VerticalLine} />
       <primitive object={dims.a45Su1ToSu2VerticalLine} />
@@ -1519,6 +1533,8 @@ function BronzeTowerModel() {
        <primitive object={dims.a44Su4ToA45Su4FuchsiaLine} />
       <primitive object={dims.a44Su1ToA45Su1FuchsiaLine} />
       {([
+        ["A44SÜ01", dims.a44Su01LabelPosition],
+        ["A44SÜ02", dims.a44Su02LabelPosition],
         ["A44SÜ2", dims.a44Su2LabelPosition],
         ["A45SÜ2", dims.a45Su2LabelPosition],
         ["A44SÜ3", dims.a44Su3LabelPosition],
