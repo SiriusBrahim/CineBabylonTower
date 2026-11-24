@@ -90,7 +90,7 @@ function BronzeTowerModel() {
 
     // 99. slotun devamına aynı ölçülerde A-E slotlarını ekle.
     // Mevcut 1-99 slotlarının konumları ve merkezdeki 100. slot değişmez.
-    const extensionLabels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
+    const extensionLabels = [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119];
     for (let extensionIndex = 0; extensionIndex < extensionLabels.length; extensionIndex++) {
       const i = totalSlots + extensionIndex;
       const radius = baseRadius - i * radialStep;
@@ -221,7 +221,7 @@ function BronzeTowerModel() {
     slotLabels.push({
       position: crownPosition.clone().add(new THREE.Vector3(0, 0, 0.045)),
       rotation: new THREE.Euler(0, 0, 0),
-      number: 100
+      number: 120
     });
 
     return { slots, slotLabels, wallGeometry, prismGeometry, bodyHeight, baseRadius, topRadius };
