@@ -54,7 +54,7 @@ function BronzeTowerModel() {
 
     const slots: THREE.Matrix4[] = [];
     const slotCenters: THREE.Vector3[] = [];
-    const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number }[] = [];
+    const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
     let theta = 0;
     let y = posterHeight / 2 + 0.12;
 
@@ -85,6 +85,34 @@ function BronzeTowerModel() {
 
       // Dikey ilerleme yarıçapa bağlıdır; bir turdaki yükselme yaklaşık
       // posterHeight + turnGap olur ve üst katlarda sabit rise kullanılmaz.
+      y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
+    }
+
+    // 99. slotun devamına aynı ölçülerde A-E slotlarını ekle.
+    // Mevcut 1-99 slotlarının konumları ve merkezdeki 100. slot değişmez.
+    const extensionLabels = ["A", "B", "C", "D", "E"];
+    for (let extensionIndex = 0; extensionIndex < extensionLabels.length; extensionIndex++) {
+      const i = totalSlots + extensionIndex;
+      const radius = baseRadius - i * radialStep;
+      const x = radius * Math.cos(theta);
+      const z = radius * Math.sin(theta);
+      const slotCenter = new THREE.Vector3(x, y, z);
+      slotCenters.push(slotCenter.clone());
+      const slotRotation = new THREE.Euler(0, -theta + Math.PI / 2, 0);
+      slots.push(new THREE.Matrix4().compose(
+        slotCenter,
+        new THREE.Quaternion().setFromEuler(slotRotation),
+        new THREE.Vector3(1, 1, 1)
+      ));
+
+      const frontNormal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
+      slotLabels.push({
+        position: slotCenter.clone().addScaledVector(frontNormal, 0.045),
+        rotation: slotRotation.clone(),
+        number: extensionLabels[extensionIndex]
+      });
+
+      theta += arcStep / radius;
       y += (posterHeight + turnGap) * arcStep / (2 * Math.PI * radius);
     }
 
