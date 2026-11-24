@@ -201,7 +201,7 @@ function BronzeTowerModel() {
     for (let index = 1; index <= 30; index++) {
       const height = aSlotHeight - index * 0.033448;
       const theta = aSlotTheta - index * sideAngleStep;
-      const radius = aSlotRadius - index * sideRadiusStep;
+      const radius = aSlotRadius + index * sideRadiusStep;
       const rotationY = Math.PI * 0.5 - theta;
       const position = new THREE.Vector3(
         Math.cos(theta) * radius,
