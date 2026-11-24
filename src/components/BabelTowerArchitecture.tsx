@@ -315,29 +315,37 @@ function BronzeTowerModel() {
       0
     );
 
-    // 119. slotun spiral duvarının son kenarını 120. slotun destek
-    // duvarının en yakın yan kenarına bağlayan geçiş yüzeyi.
-    const lastSpiralSlot = slotCenters[slotCenters.length - 1];
-    const lastSpiralRadial = new THREE.Vector3(
-      lastSpiralSlot.x, 0, lastSpiralSlot.z
-    ).normalize();
-    const lastSpiralWallPoint = lastSpiralSlot.clone()
-      .addScaledVector(lastSpiralRadial, -0.085);
-    const connectorTopStart = lastSpiralWallPoint.clone();
-    connectorTopStart.y -= wallTopOffset;
-    const connectorBottomStart = lastSpiralWallPoint.clone();
-    connectorBottomStart.y = firstSlotBaseY;
+    // Bağlantı duvarının üst kenarı tam olarak 119. slotun sol üst
+    // köşesinden 120. slotun sol alt köşesine uzanır.
+    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
+    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
+    );
+    const lastSpiralUpperLeft = new THREE.Vector3(
+      -posterWidth * 0.5,
+      posterHeight * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(lastSpiralRotation).add(
+      new THREE.Vector3(lastSpiralLayout.x, lastSpiralLayout.y, lastSpiralLayout.z)
+    );
 
-    const crownSideX = posterWidth * 0.5;
-    const connectorTopEnd = new THREE.Vector3(crownSideX, crownWallTopY, 0);
-    const connectorBottomEnd = new THREE.Vector3(crownSideX, firstSlotBaseY, 0);
+    const crownLowerLeft = new THREE.Vector3(
+      -posterWidth * 0.5,
+      -posterHeight * 0.5,
+      0.075 * 0.5
+    ).add(crownPosition);
+
+    const connectorBottomStart = lastSpiralUpperLeft.clone();
+    connectorBottomStart.y = firstSlotBaseY;
+    const connectorBottomEnd = crownLowerLeft.clone();
+    connectorBottomEnd.y = firstSlotBaseY;
 
     const wallConnectorGeometry = new THREE.BufferGeometry();
     wallConnectorGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-      connectorTopStart.x, connectorTopStart.y, connectorTopStart.z,
+      lastSpiralUpperLeft.x, lastSpiralUpperLeft.y, lastSpiralUpperLeft.z,
       connectorBottomStart.x, connectorBottomStart.y, connectorBottomStart.z,
       connectorBottomEnd.x, connectorBottomEnd.y, connectorBottomEnd.z,
-      connectorTopEnd.x, connectorTopEnd.y, connectorTopEnd.z
+      crownLowerLeft.x, crownLowerLeft.y, crownLowerLeft.z
     ], 3));
     wallConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     wallConnectorGeometry.computeVertexNormals();
