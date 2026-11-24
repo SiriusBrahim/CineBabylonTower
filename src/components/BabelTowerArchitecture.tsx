@@ -117,8 +117,8 @@ function BronzeTowerModel() {
     wallGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wallPositions, 3));
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
-    // Tek slotluk test dikmesi: 1. slotun sağ-üst-ön köşesinden
-    // spiral duvarın üst kenarına en kısa (dik) bağlantı.
+    // Test dikmesi: 1. slotun sağ üst köşesinden, 52. slotun
+    // hemen altındaki spiral duvarın üst kenarına sabit bağlantı.
     const firstCenter = slotCenters[0];
     const firstTheta = Math.atan2(firstCenter.z, firstCenter.x);
     const firstRotation = new THREE.Euler(0, -firstTheta + Math.PI / 2, 0);
@@ -129,33 +129,13 @@ function BronzeTowerModel() {
       .add(new THREE.Vector3(0, posterHeight * 0.5, 0))
       .addScaledVector(firstRadial, 0.075 / 2);
 
-    let nearestWallPoint: THREE.Vector3 | null = null;
-    let nearestDistance = Number.POSITIVE_INFINITY;
-    for (let i = 1; i < slotCenters.length - 1; i++) {
-      const wallA = slotCenters[i].clone();
-      const radialA = new THREE.Vector3(wallA.x, 0, wallA.z).normalize();
-      wallA.addScaledVector(radialA, -0.085);
-      wallA.y -= posterHeight * 0.5 + 0.025;
+    // 52. slot = index 51. Duvarın üst kenarı slotun alt hizasındadır.
+    const targetSlot = slotCenters[51];
+    const targetRadial = new THREE.Vector3(targetSlot.x, 0, targetSlot.z).normalize();
+    const strutEnd = targetSlot.clone()
+      .addScaledVector(targetRadial, -0.085);
+    strutEnd.y = targetSlot.y - posterHeight * 0.5 - 0.025;
 
-      const wallB = slotCenters[i + 1].clone();
-      const radialB = new THREE.Vector3(wallB.x, 0, wallB.z).normalize();
-      wallB.addScaledVector(radialB, -0.085);
-      wallB.y -= posterHeight * 0.5 + 0.025;
-
-      const segment = wallB.clone().sub(wallA);
-      const denominator = segment.lengthSq();
-      const t = denominator > 0
-        ? THREE.MathUtils.clamp(strutStart.clone().sub(wallA).dot(segment) / denominator, 0, 1)
-        : 0;
-      const candidate = wallA.clone().addScaledVector(segment, t);
-      const distance = candidate.distanceToSquared(strutStart);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestWallPoint = candidate;
-      }
-    }
-
-    const strutEnd = nearestWallPoint ?? firstCenter.clone().addScaledVector(firstRadial, -0.085);
     const strutDirection = strutEnd.clone().sub(strutStart);
     const strutLength = strutDirection.length();
     const strutGeometry = new THREE.CylinderGeometry(0.025, 0.025, strutLength, 12);
