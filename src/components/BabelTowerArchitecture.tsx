@@ -175,9 +175,10 @@ function BronzeTowerModel() {
     const slotCenters: THREE.Vector3[] = [];
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
     const aSlotHeight = 1.346552;
+    const aSlotBaseY = SPIRAL_SLOT_LAYOUT[0].y - posterHeight * 0.5;
     const aSlotPosition = new THREE.Vector3(
       SPIRAL_SLOT_LAYOUT[0].x,
-      aSlotHeight * 0.5,
+      aSlotBaseY + aSlotHeight * 0.5,
       SPIRAL_SLOT_LAYOUT[0].z - (posterWidth + 0.04)
     );
     const aSlotRotation = new THREE.Euler(0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0);
