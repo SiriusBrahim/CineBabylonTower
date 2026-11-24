@@ -174,6 +174,13 @@ function BronzeTowerModel() {
     const slots: THREE.Matrix4[] = [];
     const slotCenters: THREE.Vector3[] = [];
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
+    const aSlotHeight = 1.346552;
+    const aSlotPosition = new THREE.Vector3(
+      SPIRAL_SLOT_LAYOUT[0].x,
+      aSlotHeight * 0.5,
+      SPIRAL_SLOT_LAYOUT[0].z - (posterWidth + 0.04)
+    );
+    const aSlotRotation = new THREE.Euler(0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0);
 
     for (const layout of SPIRAL_SLOT_LAYOUT) {
       const slotCenter = new THREE.Vector3(layout.x, layout.y, layout.z);
@@ -419,9 +426,16 @@ function BronzeTowerModel() {
       wallToCrownConnectors.push({ left, right, fill });
     }
 
+    slotLabels.push({
+      position: aSlotPosition.clone().add(new THREE.Vector3(0, 0, 0.045)),
+      rotation: aSlotRotation.clone(),
+      number: "A"
+    });
+
     return {
       slots,
       slotLabels,
+      aSlotPosition,
       wallGeometry,
       crownWallGeometry,
       crownWallPosition,
@@ -434,6 +448,7 @@ function BronzeTowerModel() {
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
+  const aSlotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.346552, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: "#ffffff",
     metalness: 0.68,
@@ -472,6 +487,12 @@ function BronzeTowerModel() {
         </group>
       ))}
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
+      <mesh
+        geometry={aSlotGeometry}
+        material={slotMaterial}
+        position={dims.aSlotPosition}
+        rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
+      />
       {dims.slotLabels.map((label) => (
         <Text
           key={label.number}
