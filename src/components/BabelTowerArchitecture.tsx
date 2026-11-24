@@ -734,16 +734,6 @@ function BronzeTowerModel() {
       <mesh geometry={dims.wallGeometry} material={wallMaterial} />
       <primitive object={dims.wallGuideLine} />
       <primitive object={dims.slot118ToCrownGuideLine} />
-      <mesh geometry={dims.crownPanelGeometry}>
-        <meshStandardMaterial
-          color="#ff2020"
-          emissive="#8f0000"
-          emissiveIntensity={0.18}
-          side={THREE.DoubleSide}
-          roughness={0.62}
-          metalness={0.08}
-        />
-      </mesh>
       <primitive object={dims.crownPanelConnectorLine} />
       <primitive object={dims.crownPanelBaseEdgeLine} />
       {dims.wallGuideLabels.map((label) => (
