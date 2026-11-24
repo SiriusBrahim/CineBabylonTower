@@ -897,21 +897,48 @@ function BronzeTowerModel() {
     crownSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     crownSeriesRightWallGeometry.computeVertexNormals();
 
-    // Deneme 4: A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ
-    // dörtgenini üst seviyede doldur.
-    const a30A29UpperFacePoints = [
-      getSlotUpperLeft(a30),
-      getSlotUpperLeft(a29),
-      a29CrownJoinRight.clone(),
-      a30CrownJoinRight.clone()
+    // A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ
+    // dörtgeni ve aynı düzende hat boyunca devam eden tüm komşu alanlar.
+    const upperBridgeFaceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8f3030,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const upperBridgeFacePanels: THREE.Mesh[] = [];
+    const upperBridgeSlots = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
     ];
-    const a30A29UpperFaceGeometry = new THREE.BufferGeometry();
-    a30A29UpperFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
-      a30A29UpperFacePoints.flatMap((point) => [point.x, point.y, point.z]),
-      3
-    ));
-    a30A29UpperFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
-    a30A29UpperFaceGeometry.computeVertexNormals();
+
+    const getCrownJoinAtSlotHeight = (slot: typeof a30) => new THREE.Vector3(
+      posterWidth * 0.5,
+      slot.y + slot.height * 0.5,
+      0.075 * 0.5
+    );
+
+    for (let i = 1; i < upperBridgeSlots.length; i++) {
+      const previousSlot = upperBridgeSlots[i - 1];
+      const currentSlot = upperBridgeSlots[i];
+      const points = [
+        getSlotUpperLeft(previousSlot),
+        getSlotUpperLeft(currentSlot),
+        getCrownJoinAtSlotHeight(currentSlot),
+        getCrownJoinAtSlotHeight(previousSlot)
+      ];
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(
+        points.flatMap((point) => [point.x, point.y, point.z]),
+        3
+      ));
+      geometry.setIndex([0, 1, 2, 0, 2, 3]);
+      geometry.computeVertexNormals();
+
+      const panel = new THREE.Mesh(geometry, upperBridgeFaceMaterial);
+      panel.renderOrder = 8;
+      upperBridgeFacePanels.push(panel);
+    }
 
     // Deneme 5: Kullanıcının belirttiği sekiz noktalı çevrimi doldur.
     // 120A30-SÜ-0 ve 120A29-SÜ-0 aynı koordinatta birleştiği için
@@ -1009,7 +1036,8 @@ function BronzeTowerModel() {
       sideSeriesRightWallGeometry,
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
-      a30A29UpperFaceGeometry,
+      upperBridgeFacePanels,
+      upperBridgeFaceMaterial,
       a30A29EnclosedFaceGeometry,
       a30A29EnclosedFaceMaterial,
     };
@@ -1049,11 +1077,9 @@ function BronzeTowerModel() {
         material={dims.slotFrontFaceMaterial}
         renderOrder={7}
       />
-      <mesh
-        geometry={dims.a30A29UpperFaceGeometry}
-        material={dims.slotFrontFaceMaterial}
-        renderOrder={8}
-      />
+      {dims.upperBridgeFacePanels.map((panel, index) => (
+        <primitive key={`upper-bridge-face-${index}`} object={panel} />
+      ))}
       <mesh
         geometry={dims.a30A29EnclosedFaceGeometry}
         material={dims.a30A29EnclosedFaceMaterial}
