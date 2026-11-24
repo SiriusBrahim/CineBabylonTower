@@ -496,10 +496,12 @@ function BronzeTowerModel() {
       return { upperPoint, basePoint };
     });
 
+    // Deneme 6.1: A30-SÜ'den 30-SÜ'ye kadar olan ön yüzeyler
+    // mavi ve %100 opak gösterilir.
+    const lastBlueFrontFaceIndex = 60; // A30...A, ardından 1-SÜ...30-SÜ
+
     for (let i = 1; i < frontFacePoints.length; i++) {
-      // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ alanı
-      // Deneme 6 için ayrı mavi ve opak panel olarak oluşturulur.
-      if (i === 1) continue;
+      if (i <= lastBlueFrontFaceIndex) continue;
 
       const previous = frontFacePoints[i - 1];
       const current = frontFacePoints[i];
@@ -518,22 +520,30 @@ function BronzeTowerModel() {
       slotFrontFacePanels.push(panelMesh);
     }
 
-    const a30A29BlueFaceMaterial = new THREE.MeshBasicMaterial({
+    const blueFrontFaceMaterial = new THREE.MeshBasicMaterial({
       color: 0x1565ff,
       transparent: true,
       opacity: 1,
       side: THREE.DoubleSide,
       depthWrite: false
     });
-    const a30A29BlueFaceGeometry = new THREE.BufferGeometry();
-    a30A29BlueFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-      frontFacePoints[0].upperPoint.x, frontFacePoints[0].upperPoint.y, frontFacePoints[0].upperPoint.z,
-      frontFacePoints[0].basePoint.x, frontFacePoints[0].basePoint.y, frontFacePoints[0].basePoint.z,
-      frontFacePoints[1].basePoint.x, frontFacePoints[1].basePoint.y, frontFacePoints[1].basePoint.z,
-      frontFacePoints[1].upperPoint.x, frontFacePoints[1].upperPoint.y, frontFacePoints[1].upperPoint.z
-    ], 3));
-    a30A29BlueFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
-    a30A29BlueFaceGeometry.computeVertexNormals();
+    const blueFrontFacePanels: THREE.Mesh[] = [];
+    for (let i = 1; i <= lastBlueFrontFaceIndex; i++) {
+      const previous = frontFacePoints[i - 1];
+      const current = frontFacePoints[i];
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        previous.upperPoint.x, previous.upperPoint.y, previous.upperPoint.z,
+        previous.basePoint.x, previous.basePoint.y, previous.basePoint.z,
+        current.basePoint.x, current.basePoint.y, current.basePoint.z,
+        current.upperPoint.x, current.upperPoint.y, current.upperPoint.z
+      ], 3));
+      geometry.setIndex([0, 1, 2, 0, 2, 3]);
+      geometry.computeVertexNormals();
+      const panel = new THREE.Mesh(geometry, blueFrontFaceMaterial);
+      panel.renderOrder = 10;
+      blueFrontFacePanels.push(panel);
+    }
 
     // Yan yüzeyleri aynı dörtgen mantığıyla tüm SÜ noktalarından
     // 120-S2 düşey hattına kadar doldur:
@@ -1100,11 +1110,9 @@ function BronzeTowerModel() {
         material={dims.slotFrontFaceMaterial}
         renderOrder={7}
       />
-      <mesh
-        geometry={dims.a30A29BlueFaceGeometry}
-        material={dims.a30A29BlueFaceMaterial}
-        renderOrder={10}
-      />
+      {dims.blueFrontFacePanels.map((panel, index) => (
+        <primitive key={`blue-front-face-panel-${index}`} object={panel} />
+      ))}
       {dims.upperBridgeFacePanels.map((panel, index) => (
         <primitive key={`upper-bridge-face-${index}`} object={panel} />
       ))}
