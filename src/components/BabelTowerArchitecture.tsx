@@ -163,7 +163,7 @@ const SPIRAL_SLOT_LAYOUT: {
   { number: 119, x: 0.61263509454030396, y: 7.3415081573669605, z: 2.9575265404580819, rotationY: -18.645300268324178, theta: 20.216096595119076 }
 ];
 
-const CROWN_SLOT_POSITION = { x: 0, y: 8.394199914367713, z: 0, rotationY: 0 };
+const CROWN_SLOT_POSITION = { x: 0, y: 8.72150815736696, z: 0, rotationY: 0 };
 
 function BronzeTowerModel() {
   const dims = useMemo(() => {
