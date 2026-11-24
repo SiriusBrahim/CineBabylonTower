@@ -766,21 +766,9 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
-  const wallMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: "#168cff",
-    metalness: 0.18,
-    roughness: 0.24,
-    transparent: false,
-    opacity: 1,
-    transmission: 0,
-    thickness: 0.35,
-    side: THREE.DoubleSide,
-    depthWrite: true
-  }), []);
 
   return (
     <group>
-      <mesh geometry={dims.wallGeometry} material={wallMaterial} />
       <primitive object={dims.wallGuideLine} />
       <primitive object={dims.crownS2VerticalGuideLine} />
       {dims.slotToCrownS2HorizontalGuideLines.map((line, index) => (
@@ -804,23 +792,6 @@ function BronzeTowerModel() {
           {label.name}
         </Text>
       ))}
-      <mesh
-        geometry={dims.crownWallGeometry}
-        material={wallMaterial}
-        position={dims.crownWallPosition}
-      />
-      <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
-      <mesh geometry={dims.wallRightConnectorGeometry} material={wallMaterial} />
-      <mesh geometry={dims.wallConnectorFillGeometry} material={wallMaterial} />
-      {dims.wallToCrownConnectors.map((connector, index) => (
-        <group key={index}>
-          <mesh geometry={connector.left} material={wallMaterial} />
-          <mesh geometry={connector.right} material={wallMaterial} />
-          <mesh geometry={connector.fill} material={wallMaterial} />
-        </group>
-      ))}
-      <mesh geometry={dims.sideSeriesRightWallGeometry} material={wallMaterial} />
-      <mesh geometry={dims.crownSeriesRightWallGeometry} material={wallMaterial} />
       {SHOW_SLOTS && (
         <>
           <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
