@@ -467,6 +467,16 @@ function BronzeTowerModel() {
       depthWrite: false
     });
 
+    // SÜ noktası ile taban izdüşümü ve 120 bağlantı hattı arasındaki
+    // dikdörtgen yan paneller tamamen opak gösterilir.
+    const slotSideFaceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8f3030,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
     // Deneme 5 için ayrı materyal: kısmi pasta dilimi yüzeyi %50 opaklıkta.
     const a30A29EnclosedFaceMaterial = new THREE.MeshBasicMaterial({
       color: 0x8f3030,
@@ -537,7 +547,7 @@ function BronzeTowerModel() {
 
       const sideFacePanel = new THREE.Mesh(
         sideFaceGeometry,
-        slotFrontFaceMaterial
+        slotSideFaceMaterial
       );
       sideFacePanel.renderOrder = 6;
       slotSideFacePanels.push(sideFacePanel);
