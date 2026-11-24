@@ -478,7 +478,7 @@ function BronzeTowerModel() {
       const direction = new THREE.Vector3().subVectors(end, start);
       const length = direction.length();
       const connectorMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.022, 0.022, length, 8),
+        new THREE.BoxGeometry(0.044, length, 0.044),
         baseConnectorMaterial
       );
       connectorMesh.position.copy(start).add(end).multiplyScalar(0.5);
