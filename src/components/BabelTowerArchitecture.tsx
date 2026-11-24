@@ -335,6 +335,18 @@ function BronzeTowerModel() {
     wallRightConnectorGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     wallRightConnectorGeometry.computeVertexNormals();
 
+    // İki yan bağlantı duvarının arasını kapatan ön yüzey:
+    // 119. slotun üst kenarından 120. slotun alt kenarına uzanır.
+    const wallConnectorFillGeometry = new THREE.BufferGeometry();
+    wallConnectorFillGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      lastSpiralUpperLeft.x, lastSpiralUpperLeft.y, lastSpiralUpperLeft.z,
+      lastSpiralUpperRight.x, lastSpiralUpperRight.y, lastSpiralUpperRight.z,
+      crownLowerRight.x, crownLowerRight.y, crownLowerRight.z,
+      crownLowerLeft.x, crownLowerLeft.y, crownLowerLeft.z
+    ], 3));
+    wallConnectorFillGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    wallConnectorFillGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
@@ -343,6 +355,7 @@ function BronzeTowerModel() {
       crownWallPosition,
       wallConnectorGeometry,
       wallRightConnectorGeometry,
+      wallConnectorFillGeometry,
     };
   }, []);
 
@@ -377,6 +390,7 @@ function BronzeTowerModel() {
       />
       <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
       <mesh geometry={dims.wallRightConnectorGeometry} material={wallMaterial} />
+      <mesh geometry={dims.wallConnectorFillGeometry} material={wallMaterial} />
       <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
       {dims.slotLabels.map((label) => (
         <Text
