@@ -506,6 +506,14 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide,
       depthWrite: false
     });
+    // 118-SÜ ile 119-SÜ arasındaki son ön duvar için opak mavi materyal.
+    const slot119To118BlueMaterial = new THREE.MeshBasicMaterial({
+      color: 0x1565ff,
+      transparent: false,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
 
     for (let i = 1; i < frontFacePoints.length; i++) {
       const previous = frontFacePoints[i - 1];
@@ -522,9 +530,13 @@ function BronzeTowerModel() {
 
       const panelMesh = new THREE.Mesh(
         panelGeometry,
-        i <= lastBlueFrontFaceIndex ? blueFrontFaceMaterial : slotFrontFaceMaterial
+        i === 149
+          ? slot119To118BlueMaterial
+          : i <= lastBlueFrontFaceIndex
+            ? blueFrontFaceMaterial
+            : slotFrontFaceMaterial
       );
-      panelMesh.renderOrder = i <= lastBlueFrontFaceIndex ? 10 : 5;
+      panelMesh.renderOrder = i === 149 || i <= lastBlueFrontFaceIndex ? 10 : 5;
       slotFrontFacePanels.push(panelMesh);
     }
 
@@ -1115,8 +1127,10 @@ function BronzeTowerModel() {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
 
-      // i=1..148: A30-SÜ → 118-SÜ aralığındaki 148 panel.
-      // 118 sonrasındaki paneller mevcut kırmızı materyalde kalır.
+      // i=1..148: A30-SÜ → 118-SÜ aralığındaki yeşil paneller.
+      // 118-SÜ → 119-SÜ aralığı ayrı 120-S1/120-S2 yüzeyiyle kapatılır;
+      // eski kırmızı panel burada oluşturulmaz.
+      if (i === 149) continue;
       const panel = new THREE.Mesh(
         geometry,
         i <= 148 ? upperBridgeGreenMaterial : upperBridgeFaceMaterial
@@ -1223,6 +1237,7 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       upperBridgeFacePanels,
       upperBridgeFaceMaterial,
+      upperBridgeGreenMaterial,
       a30A29EnclosedFaceGeometry,
       a30A29EnclosedFaceMaterial,
     };
@@ -1265,6 +1280,11 @@ function BronzeTowerModel() {
       {dims.upperBridgeFacePanels.map((panel, index) => (
         <primitive key={`upper-bridge-face-${index}`} object={panel} />
       ))}
+      <mesh
+        geometry={dims.crownPanelGeometry}
+        material={dims.upperBridgeGreenMaterial}
+        renderOrder={9}
+      />
       <mesh
         geometry={dims.a30A29EnclosedFaceGeometry}
         material={dims.a30A29EnclosedFaceMaterial}
