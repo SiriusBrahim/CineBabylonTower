@@ -455,6 +455,32 @@ function BronzeTowerModel() {
       slotUpperLeftToBaseGuideLines.push(verticalLine);
     }
 
+    // Taban noktalarını kule yolundaki sırayla birbirine bağla:
+    // A30 → A29 → ... → A → 1 → 2 → ... → 119.
+    const slotBaseToBaseGuideLines: THREE.Line[] = [];
+    const upperLeftSlotsInPathOrder = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
+    ];
+    const orderedBasePoints = upperLeftSlotsInPathOrder.map((slot) => {
+      const point = getSlotUpperLeft(slot);
+      point.y = 0;
+      return point;
+    });
+
+    for (let i = 1; i < orderedBasePoints.length; i++) {
+      const connectorGeometry = new THREE.BufferGeometry().setFromPoints([
+        orderedBasePoints[i - 1],
+        orderedBasePoints[i]
+      ]);
+      const connectorLine = new THREE.Line(
+        connectorGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      connectorLine.renderOrder = 15;
+      slotBaseToBaseGuideLines.push(connectorLine);
+    }
+
     type WallPathPoint = {
       x: number; y: number; z: number; halfHeight: number;
       rotationY: number; radialX: number; radialZ: number;
@@ -774,6 +800,7 @@ function BronzeTowerModel() {
       crownS2VerticalGuideLine,
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
+      slotBaseToBaseGuideLines,
       slot118ToCrownGuideLine,
       crownPanelGeometry,
       crownPanelConnectorLine,
@@ -810,6 +837,9 @@ function BronzeTowerModel() {
       ))}
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
         <primitive key={`sü-to-base-${index}`} object={line} />
+      ))}
+      {dims.slotBaseToBaseGuideLines.map((line, index) => (
+        <primitive key={`base-point-link-${index}`} object={line} />
       ))}
       <primitive object={dims.slot118ToCrownGuideLine} />
       <primitive object={dims.crownPanelConnectorLine} />
