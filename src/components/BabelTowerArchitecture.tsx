@@ -910,23 +910,39 @@ function BronzeTowerModel() {
     crownSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
     crownSeriesRightWallGeometry.computeVertexNormals();
 
-    // Deneme 3: A30-SÜ-0 → A29-SÜ-0 → 120A29-SÜ-0 → 120A30-SÜ-0
-    // dikdörtgenini taban düzleminden 0.044 birim yukarı taşıyarak doldur.
-    const a30A29BaseFacePoints = [
-      getSlotUpperLeft(a30),
-      getSlotUpperLeft(a29),
-      a29CrownBaseRight.clone(),
-      a30CrownBaseRight.clone()
+    // A30-SÜ-0'dan başlayıp 119-SÜ-0'a kadar tüm komşu taban
+    // noktalarını 120-S2 taban noktasına bağlayan yüzeyleri doldur.
+    // Her aralık, 0.044 yüksekliğinde üçgen bir yüzey olarak oluşturulur.
+    const baseFaceSlotsInPathOrder = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
     ];
-    a30A29BaseFacePoints.forEach((point) => {
-      point.y = 0.044;
-    });
+    const baseFacePositions: number[] = [];
+    const baseFaceIndices: number[] = [];
+    const baseFaceAnchor = crownLowerRightGuidePoint.clone();
+    baseFaceAnchor.y = 0.044;
+
+    for (let i = 1; i < baseFaceSlotsInPathOrder.length; i++) {
+      const previousBasePoint = getSlotUpperLeft(baseFaceSlotsInPathOrder[i - 1]);
+      const currentBasePoint = getSlotUpperLeft(baseFaceSlotsInPathOrder[i]);
+      previousBasePoint.y = 0.044;
+      currentBasePoint.y = 0.044;
+
+      const vertexOffset = baseFacePositions.length / 3;
+      baseFacePositions.push(
+        previousBasePoint.x, previousBasePoint.y, previousBasePoint.z,
+        currentBasePoint.x, currentBasePoint.y, currentBasePoint.z,
+        baseFaceAnchor.x, baseFaceAnchor.y, baseFaceAnchor.z
+      );
+      baseFaceIndices.push(vertexOffset, vertexOffset + 1, vertexOffset + 2);
+    }
+
     const a30A29BaseFaceGeometry = new THREE.BufferGeometry();
     a30A29BaseFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
-      a30A29BaseFacePoints.flatMap((point) => [point.x, point.y, point.z]),
+      baseFacePositions,
       3
     ));
-    a30A29BaseFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    a30A29BaseFaceGeometry.setIndex(baseFaceIndices);
     a30A29BaseFaceGeometry.computeVertexNormals();
 
     return {
