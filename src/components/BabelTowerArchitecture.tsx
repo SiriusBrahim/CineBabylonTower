@@ -466,6 +466,15 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide,
       depthWrite: false
     });
+
+    // Deneme 5 için ayrı materyal: kısmi pasta dilimi yüzeyi %50 opaklıkta.
+    const a30A29EnclosedFaceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x8f3030,
+      transparent: true,
+      opacity: 0.5,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
     const frontFaceSlotsInPathOrder = [
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
       ...SPIRAL_SLOT_LAYOUT
@@ -991,6 +1000,7 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30A29UpperFaceGeometry,
       a30A29EnclosedFaceGeometry,
+      a30A29EnclosedFaceMaterial,
     };
   }, []);
 
@@ -1030,7 +1040,7 @@ function BronzeTowerModel() {
       />
       <mesh
         geometry={dims.a30A29EnclosedFaceGeometry}
-        material={dims.slotFrontFaceMaterial}
+        material={dims.a30A29EnclosedFaceMaterial}
         renderOrder={9}
       />
       {dims.slotUpperLeftToBaseGuideLines.map((line, index) => (
