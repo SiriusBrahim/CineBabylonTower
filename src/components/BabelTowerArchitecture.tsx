@@ -254,18 +254,24 @@ function BronzeTowerModel() {
       });
     }
 
-    // Kırmızı kılavuz çizgisi: 1'den 119'a kadar tüm slotların
-    // sol üst köşelerini sırasıyla birleştirir.
-    const getSlotUpperLeft = (slot: typeof SPIRAL_SLOT_LAYOUT[number]) => new THREE.Vector3(
+    // Kırmızı kılavuz çizgisi: A30 -> ... -> A -> 1 -> ... -> 119.
+    // Her slotun gerçek yüksekliği ve dönüş açısı hesaba katılır.
+    const getSlotUpperLeft = (slot: {
+      x: number; y: number; z: number; rotationY: number; height?: number;
+    }) => new THREE.Vector3(
       -posterWidth * 0.5,
-      posterHeight * 0.5,
+      (slot.height ?? posterHeight) * 0.5,
       0.075 * 0.5
     ).applyQuaternion(
       new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
     ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
 
+    const wallGuideLinePoints = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
+      ...SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft)
+    ];
     const wallGuideLineGeometry = new THREE.BufferGeometry().setFromPoints(
-      SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft)
+      wallGuideLinePoints
     );
     const wallGuideLine = new THREE.Line(
       wallGuideLineGeometry,
