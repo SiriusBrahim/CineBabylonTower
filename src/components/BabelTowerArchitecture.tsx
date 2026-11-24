@@ -867,6 +867,23 @@ function BronzeTowerModel() {
 
     const a29UpperRight = getSideSlotUpperRight(a29);
     const a30UpperRight = getSideSlotUpperRight(a30);
+
+    // Deneme 9: A30-SÜ'den tabana 88.01° eğimli, merkezden dışarı yönelen kırmızı spiral doğrusu.
+    // Açı yatay düzleme göre ölçülür; taban ucunun radyal kaçıklığı bu açıdan hesaplanır.
+    const a30SpiralLineStart = getSlotUpperLeft(a30);
+    const a30SpiralLineEnd = a30SpiralLineStart.clone();
+    const a30SpiralLineAngle = THREE.MathUtils.degToRad(88.01);
+    const a30SpiralLineVerticalDrop = a30SpiralLineStart.y;
+    const a30SpiralLineOutwardOffset = a30SpiralLineVerticalDrop / Math.tan(a30SpiralLineAngle);
+    const a30SpiralLineRadialLength = Math.hypot(a30SpiralLineStart.x, a30SpiralLineStart.z);
+    a30SpiralLineEnd.y = 0;
+    a30SpiralLineEnd.x += (a30SpiralLineStart.x / a30SpiralLineRadialLength) * a30SpiralLineOutwardOffset;
+    a30SpiralLineEnd.z += (a30SpiralLineStart.z / a30SpiralLineRadialLength) * a30SpiralLineOutwardOffset;
+    const a30SpiralGuideLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a30SpiralLineStart, a30SpiralLineEnd]),
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    a30SpiralGuideLine.renderOrder = 15;
     const a29BaseRight = a29UpperRight.clone();
     const a30BaseRight = a30UpperRight.clone();
     a29BaseRight.y = firstSlotBaseY;
@@ -1207,6 +1224,7 @@ function BronzeTowerModel() {
       sideSeriesRightWallGeometry,
       crownSeriesRightWallGeometry,
       a30A29BaseFaceGeometry,
+      a30SpiralGuideLine,
       upperBridgeFacePanels,
       upperBridgeGreenMaterial,
       crownPanelMaterial,
@@ -1258,6 +1276,7 @@ function BronzeTowerModel() {
         material={dims.blueFrontFaceMaterial}
         renderOrder={10}
       />
+      <primitive object={dims.a30SpiralGuideLine} />
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
