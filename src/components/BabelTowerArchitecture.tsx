@@ -369,6 +369,17 @@ function BronzeTowerModel() {
         name: `${slot.number}-SÜ`,
         position: getSlotUpperLeft(slot)
       })),
+      // Her SÜ noktasından y=0 tabanına indirilen dikmenin alt ucunu
+      // kaynak noktasıyla eşleştirmek için -0 ekiyle etiketle.
+      ...[...SIDE_SLOT_LAYOUT, ...SPIRAL_SLOT_LAYOUT].map((slot) => {
+        const basePosition = getSlotUpperLeft(slot);
+        basePosition.y = 0;
+        const slotName = "label" in slot ? slot.label : String(slot.number);
+        return {
+          name: `${slotName}-SÜ-0`,
+          position: basePosition
+        };
+      }),
       { name: "120-S1", position: crownLowerLeftGuidePoint },
       { name: "120-S2", position: crownWallMatchPoint }
     ];
