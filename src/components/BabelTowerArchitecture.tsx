@@ -181,22 +181,38 @@ function BronzeTowerModel() {
       aSlotBaseY + aSlotHeight * 0.5,
       SPIRAL_SLOT_LAYOUT[0].z - (posterWidth + 0.04)
     );
-    const aSlotRotation = new THREE.Euler(0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0);
-    const descendingSideSlots: { position: THREE.Vector3; height: number }[] = [];
+    const aSlotTheta = Math.atan2(aSlotPosition.z, aSlotPosition.x);
+    const aSlotRotation = new THREE.Euler(0, Math.PI * 0.5 - aSlotTheta, 0);
+    const aSlotFront = new THREE.Vector3(Math.cos(aSlotTheta), 0, Math.sin(aSlotTheta));
+    const descendingSideSlots: {
+      position: THREE.Vector3;
+      height: number;
+      rotationY: number;
+    }[] = [];
 
-    // A slotundan sağa doğru A1-A30 yuvaları aynı taban kotunda,
-    // her adımda 0.033448 daha düşük yükseklikte oluşturulur.
+    // A1-A30, A slotundan itibaren ana spiralın ters yönünde kıvrılarak ilerler.
+    // Açısal ve radyal adım, ana spiralin ilk iki slotundan alınır.
+    const sideAngleStep = SPIRAL_SLOT_LAYOUT[1].theta - SPIRAL_SLOT_LAYOUT[0].theta;
+    const firstRadius = Math.hypot(SPIRAL_SLOT_LAYOUT[0].x, SPIRAL_SLOT_LAYOUT[0].z);
+    const secondRadius = Math.hypot(SPIRAL_SLOT_LAYOUT[1].x, SPIRAL_SLOT_LAYOUT[1].z);
+    const sideRadiusStep = firstRadius - secondRadius;
+    const aSlotRadius = Math.hypot(aSlotPosition.x, aSlotPosition.z);
+
     for (let index = 1; index <= 30; index++) {
       const height = aSlotHeight - index * 0.033448;
+      const theta = aSlotTheta - index * sideAngleStep;
+      const radius = aSlotRadius - index * sideRadiusStep;
+      const rotationY = Math.PI * 0.5 - theta;
       const position = new THREE.Vector3(
-        aSlotPosition.x,
+        Math.cos(theta) * radius,
         aSlotBaseY + height * 0.5,
-        aSlotPosition.z - index * (posterWidth + 0.04)
+        Math.sin(theta) * radius
       );
-      descendingSideSlots.push({ position, height });
+      descendingSideSlots.push({ position, height, rotationY });
+      const frontNormal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
       slotLabels.push({
-        position: position.clone().add(new THREE.Vector3(0, 0, 0.045)),
-        rotation: aSlotRotation.clone(),
+        position: position.clone().addScaledVector(frontNormal, 0.045),
+        rotation: new THREE.Euler(0, rotationY, 0),
         number: `A${index}`
       });
     }
@@ -446,7 +462,7 @@ function BronzeTowerModel() {
     }
 
     slotLabels.push({
-      position: aSlotPosition.clone().add(new THREE.Vector3(0, 0, 0.045)),
+      position: aSlotPosition.clone().addScaledVector(aSlotFront, 0.045),
       rotation: aSlotRotation.clone(),
       number: "A"
     });
@@ -511,13 +527,13 @@ function BronzeTowerModel() {
         geometry={aSlotGeometry}
         material={slotMaterial}
         position={dims.aSlotPosition}
-        rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
+        rotation={[0, Math.PI * 0.5 - Math.atan2(dims.aSlotPosition.z, dims.aSlotPosition.x), 0]}
       />
       {dims.descendingSideSlots.map((slot, index) => (
         <mesh
           key={`A${index + 1}`}
           position={slot.position}
-          rotation={[0, SPIRAL_SLOT_LAYOUT[0].rotationY, 0]}
+          rotation={[0, slot.rotationY, 0]}
           material={slotMaterial}
         >
           <boxGeometry args={[0.92, slot.height, 0.075]} />
