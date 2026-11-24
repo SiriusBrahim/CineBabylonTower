@@ -497,6 +497,10 @@ function BronzeTowerModel() {
     });
 
     for (let i = 1; i < frontFacePoints.length; i++) {
+      // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ alanı
+      // Deneme 6 için ayrı mavi ve opak panel olarak oluşturulur.
+      if (i === 1) continue;
+
       const previous = frontFacePoints[i - 1];
       const current = frontFacePoints[i];
       const panelGeometry = new THREE.BufferGeometry();
@@ -513,6 +517,23 @@ function BronzeTowerModel() {
       panelMesh.renderOrder = 5;
       slotFrontFacePanels.push(panelMesh);
     }
+
+    const a30A29BlueFaceMaterial = new THREE.MeshBasicMaterial({
+      color: 0x1565ff,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const a30A29BlueFaceGeometry = new THREE.BufferGeometry();
+    a30A29BlueFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      frontFacePoints[0].upperPoint.x, frontFacePoints[0].upperPoint.y, frontFacePoints[0].upperPoint.z,
+      frontFacePoints[0].basePoint.x, frontFacePoints[0].basePoint.y, frontFacePoints[0].basePoint.z,
+      frontFacePoints[1].basePoint.x, frontFacePoints[1].basePoint.y, frontFacePoints[1].basePoint.z,
+      frontFacePoints[1].upperPoint.x, frontFacePoints[1].upperPoint.y, frontFacePoints[1].upperPoint.z
+    ], 3));
+    a30A29BlueFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    a30A29BlueFaceGeometry.computeVertexNormals();
 
     // Yan yüzeyleri aynı dörtgen mantığıyla tüm SÜ noktalarından
     // 120-S2 düşey hattına kadar doldur:
@@ -1016,6 +1037,8 @@ function BronzeTowerModel() {
       slotToCrownS2HorizontalGuideLines,
       slotUpperLeftToBaseGuideLines,
       slotFrontFacePanels,
+      a30A29BlueFaceGeometry,
+      a30A29BlueFaceMaterial,
       slotSideFacePanels,
       slot119ToCrownS1WallGeometry,
       slot119ToCrownS1WallMaterial,
@@ -1076,6 +1099,11 @@ function BronzeTowerModel() {
         geometry={dims.a30A29BaseFaceGeometry}
         material={dims.slotFrontFaceMaterial}
         renderOrder={7}
+      />
+      <mesh
+        geometry={dims.a30A29BlueFaceGeometry}
+        material={dims.a30A29BlueFaceMaterial}
+        renderOrder={10}
       />
       {dims.upperBridgeFacePanels.map((panel, index) => (
         <primitive key={`upper-bridge-face-${index}`} object={panel} />
