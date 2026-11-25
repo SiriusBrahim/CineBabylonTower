@@ -1566,10 +1566,6 @@ function BronzeTowerModel() {
     };
   }, []);
 
-  const nicheNumbers = useMemo(
-    () => new Set(Array.from({ length: 119 }, (_, i) => i + 1)),
-    []
-  );
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
@@ -1691,10 +1687,8 @@ function BronzeTowerModel() {
       ))}
       {SHOW_ALL_SLOTS && (
         <>
-          {/* 1-120 arasındaki tüm spiral slotları birlikte göster. */}
-          {SPIRAL_SLOT_LAYOUT
-            .filter((slot) => nicheNumbers.has(slot.number))
-            .map((slot) => (
+          {/* Spiral nişler, tepe slotu ve yan etiketler birlikte gösterilir. */}
+          {SPIRAL_SLOT_LAYOUT.map((slot) => (
               <SlotNiche
                 key={`niche-${slot.number}`}
                 x={slot.x}
@@ -1703,15 +1697,15 @@ function BronzeTowerModel() {
                 theta={slot.theta}
                 slotNumber={slot.number}
               />
-            ))}
+          ))}
           <InstancedSlots
-            matrices={dims.slots.filter((_, index) =>
-              index >= SPIRAL_SLOT_LAYOUT.length || !nicheNumbers.has(index + 1)
-            )}
+            matrices={dims.slots.slice(SPIRAL_SLOT_LAYOUT.length)}
             geometry={slotGeometry}
             material={slotMaterial}
           />
-          {dims.slotLabels.filter((label) => !nicheNumbers.has(Number(label.number))).map((label, index) => (
+          {dims.slotLabels.filter((label) =>
+            typeof label.number !== "number" || label.number > SPIRAL_SLOT_LAYOUT.length
+          ).map((label, index) => (
             <Text
               key={`slot-label-${index}-${label.number}`}
               position={label.position}
