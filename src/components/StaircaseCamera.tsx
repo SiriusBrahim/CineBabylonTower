@@ -15,15 +15,16 @@ export default function StaircaseCamera({
   const { camera } = useThree();
 
   useEffect(() => {
+    const targetY = -3.6;
     camera.position.set(
       distance * Math.sin(polarAngle),
-      distance * Math.cos(polarAngle),
+      targetY + distance * Math.cos(polarAngle),
       0
     );
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, targetY, 0);
 
     if (controlsRef.current) {
-      controlsRef.current.target.set(0, 0, 0);
+      controlsRef.current.target.set(0, targetY, 0);
       controlsRef.current.update();
     }
   }, [camera, polarAngle, distance]);
