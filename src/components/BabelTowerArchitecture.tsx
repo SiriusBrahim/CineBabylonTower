@@ -895,11 +895,12 @@ function BronzeTowerModel() {
     // İç kemer açıklığını posterin arkasında siyah bir yüzeyle doldur.
     // Kontur: 0.96 genişlik, 0.06 taban kotu, 0.48 yarıçaplı yarım daire.
     const a44ArchFillShape = new THREE.Shape();
-    a44ArchFillShape.moveTo(0.06, 0.06);
-    a44ArchFillShape.lineTo(1.02, 0.06);
-    a44ArchFillShape.lineTo(1.02, 1.38);
-    a44ArchFillShape.absarc(0.54, 1.38, 0.48, 0, Math.PI, false);
-    a44ArchFillShape.lineTo(0.06, 0.06);
+    // Geometri, poster grubunun merkezine göre yerel koordinatlarla tanımlanır.
+    a44ArchFillShape.moveTo(-0.48, -0.69);
+    a44ArchFillShape.lineTo(0.48, -0.69);
+    a44ArchFillShape.lineTo(0.48, 0.63);
+    a44ArchFillShape.absarc(0, 0.63, 0.48, 0, Math.PI, false);
+    a44ArchFillShape.lineTo(-0.48, -0.69);
     a44ArchFillShape.closePath();
     const a44ArchFillGeometry = new THREE.ShapeGeometry(a44ArchFillShape, 48);
     const a44ArchFillMaterial = new THREE.MeshBasicMaterial({
