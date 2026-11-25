@@ -5,51 +5,73 @@ interface StepPosterProps {
   index: number;
   position: [number, number, number];
   rotation: [number, number, number];
-  width: number;
+  radius: number;
   depth: number;
+  angularStep: number;
 }
 
-const BORDER = 0.05;
+const BORDER = 0.045;
 const PLATFORM_THICKNESS = 0.08;
+
+function createPolarTrapezoid(
+  centerRadius: number,
+  innerRadius: number,
+  outerRadius: number,
+  halfAngle: number,
+  inset: number
+) {
+  const shape = new THREE.Shape();
+  const inner = innerRadius + inset;
+  const outer = outerRadius - inset;
+  const innerHalf = Math.max(0, halfAngle - inset / inner);
+  const outerHalf = Math.max(0, halfAngle - inset / outer);
+  const point = (r: number, angle: number): [number, number] => [
+    r * Math.cos(angle) - centerRadius,
+    r * Math.sin(angle)
+  ];
+
+  const innerLeft = point(inner, -innerHalf);
+  const innerRight = point(inner, innerHalf);
+  const outerRight = point(outer, outerHalf);
+  const outerLeft = point(outer, -outerHalf);
+
+  shape.moveTo(...innerLeft);
+  shape.lineTo(...innerRight);
+  shape.lineTo(...outerRight);
+  shape.lineTo(...outerLeft);
+  shape.closePath();
+  return shape;
+}
 
 export default function StepPoster({
   index,
   position,
   rotation,
-  width,
-  depth
+  radius,
+  depth,
+  angularStep
 }: StepPosterProps) {
-  // Local X is radial depth; local Y becomes tangential width after mesh rotation.
+  const innerRadius = radius - depth / 2;
+  const outerRadius = radius + depth / 2;
+  const halfAngle = angularStep / 2;
+
   const platformGeometry = useMemo(() => {
-    const halfRadialDepth = depth / 2;
-    const halfTangentialWidth = width / 2;
-    const shape = new THREE.Shape();
-
-    shape.moveTo(-halfRadialDepth, -halfTangentialWidth);
-    shape.lineTo(halfRadialDepth, -halfTangentialWidth);
-    shape.lineTo(halfRadialDepth, halfTangentialWidth);
-    shape.lineTo(-halfRadialDepth, halfTangentialWidth);
-    shape.closePath();
-
-    const opening = new THREE.Path();
-    opening.moveTo(-halfRadialDepth + BORDER, -halfTangentialWidth + BORDER);
-    opening.lineTo(-halfRadialDepth + BORDER, halfTangentialWidth - BORDER);
-    opening.lineTo(halfRadialDepth - BORDER, halfTangentialWidth - BORDER);
-    opening.lineTo(halfRadialDepth - BORDER, -halfTangentialWidth + BORDER);
-    opening.closePath();
-    shape.holes.push(opening);
-
+    const shape = createPolarTrapezoid(
+      radius, innerRadius, outerRadius, halfAngle, 0
+    );
     return new THREE.ExtrudeGeometry(shape, {
       depth: PLATFORM_THICKNESS,
       bevelEnabled: false,
       curveSegments: 1
     });
-  }, [width, depth]);
+  }, [radius, innerRadius, outerRadius, halfAngle]);
 
-  const posterGeometry = useMemo(
-    () => new THREE.PlaneGeometry(depth - BORDER * 2, width - BORDER * 2),
-    [width, depth]
-  );
+  const posterGeometry = useMemo(() => {
+    const shape = createPolarTrapezoid(
+      radius, innerRadius, outerRadius, halfAngle, BORDER
+    );
+    return new THREE.ShapeGeometry(shape);
+  }, [radius, innerRadius, outerRadius, halfAngle]);
 
   const posterColor = useMemo(() => {
     const hue = (index * 0.61803398875) % 1;
@@ -68,9 +90,9 @@ export default function StepPoster({
           color="#cd7f32"
           metalness={0.72}
           roughness={0.34}
+          side={THREE.DoubleSide}
         />
       </mesh>
-
       <mesh
         geometry={posterGeometry}
         position={[0, PLATFORM_THICKNESS + 0.002, 0]}
