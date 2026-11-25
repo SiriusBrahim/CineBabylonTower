@@ -37,7 +37,7 @@ function InstancedSlots({ matrices, geometry, material }: {
   return <primitive object={mesh} />;
 }
 
-// Slot #1 için kemerli poster yuvası: şekiller Group'un sol alt köşesine göre tanımlanır.
+// Kemerli poster yuvası: geometri Group'un sol alt köşesine göre tanımlanır.
 function createArchRingShape(outerWidth: number, innerWidth: number) {
   const shape = new THREE.Shape();
   const straightHeight = 1.38;
@@ -45,7 +45,6 @@ function createArchRingShape(outerWidth: number, innerWidth: number) {
   const outRadius = outerWidth / 2;
   const inRadius = innerWidth / 2;
 
-  // Dış çevre: CCW.
   shape.moveTo(centerX - outRadius, 0);
   shape.lineTo(centerX + outRadius, 0);
   shape.lineTo(centerX + outRadius, straightHeight);
@@ -53,7 +52,6 @@ function createArchRingShape(outerWidth: number, innerWidth: number) {
   shape.lineTo(centerX - outRadius, straightHeight);
   shape.closePath();
 
-  // İç delik: aynı üst kemeri CW yönde izler.
   const hole = new THREE.Path();
   hole.moveTo(centerX - inRadius, 0);
   hole.lineTo(centerX - inRadius, straightHeight);
@@ -93,12 +91,12 @@ function computeLocalMatrix(centerPos: THREE.Vector3, normal: THREE.Vector3) {
 
   const det = X.dot(new THREE.Vector3().crossVectors(Y, Z));
   if (Math.abs(det - 1.0) > 0.001) {
-    console.warn("Slot #1 baz matrisi determinantı beklenen değerde değil:", det);
+    console.warn("SlotNiche baz matrisi determinantı beklenen değerde değil:", det);
   }
 
   const normalAlignment = Z.dot(normalizedNormal);
   if (normalAlignment < 0.999) {
-    console.warn("Slot #1 yerel Z ekseni duvar normalinden sapıyor:", normalAlignment);
+    console.warn("SlotNiche yerel Z ekseni duvar normalinden sapıyor:", normalAlignment);
   }
 
   const bottomLeft = centerPos.clone()
@@ -116,14 +114,21 @@ function computeLocalMatrix(centerPos: THREE.Vector3, normal: THREE.Vector3) {
   return matrix;
 }
 
-function Slot1Prototype() {
-  const centerPos = useMemo(() => new THREE.Vector3(9.2728879323750562, 0.81, 0), []);
-  const normal = useMemo(() => new THREE.Vector3(1, 0, 0), []);
+interface SlotNicheProps {
+  x: number;
+  y: number;
+  z: number;
+  theta: number;
+  slotNumber: number;
+}
+
+function SlotNiche({ x, y, z, theta, slotNumber }: SlotNicheProps) {
   const localMatrix = useMemo(() => {
-    const surfaceCenter = centerPos.clone()
-      .addScaledVector(normal, 0.12);
+    const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
+    const centerPos = new THREE.Vector3(x, y, z);
+    const surfaceCenter = centerPos.addScaledVector(normal, 0.12);
     return computeLocalMatrix(surfaceCenter, normal);
-  }, [centerPos, normal]);
+  }, [x, y, z, theta]);
 
   const nicheGeo = useMemo(
     () => new THREE.ShapeGeometry(createNicheCapShape()),
@@ -166,6 +171,19 @@ function Slot1Prototype() {
 
       <mesh geometry={frameGeo} material={frameMat} />
       <mesh position={[0, 0, 0.03]} geometry={borderGeo} material={borderMat} />
+
+      <Text
+        position={[-0.15, 2.0, 0.07]}
+        fontSize={0.12}
+        color="#d39b55"
+        anchorX="center"
+        anchorY="middle"
+        outlineColor="#090b12"
+        outlineWidth={0.008}
+        renderOrder={3}
+      >
+        {slotNumber}
+      </Text>
     </group>
   );
 }
@@ -1536,6 +1554,7 @@ function BronzeTowerModel() {
     };
   }, []);
 
+  const nicheNumbers = useMemo(() => new Set([1, 15, 29]), []);
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
@@ -1658,13 +1677,26 @@ function BronzeTowerModel() {
       {SHOW_ALL_SLOTS && (
         <>
           {/* 1-120 arasındaki tüm spiral slotları birlikte göster. */}
+          {SPIRAL_SLOT_LAYOUT
+            .filter((slot) => nicheNumbers.has(slot.number))
+            .map((slot) => (
+              <SlotNiche
+                key={`niche-${slot.number}`}
+                x={slot.x}
+                y={slot.y}
+                z={slot.z}
+                theta={slot.theta}
+                slotNumber={slot.number}
+              />
+            ))}
           <InstancedSlots
-            matrices={dims.slots.filter((_, index) => index !== 0)}
+            matrices={dims.slots.filter((_, index) =>
+              index >= SPIRAL_SLOT_LAYOUT.length || !nicheNumbers.has(index + 1)
+            )}
             geometry={slotGeometry}
             material={slotMaterial}
           />
-          <Slot1Prototype />
-          {dims.slotLabels.filter((label) => label.number !== 1).map((label, index) => (
+          {dims.slotLabels.filter((label) => !nicheNumbers.has(Number(label.number))).map((label, index) => (
             <Text
               key={`slot-label-${index}-${label.number}`}
               position={label.position}
