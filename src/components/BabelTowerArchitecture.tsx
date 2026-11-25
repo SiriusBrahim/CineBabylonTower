@@ -888,29 +888,6 @@ function BronzeTowerModel() {
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
 
-    // A44-SÜ noktasına sabitlenen kemerli slot; Z1-Z20 referans çizimleri kaldırıldı.
-    const a44SlotAnchor = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
-    const a44SlotRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
-      .sub(a44SlotAnchor).setY(0).normalize();
-    // Kemerin içi boş bırakılır. İçine yalnızca 0.96 × 1.38 ölçülerinde
-    // sarı dikdörtgen slot çerçevesi çizilir.
-    const a44SlotRectanglePoints = [
-      new THREE.Vector2(0, 0),
-      new THREE.Vector2(0.96, 0),
-      new THREE.Vector2(0.96, 1.38),
-      new THREE.Vector2(0, 1.38),
-      new THREE.Vector2(0, 0)
-    ];
-    const a44SlotRectangleWorldPoints = a44SlotRectanglePoints.map(({ x, y }) =>
-      a44SlotAnchor.clone()
-        .addScaledVector(a44SlotRightDirection, x)
-        .add(new THREE.Vector3(0, y, 0))
-    );
-    const a44ArchedSlotOutline = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(a44SlotRectangleWorldPoints),
-      new THREE.LineBasicMaterial({ color: "#ffff00", depthTest: true })
-    );
-    a44ArchedSlotOutline.renderOrder = 31;
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
@@ -1368,7 +1345,6 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
       a30SpiralBottomLine,
-      a44ArchedSlotOutline,
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1429,7 +1405,6 @@ function BronzeTowerModel() {
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
-      <primitive object={dims.a44ArchedSlotOutline} />
 
       {dims.wallGuideLabels.map((label) => (
         <Text
