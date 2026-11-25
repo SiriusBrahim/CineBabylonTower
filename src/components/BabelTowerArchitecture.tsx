@@ -1196,7 +1196,9 @@ function BronzeTowerModel({
       ...SIDE_SLOT_LAYOUT.slice().reverse(),
       ...SPIRAL_SLOT_LAYOUT
     ];
-    const frontFacePoints = frontFaceSlotsInPathOrder.map((slot) => {
+    const frontFacePoints = frontFaceSlotsInPathOrder.map((slot: {
+      x: number; y: number; z: number; rotationY: number; height?: number;
+    }) => {
       // Kemer tepe noktası: dikdörtgen yarı yüksekliği + kemer yarıçapı.
       // createNicheCapShape() ile aynı 0.48 yarıçapı ve slotun mevcut
       // rotationY dönüşümünü kullan; layout kayıtlarında matrix bulunmaz.
