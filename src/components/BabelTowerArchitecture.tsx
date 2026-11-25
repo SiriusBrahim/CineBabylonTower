@@ -943,6 +943,23 @@ function BronzeTowerModel() {
     );
     a44InnerArchOutline.renderOrder = 32;
 
+    // Kemer açıklığının içine örnek poster: iç konturdan pay bırakılarak yerleştirilir.
+    // Poster 0.88 × 1.28 birimdir; altı Y=0.08, üstü Y=1.36 seviyesindedir.
+    const a44PosterNormal = new THREE.Vector3()
+      .crossVectors(a44ArchRightDirection, new THREE.Vector3(0, 1, 0))
+      .normalize();
+    const a44PosterQuaternion = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(
+        a44ArchRightDirection,
+        new THREE.Vector3(0, 1, 0),
+        a44PosterNormal
+      )
+    );
+    const a44PosterPosition = a44ArchAnchor.clone()
+      .addScaledVector(a44ArchRightDirection, 0.54)
+      .add(new THREE.Vector3(0, 0.72, 0))
+      .addScaledVector(a44PosterNormal, 0.018);
+
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
@@ -1402,6 +1419,8 @@ function BronzeTowerModel() {
       a30SpiralBottomLine,
       a44OuterArchOutline,
       a44InnerArchOutline,
+      a44PosterPosition,
+      a44PosterQuaternion,
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1461,6 +1480,56 @@ function BronzeTowerModel() {
       />
       <primitive object={dims.a44OuterArchOutline} />
       <primitive object={dims.a44InnerArchOutline} />
+      <group
+        position={dims.a44PosterPosition}
+        quaternion={dims.a44PosterQuaternion}
+      >
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[0.88, 1.28]} />
+          <meshStandardMaterial
+            color="#101827"
+            emissive="#17243a"
+            emissiveIntensity={0.32}
+            roughness={0.82}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        <mesh position={[0, 0, 0.006]}>
+          <planeGeometry args={[0.84, 1.24]} />
+          <meshBasicMaterial color="#263c50" side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, 0.28, 0.012]}>
+          <circleGeometry args={[0.245, 48]} />
+          <meshBasicMaterial color="#d39b55" />
+        </mesh>
+        <mesh position={[0, 0.28, 0.016]}>
+          <circleGeometry args={[0.19, 48]} />
+          <meshBasicMaterial color="#263c50" />
+        </mesh>
+        <Text
+          position={[0, -0.12, 0.02]}
+          fontSize={0.105}
+          color="#f4dfb4"
+          anchorX="center"
+          anchorY="middle"
+          textAlign="center"
+          lineHeight={1.15}
+          maxWidth={0.78}
+        >
+          CINE
+          {"\\n"}
+          BABYLON
+        </Text>
+        <Text
+          position={[0, -0.43, 0.02]}
+          fontSize={0.045}
+          color="#d39b55"
+          anchorX="center"
+          anchorY="middle"
+        >
+          A SAMPLE POSTER
+        </Text>
+      </group>
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
