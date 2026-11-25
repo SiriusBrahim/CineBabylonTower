@@ -3,6 +3,8 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
+const SHOW_DEBUG_GUIDES = false; // Production için false, geliştirme için true
+
 // Tüm spiral slotlar ve 120 numaralı tepe slotu görünür.
 const SHOW_ALL_SLOTS = true;
 
@@ -1668,7 +1670,7 @@ function BronzeTowerModel() {
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
 
-      {dims.wallGuideLabels.map((label) => (
+      {SHOW_DEBUG_GUIDES && dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
           position={label.position.clone().add(new THREE.Vector3(0.08, 0.06, 0.04))}
