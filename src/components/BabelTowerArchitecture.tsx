@@ -909,6 +909,40 @@ function BronzeTowerModel() {
     const a44ArchedSlotPoints = a44ArchedSlotLocalPoints.map(({ x, y }) =>
       a44SlotAnchor.clone().addScaledVector(a44SlotRightDirection, x).add(new THREE.Vector3(0, y, 0))
     );
+
+    // Slot alanı: kemerli sınırın içini tam 0.96 × 1.38 ölçüsünde doldurur.
+    const a44SlotShape = new THREE.Shape();
+    a44SlotShape.moveTo(0, 0);
+    a44SlotShape.lineTo(0.96, 0);
+    a44SlotShape.lineTo(0.96, 0.90);
+    a44SlotShape.absarc(0.48, 0.90, 0.48, 0, Math.PI, false);
+    a44SlotShape.closePath();
+    const a44SlotAreaGeometry = new THREE.ShapeGeometry(a44SlotShape, 32);
+    const a44SlotNormal = new THREE.Vector3().crossVectors(
+      a44SlotRightDirection,
+      new THREE.Vector3(0, 1, 0)
+    ).normalize();
+    const a44SlotBasis = new THREE.Matrix4().makeBasis(
+      a44SlotRightDirection,
+      new THREE.Vector3(0, 1, 0),
+      a44SlotNormal
+    );
+    a44SlotAreaGeometry.applyMatrix4(a44SlotBasis);
+    a44SlotAreaGeometry.translate(
+      a44SlotAnchor.x + a44SlotNormal.x * 0.012,
+      a44SlotAnchor.y + a44SlotNormal.y * 0.012,
+      a44SlotAnchor.z + a44SlotNormal.z * 0.012
+    );
+    const a44SlotAreaMaterial = new THREE.MeshStandardMaterial({
+      color: "#17212b",
+      metalness: 0.18,
+      roughness: 0.72,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const a44SlotArea = new THREE.Mesh(a44SlotAreaGeometry, a44SlotAreaMaterial);
+    a44SlotArea.renderOrder = 28;
+
     const a44ArchedSlotOutline = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a44ArchedSlotPoints),
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
@@ -1372,6 +1406,7 @@ function BronzeTowerModel() {
       a30SpiralGuideLine,
       a30SpiralBottomLine,
       a44ArchedSlotOutline,
+      a44SlotArea,
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1432,6 +1467,7 @@ function BronzeTowerModel() {
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
+      <primitive object={dims.a44SlotArea} />
       <primitive object={dims.a44ArchedSlotOutline} />
 
       {dims.wallGuideLabels.map((label) => (
