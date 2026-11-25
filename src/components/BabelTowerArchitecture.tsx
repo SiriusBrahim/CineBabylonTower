@@ -71,19 +71,23 @@ const sharedBorderGeo = new THREE.ExtrudeGeometry(
 const sharedPosterGeo = new THREE.PlaneGeometry(0.96, 1.38);
 
 const sharedFrameMat = new THREE.MeshStandardMaterial({
-  color: "#8B7355",
-  roughness: 0.8
+  color: "#c4b49a",
+  roughness: 0.92,
+  metalness: 0.05
 });
 const sharedBorderMat = new THREE.MeshStandardMaterial({
-  color: "#6B5344",
-  roughness: 0.9
+  color: "#a3927a",
+  roughness: 0.96,
+  metalness: 0.0
 });
 const sharedPosterMat = new THREE.MeshStandardMaterial({
-  color: "#101827",
+  color: "#0f172a",
+  roughness: 0.85,
   side: THREE.DoubleSide
 });
 const sharedNicheMat = new THREE.MeshStandardMaterial({
   color: "#050505",
+  roughness: 1.0,
   side: THREE.DoubleSide
 });
 
