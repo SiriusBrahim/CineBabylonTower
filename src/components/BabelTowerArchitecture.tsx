@@ -474,7 +474,7 @@ function BronzeTowerModel() {
   }, []);
 
   const updatePosterLoadStatus = useCallback(() => {
-    if (loadingUrlsRef.current.size > 0) {
+    if (loadingUrlsRef.current.size > 0 || posterQueueRef.current.size > 0) {
       setPosterLoadStatus("loading");
     } else if (failedUrlsRef.current.size === 0) {
       setPosterLoadStatus(requestedUrlsRef.current.size > 0 ? "loaded" : "idle");
