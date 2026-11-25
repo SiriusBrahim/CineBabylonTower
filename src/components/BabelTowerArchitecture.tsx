@@ -1766,7 +1766,7 @@ export default function BabelTowerArchitecture() {
       <pointLight position={[radius, height * 0.9, radius * 1.5]}
         intensity={height * 0.065} color="#9eb7ff" />
       <BronzeTowerModel />
-      <Environment preset="city" />
+      <Environment preset="sunset" />
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
         zoomSpeed={1.4} minDistance={radius * 1.5} maxDistance={height * 18}
         maxPolarAngle={Math.PI * 0.49} target={[0, height * 0.48, 0]} />
