@@ -6,15 +6,17 @@ import { usePosterSequence } from "./PosterSequence";
 
 const STAIRCASE_CONFIG = {
   totalSteps: 10,
-  radius: 3.5,
+  radius: 2.5,
   stepHeight: 0.8,
   stepDepth: 1.0,
   stepWidth: 0.95,
-  angularStep: 0.65,
   startAngle: 0,
   cameraPolarAngle: Math.PI / 4,
   cameraDistance: 10
 };
+
+// Tangential tread width / radius keeps neighboring steps edge-to-edge.
+const ANGULAR_STEP = STAIRCASE_CONFIG.stepWidth / STAIRCASE_CONFIG.radius;
 
 interface StepData {
   index: number;
@@ -29,8 +31,7 @@ function StaircaseScene() {
   const steps = useMemo<StepData[]>(
     () =>
       sequence.map(({ index }): StepData => {
-        const theta =
-          STAIRCASE_CONFIG.startAngle + index * STAIRCASE_CONFIG.angularStep;
+        const theta = STAIRCASE_CONFIG.startAngle + index * ANGULAR_STEP;
         const y = -index * STAIRCASE_CONFIG.stepHeight;
 
         return {
@@ -40,7 +41,8 @@ function StaircaseScene() {
             y,
             STAIRCASE_CONFIG.radius * Math.sin(theta)
           ],
-          rotation: [0, -theta + Math.PI / 2, 0],
+          // StepPoster's local X axis is radial; its local Y axis is tangential.
+          rotation: [0, -theta, 0],
           theta
         };
       }),
