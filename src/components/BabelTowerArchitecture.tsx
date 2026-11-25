@@ -3,8 +3,8 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
-// Slotların görünürlüğü kapalı; yerleşim verileri ve duvar hesapları korunur.
-const SHOW_SLOTS = false;
+// Yalnızca 1. spiral slot görünür; diğer slotların yerleşim verileri korunur.
+const SHOW_FIRST_SLOT = true;
 
 const BRONZE_TOWER = {
   name: "Bronz Kule",
@@ -1519,41 +1519,32 @@ function BronzeTowerModel() {
           {label.name}
         </Text>
       ))}
-      {SHOW_SLOTS && (
+      {SHOW_FIRST_SLOT && (
         <>
-          <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
-          <mesh
-            geometry={aSlotGeometry}
+          {/* İlk spiral slotu tek başına göster; A serisi ve diğer slotlar kapalı kalır. */}
+          <InstancedSlots
+            matrices={dims.slots.slice(0, 1)}
+            geometry={slotGeometry}
             material={slotMaterial}
-            position={dims.aSlotPosition}
-            rotation={[0, SIDE_SLOT_LAYOUT[0].rotationY, 0]}
           />
-          {dims.descendingSideSlots.map((slot, index) => (
-            <mesh
-              key={`A${index + 1}`}
-              position={slot.position}
-              rotation={[0, slot.rotationY, 0]}
-              material={slotMaterial}
-            >
-              <boxGeometry args={[0.92, slot.height, 0.075]} />
-            </mesh>
-          ))}
-          {dims.slotLabels.map((label) => (
-            <Text
-              key={label.number}
-              position={label.position}
-              rotation={label.rotation}
-              fontSize={0.24}
-              color="#ffffff"
-              outlineColor="#090b12"
-              outlineWidth={0.012}
-              anchorX="center"
-              anchorY="middle"
-              renderOrder={2}
-            >
-              {label.number}
-            </Text>
-          ))}
+          {dims.slotLabels
+            .filter((label) => label.number === 1)
+            .map((label) => (
+              <Text
+                key={label.number}
+                position={label.position}
+                rotation={label.rotation}
+                fontSize={0.24}
+                color="#ffffff"
+                outlineColor="#090b12"
+                outlineWidth={0.012}
+                anchorX="center"
+                anchorY="middle"
+                renderOrder={2}
+              >
+                {label.number}
+              </Text>
+            ))}
         </>
       )}
     </group>
