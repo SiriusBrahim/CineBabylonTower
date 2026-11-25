@@ -207,14 +207,14 @@ const SlotNiche = memo(function SlotNiche({
       dispose={null}
       onPointerOver={(event) => {
         event.stopPropagation();
-        if (event.nativeEvent.pointerType !== "touch") onHover(slotNumber);
+        if ((event.nativeEvent as PointerEvent).pointerType !== "touch") onHover(slotNumber);
       }}
       onPointerOut={(event) => {
         event.stopPropagation();
-        if (event.nativeEvent.pointerType !== "touch") onHover(null);
+        if ((event.nativeEvent as PointerEvent).pointerType !== "touch") onHover(null);
       }}
       onPointerDown={(event) => {
-        if (event.nativeEvent.pointerType === "touch") {
+        if ((event.nativeEvent as PointerEvent).pointerType === "touch") {
           event.stopPropagation();
           onSelect(slotNumber);
         }
@@ -222,7 +222,7 @@ const SlotNiche = memo(function SlotNiche({
       onClick={(event) => {
         event.stopPropagation();
         // Touch seçimi pointerdown'da yapılır; click'te ikinci kez toggle edilmez.
-        if (event.nativeEvent.pointerType !== "touch") onSelect(slotNumber);
+        if ((event.nativeEvent as PointerEvent).pointerType !== "touch") onSelect(slotNumber);
       }}
     >
       <mesh
@@ -282,14 +282,14 @@ function CrownNiche({
       dispose={null}
       onPointerOver={(event) => {
         event.stopPropagation();
-        if (event.nativeEvent.pointerType !== "touch") onHover(120);
+        if ((event.nativeEvent as PointerEvent).pointerType !== "touch") onHover(120);
       }}
       onPointerOut={(event) => {
         event.stopPropagation();
-        if (event.nativeEvent.pointerType !== "touch") onHover(null);
+        if ((event.nativeEvent as PointerEvent).pointerType !== "touch") onHover(null);
       }}
       onPointerDown={(event) => {
-        if (event.nativeEvent.pointerType === "touch") {
+        if ((event.nativeEvent as PointerEvent).pointerType === "touch") {
           event.stopPropagation();
           onSelect(120);
         }
@@ -297,7 +297,7 @@ function CrownNiche({
       onClick={(event) => {
         event.stopPropagation();
         // Touch seçimi pointerdown'da yapılır; click'te ikinci kez toggle edilmez.
-        if (event.nativeEvent.pointerType !== "touch") onSelect(120);
+        if ((event.nativeEvent as PointerEvent).pointerType !== "touch") onSelect(120);
       }}
     >
       <mesh
