@@ -937,6 +937,30 @@ function BronzeTowerModel() {
     const z2ToZ14Line = makeZLine(z2Point, z14Point);
     const z3ToZ15Line = makeZLine(z3Point, z15Point);
     const z16ToZ17Line = makeZLine(z16Point, z17Point);
+
+    // Kemerli slot: sol alt köşe A44-SÜ (Z1) noktasına sabitlenir.
+    // Yerel ölçüler: 0.96 genişlik, 0.90 düz yan duvar, R=0.48 yarım daire.
+    const a44ArchedSlotLocalPoints = [
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(0.96, 0),
+      new THREE.Vector2(0.96, 0.90),
+      ...Array.from({ length: 17 }, (_, index) => {
+        const angle = (Math.PI * index) / 16;
+        return new THREE.Vector2(
+          0.48 + 0.48 * Math.cos(angle),
+          0.90 + 0.48 * Math.sin(angle)
+        );
+      }),
+      new THREE.Vector2(0, 0)
+    ];
+    const a44ArchedSlotPoints = a44ArchedSlotLocalPoints.map(({ x, y }) =>
+      z1Point.clone().addScaledVector(zRightDirection, x).add(new THREE.Vector3(0, y, 0))
+    );
+    const a44ArchedSlotOutline = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(a44ArchedSlotPoints),
+      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+    );
+    a44ArchedSlotOutline.renderOrder = 29;
     // Z noktaları arasında kullanıcının belirttiği bağlantılar.
     const z13ToZ17Line = makeZLine(z13Point, z17Point);
     const z1ToZ18Line = makeZLine(z1Point, z18Point);
@@ -1415,6 +1439,7 @@ function BronzeTowerModel() {
       z7ToZ19Line,
       z4ToZ20Line,
       z1ToZ16Line,
+      a44ArchedSlotOutline,
       z18LabelPosition: z18Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z19LabelPosition: z19Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z20LabelPosition: z20Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1509,6 +1534,7 @@ function BronzeTowerModel() {
       <primitive object={dims.z7ToZ19Line} />
       <primitive object={dims.z4ToZ20Line} />
       <primitive object={dims.z1ToZ16Line} />
+      <primitive object={dims.a44ArchedSlotOutline} />
       {([
         // Z1-Z15 etiketleri kullanıcının tarif ettiği sıra ve koordinatlara göre tekil atanır.
         ["Z1", dims.z1LabelPosition],
