@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useLoader } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -80,11 +80,6 @@ const sharedBorderMat = new THREE.MeshStandardMaterial({
   roughness: 0.96,
   metalness: 0.0
 });
-const sharedPosterMat = new THREE.MeshStandardMaterial({
-  color: "#0f172a",
-  roughness: 0.85,
-  side: THREE.DoubleSide
-});
 const sharedNicheMat = new THREE.MeshStandardMaterial({
   color: "#050505",
   roughness: 1.0,
@@ -134,6 +129,7 @@ interface SlotNicheProps {
   z: number;
   theta: number;
   slotNumber: number;
+  posterMaterial: THREE.MeshStandardMaterial;
 }
 
 const SlotNiche = memo(function SlotNiche({
@@ -141,7 +137,8 @@ const SlotNiche = memo(function SlotNiche({
   y,
   z,
   theta,
-  slotNumber
+  slotNumber,
+  posterMaterial
 }: SlotNicheProps) {
   const localMatrix = useMemo(() => {
     const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
@@ -155,7 +152,7 @@ const SlotNiche = memo(function SlotNiche({
       <mesh
         position={[0.48, 0.69, -0.04]}
         geometry={sharedPosterGeo}
-        material={sharedPosterMat}
+        material={posterMaterial}
       />
       <mesh
         position={[0, 0, -0.01]}
@@ -186,7 +183,7 @@ const SlotNiche = memo(function SlotNiche({
 
 // Tepe slotu, spiralden bağımsız +Z normaline bakan dikey bir yüzeydir.
 // Aynı yerel matris ve paylaşılan niş geometrileri kullanılarak görsel tutarlılık korunur.
-function CrownNiche() {
+function CrownNiche({ posterMaterial }: { posterMaterial: THREE.MeshStandardMaterial }) {
   const localMatrix = useMemo(() => {
     const centerPos = new THREE.Vector3(0, 8.72150815736696, 0);
     const normal = new THREE.Vector3(0, 0, 1);
@@ -199,7 +196,7 @@ function CrownNiche() {
       <mesh
         position={[0.48, 0.69, -0.04]}
         geometry={sharedPosterGeo}
-        material={sharedPosterMat}
+        material={posterMaterial}
       />
       <mesh
         position={[0, 0, -0.01]}
@@ -401,6 +398,20 @@ const SIDE_SLOT_LAYOUT: {
 const CROWN_SLOT_POSITION = { x: 0, y: 8.72150815736696, z: 0, rotationY: 0 };
 
 function BronzeTowerModel() {
+  const posterTexture = useLoader(THREE.TextureLoader, "/posters/sample.svg");
+  const sharedPosterMat = useMemo(() => {
+    posterTexture.colorSpace = THREE.SRGBColorSpace;
+    posterTexture.flipY = true;
+    posterTexture.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({
+      map: posterTexture,
+      color: "#ffffff",
+      roughness: 0.85,
+      metalness: 0.0,
+      side: THREE.DoubleSide
+    });
+  }, [posterTexture]);
+
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
@@ -1704,9 +1715,10 @@ function BronzeTowerModel() {
                 z={slot.z}
                 theta={slot.theta}
                 slotNumber={slot.number}
+                posterMaterial={sharedPosterMat}
               />
           ))}
-          <CrownNiche />
+          <CrownNiche posterMaterial={sharedPosterMat} />
           {dims.slotLabels.filter((label) =>
             typeof label.number !== "number"
           ).map((label, index) => (
