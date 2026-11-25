@@ -9,14 +9,15 @@ const STAIRCASE_CONFIG = {
   radius: 2.5,
   stepHeight: 0.8,
   stepDepth: 1.0,
-  stepWidth: 0.95,
+  totalTurn: (196 * Math.PI) / 180,
   startAngle: 0,
   cameraPolarAngle: Math.PI / 4,
-  cameraDistance: 10
+  cameraDistance: 2.5 * 4,
+  cameraFov: 38
 };
 
-// Tangential tread width / radius keeps neighboring steps edge-to-edge.
-const ANGULAR_STEP = STAIRCASE_CONFIG.stepWidth / STAIRCASE_CONFIG.radius;
+// Each tread spans one equal angular sector; neighboring trapezoids share radial edges.
+const ANGULAR_STEP = STAIRCASE_CONFIG.totalTurn / STAIRCASE_CONFIG.totalSteps;
 
 interface StepData {
   index: number;
@@ -27,25 +28,20 @@ interface StepData {
 
 function StaircaseScene() {
   const sequence = usePosterSequence(STAIRCASE_CONFIG.totalSteps);
-
   const steps = useMemo<StepData[]>(
-    () =>
-      sequence.map(({ index }): StepData => {
-        const theta = STAIRCASE_CONFIG.startAngle + index * ANGULAR_STEP;
-        const y = -index * STAIRCASE_CONFIG.stepHeight;
-
-        return {
-          index,
-          position: [
-            STAIRCASE_CONFIG.radius * Math.cos(theta),
-            y,
-            STAIRCASE_CONFIG.radius * Math.sin(theta)
-          ],
-          // StepPoster's local X axis is radial; its local Y axis is tangential.
-          rotation: [0, -theta, 0],
-          theta
-        };
-      }),
+    () => sequence.map(({ index }): StepData => {
+      const theta = STAIRCASE_CONFIG.startAngle + index * ANGULAR_STEP;
+      return {
+        index,
+        position: [
+          STAIRCASE_CONFIG.radius * Math.cos(theta),
+          -index * STAIRCASE_CONFIG.stepHeight,
+          STAIRCASE_CONFIG.radius * Math.sin(theta)
+        ],
+        rotation: [0, -theta, 0],
+        theta
+      };
+    }),
     [sequence]
   );
 
@@ -61,40 +57,39 @@ function StaircaseScene() {
         shadow-mapSize-height={1024}
       />
       <hemisphereLight args={["#d9e2f2", "#17131a", 0.35]} />
-
       {steps.map((step) => (
         <StepPoster
           key={step.index}
           index={step.index}
           position={step.position}
           rotation={step.rotation}
-          width={STAIRCASE_CONFIG.stepWidth}
+          radius={STAIRCASE_CONFIG.radius}
           depth={STAIRCASE_CONFIG.stepDepth}
+          angularStep={ANGULAR_STEP}
         />
       ))}
-
       <StaircaseCamera
         polarAngle={STAIRCASE_CONFIG.cameraPolarAngle}
         distance={STAIRCASE_CONFIG.cameraDistance}
+        targetY={-((STAIRCASE_CONFIG.totalSteps - 1) * STAIRCASE_CONFIG.stepHeight) / 2}
       />
     </>
   );
 }
 
 export default function SpiralStaircase() {
+  const targetY = -((STAIRCASE_CONFIG.totalSteps - 1) * STAIRCASE_CONFIG.stepHeight) / 2;
   return (
     <Canvas
       shadows
       dpr={[1, 1.75]}
       camera={{
         position: [
-          STAIRCASE_CONFIG.cameraDistance *
-            Math.sin(STAIRCASE_CONFIG.cameraPolarAngle),
-          6,
-          STAIRCASE_CONFIG.cameraDistance *
-            Math.cos(STAIRCASE_CONFIG.cameraPolarAngle)
+          STAIRCASE_CONFIG.cameraDistance * Math.sin(STAIRCASE_CONFIG.cameraPolarAngle),
+          targetY + STAIRCASE_CONFIG.cameraDistance * Math.cos(STAIRCASE_CONFIG.cameraPolarAngle),
+          0
         ],
-        fov: 50,
+        fov: STAIRCASE_CONFIG.cameraFov,
         near: 0.1,
         far: 100
       }}
