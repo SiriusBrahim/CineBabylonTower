@@ -119,10 +119,11 @@ function computeLocalMatrix(centerPos: THREE.Vector3, normal: THREE.Vector3) {
 function Slot1Prototype() {
   const centerPos = useMemo(() => new THREE.Vector3(9.2728879323750562, 0.81, 0), []);
   const normal = useMemo(() => new THREE.Vector3(1, 0, 0), []);
-  const localMatrix = useMemo(
-    () => computeLocalMatrix(centerPos, normal),
-    [centerPos, normal]
-  );
+  const localMatrix = useMemo(() => {
+    const surfaceCenter = centerPos.clone()
+      .addScaledVector(normal, 0.12);
+    return computeLocalMatrix(surfaceCenter, normal);
+  }, [centerPos, normal]);
 
   const nicheGeo = useMemo(
     () => new THREE.ShapeGeometry(createNicheCapShape()),
