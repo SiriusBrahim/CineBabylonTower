@@ -455,6 +455,46 @@ function BronzeTowerModel() {
     };
   }, [sharedPosterMat]);
 
+  // C5.1: Poster eşleştirme haritası
+  const posterMap = useMemo(() => {
+    const map = new Map<number, string>();
+
+    // 5 farklı poster, döngüsel dağılım
+    const posters = [
+      "/posters/poster1.svg",
+      "/posters/poster2.svg",
+      "/posters/poster3.svg",
+      "/posters/poster4.svg",
+      "/posters/poster5.svg"
+    ];
+
+    // 1-119 spiral slotlar
+    for (let i = 1; i <= 119; i++) {
+      const posterIndex = (i - 1) % 5;
+      map.set(i, posters[posterIndex]);
+    }
+
+    // 120 tepe slotu
+    map.set(120, posters[4]);
+
+    return map;
+  }, []);
+
+  // C5.1 veri yapısı doğrulaması
+  useEffect(() => {
+    console.log("PosterMap doğrulama:");
+    console.log("Toplam slot:", posterMap.size);
+    console.log("Örnek eşleştirmeler:");
+    console.log("Slot 1:", posterMap.get(1));
+    console.log("Slot 24:", posterMap.get(24));
+    console.log("Slot 25:", posterMap.get(25));
+    console.log("Slot 119:", posterMap.get(119));
+    console.log("Slot 120:", posterMap.get(120));
+
+    const uniqueUrls = new Set(posterMap.values());
+    console.log("Benzersiz URL sayısı:", uniqueUrls.size);
+  }, [posterMap]);
+
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
