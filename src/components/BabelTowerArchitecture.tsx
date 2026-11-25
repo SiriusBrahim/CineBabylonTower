@@ -1754,9 +1754,9 @@ export default function BabelTowerArchitecture() {
     <Canvas shadows dpr={[1, 1.7]}
       camera={{ position: [radius * 3.3, height * 1.8, radius * 4.8], fov: 50 }}>
       <color attach="background" args={["#090b12"]} />
-      <ambientLight intensity={0.68} />
+      <ambientLight intensity={0.35} />
       <directionalLight position={[18, height * 1.6, 14]} intensity={2.0}
-        castShadow shadow-mapSize={[2048, 2048]} />
+        castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
       <pointLight position={[-radius * 2, height * 0.55, -radius]}
         intensity={height * 0.1} color={BRONZE_TOWER.accentColor} />
       <pointLight position={[radius, height * 0.9, radius * 1.5]}
