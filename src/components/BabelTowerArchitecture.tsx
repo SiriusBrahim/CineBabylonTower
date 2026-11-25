@@ -157,11 +157,11 @@ function Slot1Prototype() {
     <group matrix={localMatrix} matrixAutoUpdate={false}>
       <mesh position={[0.48, 0.69, -0.04]}>
         <planeGeometry args={[0.96, 1.38]} />
-        <meshStandardMaterial color="#101827" side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#ff2222" side={THREE.DoubleSide} />
       </mesh>
 
       <mesh position={[0, 0, -0.01]} geometry={nicheGeo}>
-        <meshStandardMaterial color="#050505" side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#22ff22" side={THREE.DoubleSide} />
       </mesh>
 
       <mesh geometry={frameGeo} material={frameMat} />
