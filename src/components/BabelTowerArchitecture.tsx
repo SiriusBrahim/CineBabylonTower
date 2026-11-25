@@ -495,6 +495,82 @@ function BronzeTowerModel() {
     console.log("Benzersiz URL sayısı:", uniqueUrls.size);
   }, [posterMap]);
 
+  // C5.2: PosterMap içindeki benzersiz URL'leri çıkar.
+  const uniquePosterUrls = useMemo(() => {
+    return Array.from(new Set(posterMap.values()));
+  }, [posterMap]);
+
+  // C5.2: Başarılı texture'lar URL anahtarıyla bellekte tutulur.
+  const [textureCache, setTextureCache] = useState<Map<string, THREE.Texture>>(() => new Map());
+  const [posterLoadStatus, setPosterLoadStatus] = useState<"loading" | "loaded" | "partial" | "error">("loading");
+
+  // C5.2: Her benzersiz URL yalnızca bir kez yüklenir.
+  useEffect(() => {
+    let cancelled = false;
+    const loader = new THREE.TextureLoader();
+    const textures = new Map<string, THREE.Texture>();
+    let completedCount = 0;
+    let errorCount = 0;
+
+    const finishIfComplete = () => {
+      if (cancelled || completedCount !== uniquePosterUrls.length) return;
+
+      setTextureCache(new Map(textures));
+      setPosterLoadStatus(
+        errorCount === 0 ? "loaded" : errorCount === uniquePosterUrls.length ? "error" : "partial"
+      );
+    };
+
+    if (uniquePosterUrls.length === 0) {
+      setTextureCache(new Map());
+      setPosterLoadStatus("error");
+      return;
+    }
+
+    uniquePosterUrls.forEach((url) => {
+      loader.load(
+        url,
+        (texture) => {
+          if (cancelled) {
+            texture.dispose();
+            return;
+          }
+
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.flipY = true;
+          texture.needsUpdate = true;
+          textures.set(url, texture);
+          completedCount++;
+          finishIfComplete();
+        },
+        undefined,
+        (error) => {
+          if (cancelled) return;
+
+          console.warn(`Poster yüklenemedi: ${url}`, error);
+          errorCount++;
+          completedCount++;
+          finishIfComplete();
+        }
+      );
+    });
+
+    return () => {
+      cancelled = true;
+      textures.forEach((texture) => texture.dispose());
+      textures.clear();
+    };
+  }, [uniquePosterUrls]);
+
+  // C5.2: Texture cache yükleme durumunu izle.
+  useEffect(() => {
+    console.log("C5.2 Texture Cache:");
+    console.log("Benzersiz URL sayısı:", uniquePosterUrls.length);
+    console.log("Yükleme durumu:", posterLoadStatus);
+    console.log("Cache boyutu:", textureCache.size);
+    console.log("URL'ler:", uniquePosterUrls);
+  }, [uniquePosterUrls, posterLoadStatus, textureCache]);
+
   const dims = useMemo(() => {
     const posterWidth = 0.92;
     const posterHeight = 1.38;
