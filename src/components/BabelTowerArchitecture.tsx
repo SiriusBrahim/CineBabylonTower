@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
@@ -77,6 +77,36 @@ function createNicheCapShape() {
   return shape;
 }
 
+
+// SlotNiche örneklerinin tamamı aynı GPU kaynaklarını paylaşır.
+const sharedNicheGeo = new THREE.ShapeGeometry(createNicheCapShape());
+const sharedFrameGeo = new THREE.ExtrudeGeometry(
+  createArchRingShape(1.08, 0.96),
+  { depth: 0.03, bevelEnabled: false }
+);
+const sharedBorderGeo = new THREE.ExtrudeGeometry(
+  createArchRingShape(1.16, 1.08),
+  { depth: 0.02, bevelEnabled: false }
+);
+const sharedPosterGeo = new THREE.PlaneGeometry(0.96, 1.38);
+
+const sharedFrameMat = new THREE.MeshStandardMaterial({
+  color: "#8B7355",
+  roughness: 0.8
+});
+const sharedBorderMat = new THREE.MeshStandardMaterial({
+  color: "#6B5344",
+  roughness: 0.9
+});
+const sharedPosterMat = new THREE.MeshStandardMaterial({
+  color: "#101827",
+  side: THREE.DoubleSide
+});
+const sharedNicheMat = new THREE.MeshStandardMaterial({
+  color: "#050505",
+  side: THREE.DoubleSide
+});
+
 function computeLocalMatrix(centerPos: THREE.Vector3, normal: THREE.Vector3) {
   const normalizedNormal = normal.clone().normalize();
   const Y = new THREE.Vector3(0, 1, 0);
@@ -122,7 +152,13 @@ interface SlotNicheProps {
   slotNumber: number;
 }
 
-function SlotNiche({ x, y, z, theta, slotNumber }: SlotNicheProps) {
+const SlotNiche = memo(function SlotNiche({
+  x,
+  y,
+  z,
+  theta,
+  slotNumber
+}: SlotNicheProps) {
   const localMatrix = useMemo(() => {
     const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
     const centerPos = new THREE.Vector3(x, y, z);
@@ -130,48 +166,24 @@ function SlotNiche({ x, y, z, theta, slotNumber }: SlotNicheProps) {
     return computeLocalMatrix(surfaceCenter, normal);
   }, [x, y, z, theta]);
 
-  const nicheGeo = useMemo(
-    () => new THREE.ShapeGeometry(createNicheCapShape()),
-    []
-  );
-  const frameGeo = useMemo(
-    () => new THREE.ExtrudeGeometry(createArchRingShape(1.08, 0.96), {
-      depth: 0.03,
-      bevelEnabled: false
-    }),
-    []
-  );
-  const borderGeo = useMemo(
-    () => new THREE.ExtrudeGeometry(createArchRingShape(1.16, 1.08), {
-      depth: 0.02,
-      bevelEnabled: false
-    }),
-    []
-  );
-
-  const frameMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#8B7355", roughness: 0.8 }),
-    []
-  );
-  const borderMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#6B5344", roughness: 0.9 }),
-    []
-  );
-
   return (
-    <group matrix={localMatrix} matrixAutoUpdate={false}>
-      <mesh position={[0.48, 0.69, -0.04]}>
-        <planeGeometry args={[0.96, 1.38]} />
-        <meshStandardMaterial color="#101827" side={THREE.DoubleSide} />
-      </mesh>
-
-      <mesh position={[0, 0, -0.01]} geometry={nicheGeo}>
-        <meshStandardMaterial color="#050505" side={THREE.DoubleSide} />
-      </mesh>
-
-      <mesh geometry={frameGeo} material={frameMat} />
-      <mesh position={[0, 0, 0.03]} geometry={borderGeo} material={borderMat} />
-
+    <group matrix={localMatrix} matrixAutoUpdate={false} dispose={null}>
+      <mesh
+        position={[0.48, 0.69, -0.04]}
+        geometry={sharedPosterGeo}
+        material={sharedPosterMat}
+      />
+      <mesh
+        position={[0, 0, -0.01]}
+        geometry={sharedNicheGeo}
+        material={sharedNicheMat}
+      />
+      <mesh geometry={sharedFrameGeo} material={sharedFrameMat} />
+      <mesh
+        position={[0, 0, 0.03]}
+        geometry={sharedBorderGeo}
+        material={sharedBorderMat}
+      />
       <Text
         position={[-0.15, 2.0, 0.07]}
         fontSize={0.12}
@@ -186,7 +198,7 @@ function SlotNiche({ x, y, z, theta, slotNumber }: SlotNicheProps) {
       </Text>
     </group>
   );
-}
+});
 
 const SPIRAL_SLOT_LAYOUT: {
   number: number;
@@ -1554,7 +1566,7 @@ function BronzeTowerModel() {
     };
   }, []);
 
-  const nicheNumbers = useMemo(() => new Set([1, 15, 29]), []);
+  const nicheNumbers = useMemo(() => new Set([1, 2, 3, 14, 15, 16, 28, 29, 30]), []);
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
