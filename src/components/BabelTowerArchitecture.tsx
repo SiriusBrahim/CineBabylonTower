@@ -1566,7 +1566,10 @@ function BronzeTowerModel() {
     };
   }, []);
 
-  const nicheNumbers = useMemo(() => new Set([1, 2, 3, 14, 15, 16, 28, 29, 30]), []);
+  const nicheNumbers = useMemo(
+    () => new Set(Array.from({ length: 30 }, (_, i) => i + 1)),
+    []
+  );
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
