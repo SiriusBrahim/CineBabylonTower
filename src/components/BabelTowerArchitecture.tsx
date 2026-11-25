@@ -892,56 +892,21 @@ function BronzeTowerModel() {
     const a44ArchAnchor = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
     const a44ArchRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
       .sub(a44ArchAnchor).setY(0).normalize();
-    const createA44ArchContour = (
-      leftBottom: THREE.Vector2,
-      rightBottom: THREE.Vector2,
-      rightSpring: THREE.Vector2,
-      center: THREE.Vector2,
-      radius: number,
-      leftSpring: THREE.Vector2
-    ) => {
-      const points = [leftBottom, rightBottom, rightSpring];
-      for (let i = 1; i <= 32; i++) {
-        const angle = (Math.PI * i) / 32;
-        points.push(new THREE.Vector2(
-          center.x + Math.cos(angle) * radius,
-          center.y + Math.sin(angle) * radius
-        ));
-      }
-      points.push(leftSpring, leftBottom);
-      return points.map(({ x, y }) =>
-        a44ArchAnchor.clone()
-          .addScaledVector(a44ArchRightDirection, x)
-          .add(new THREE.Vector3(0, y, 0))
-      );
-    };
-
-    const a44OuterArchPoints = createA44ArchContour(
-      new THREE.Vector2(0, 0),
-      new THREE.Vector2(1.08, 0),
-      new THREE.Vector2(1.08, 1.38),
-      new THREE.Vector2(0.54, 1.38),
-      0.54,
-      new THREE.Vector2(0, 1.38)
-    );
-    const a44InnerArchPoints = createA44ArchContour(
-      new THREE.Vector2(0.06, 0.06),
-      new THREE.Vector2(1.02, 0.06),
-      new THREE.Vector2(1.02, 1.38),
-      new THREE.Vector2(0.54, 1.38),
-      0.48,
-      new THREE.Vector2(0.06, 1.38)
-    );
-    const a44OuterArchOutline = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(a44OuterArchPoints),
-      new THREE.LineBasicMaterial({ color: "#ffff00", depthTest: true })
-    );
-    a44OuterArchOutline.renderOrder = 31;
-    const a44InnerArchOutline = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(a44InnerArchPoints),
-      new THREE.LineBasicMaterial({ color: "#ffff00", depthTest: true })
-    );
-    a44InnerArchOutline.renderOrder = 32;
+    // İç kemer açıklığını posterin arkasında siyah bir yüzeyle doldur.
+    // Kontur: 0.96 genişlik, 0.06 taban kotu, 0.48 yarıçaplı yarım daire.
+    const a44ArchFillShape = new THREE.Shape();
+    a44ArchFillShape.moveTo(0.06, 0.06);
+    a44ArchFillShape.lineTo(1.02, 0.06);
+    a44ArchFillShape.lineTo(1.02, 1.38);
+    a44ArchFillShape.absarc(0.54, 1.38, 0.48, 0, Math.PI, false);
+    a44ArchFillShape.lineTo(0.06, 0.06);
+    a44ArchFillShape.closePath();
+    const a44ArchFillGeometry = new THREE.ShapeGeometry(a44ArchFillShape, 48);
+    const a44ArchFillMaterial = new THREE.MeshBasicMaterial({
+      color: "#000000",
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
 
     // Poster, iç kemerin alt doğrusu (Y=0.06) üzerinden başlar.
     // 0.96 × 1.38 ölçüsünde; alt kenarı iç alt doğruyla çakışıktır.
@@ -1417,8 +1382,8 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
       a30SpiralBottomLine,
-      a44OuterArchOutline,
-      a44InnerArchOutline,
+      a44ArchFillGeometry,
+      a44ArchFillMaterial,
       a44PosterPosition,
       a44PosterQuaternion,
       a44ToCrownS2GuideLine,
@@ -1478,8 +1443,12 @@ function BronzeTowerModel() {
         material={dims.blueFrontFaceMaterial}
         renderOrder={10}
       />
-      <primitive object={dims.a44OuterArchOutline} />
-      <primitive object={dims.a44InnerArchOutline} />
+      <group
+        position={dims.a44PosterPosition}
+        quaternion={dims.a44PosterQuaternion}
+      >
+        <mesh position={[0, 0, -0.012]} geometry={dims.a44ArchFillGeometry} material={dims.a44ArchFillMaterial} />
+      </group>
       <group
         position={dims.a44PosterPosition}
         quaternion={dims.a44PosterQuaternion}
