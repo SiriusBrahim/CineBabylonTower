@@ -7,13 +7,13 @@ import { usePosterSequence } from "./PosterSequence";
 const STAIRCASE_CONFIG = {
   totalSteps: 10,
   radius: 3.5,
-  stepHeight: 0.15,
+  stepHeight: 0.8,
   stepDepth: 1.0,
   stepWidth: 0.95,
-  angularStep: 0.3,
+  angularStep: 0.65,
   startAngle: 0,
-  cameraPolarAngle: Math.PI / 3,
-  cameraDistance: 8
+  cameraPolarAngle: Math.PI / 4,
+  cameraDistance: 10
 };
 
 interface StepData {
@@ -88,9 +88,9 @@ export default function SpiralStaircase() {
         position: [
           STAIRCASE_CONFIG.cameraDistance *
             Math.sin(STAIRCASE_CONFIG.cameraPolarAngle),
+          6,
           STAIRCASE_CONFIG.cameraDistance *
-            Math.cos(STAIRCASE_CONFIG.cameraPolarAngle),
-          0
+            Math.cos(STAIRCASE_CONFIG.cameraPolarAngle)
         ],
         fov: 50,
         near: 0.1,
