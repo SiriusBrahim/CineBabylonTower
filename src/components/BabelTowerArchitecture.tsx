@@ -1197,7 +1197,19 @@ function BronzeTowerModel({
       ...SPIRAL_SLOT_LAYOUT
     ];
     const frontFacePoints = frontFaceSlotsInPathOrder.map((slot) => {
-      const upperPoint = getSlotUpperLeft(slot);
+      // Kemer tepe noktası: dikdörtgen yarı yüksekliği + kemer yarıçapı.
+      // createNicheCapShape() ile aynı 0.48 yarıçapı ve slotun mevcut
+      // rotationY dönüşümünü kullan; layout kayıtlarında matrix bulunmaz.
+      const archApexLocal = new THREE.Vector3(
+        0,
+        (slot.height ?? posterHeight) * 0.5 + 0.48,
+        0.075 * 0.5
+      );
+      const upperPoint = archApexLocal
+        .applyQuaternion(
+          new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
+        )
+        .add(new THREE.Vector3(slot.x, slot.y, slot.z));
       const basePoint = upperPoint.clone();
       basePoint.y = 0;
       return { upperPoint, basePoint };
