@@ -1401,7 +1401,6 @@ function BronzeTowerModel() {
 
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
   const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
-  const aSlotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.346552, 0.075), []);
   const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: "#ffffff",
     metalness: 0.68,
