@@ -3,6 +3,9 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
+// Slotların görünürlüğü kapalı; yerleşim verileri ve duvar hesapları korunur.
+const SHOW_SLOTS = false;
+
 const BRONZE_TOWER = {
   name: "Bronz Kule",
   targetTotal: 100,
@@ -251,49 +254,410 @@ function BronzeTowerModel() {
       });
     }
 
-    // Slotların altından aşağı sarkan, aynı helis hattını izleyen saydam mavi duvar.
-    const wallPositions: number[] = [];
-    const wallIndices: number[] = [];
-    const wallTopOffset = posterHeight * 0.5 + 0.025;
-    // Duvar ikinci slottan başlar. Her noktada alt kenar 1. slotun tabanında
-    // sabit kalır; üst kenar ise ilgili slotun tabanını izler. Böylece duvarın
-    // yüksekliği her slotta 1. slota göre biriken gerçek yükselme kadar artar.
-    const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
+    // Kırmızı kılavuz çizgisi: A30 -> ... -> A -> 1 -> ... -> 119.
+    // Her slotun gerçek yüksekliği ve dönüş açısı hesaba katılır.
+    const getSlotUpperLeft = (slot: {
+      x: number; y: number; z: number; rotationY: number; height?: number;
+    }) => new THREE.Vector3(
+      -posterWidth * 0.5,
+      (slot.height ?? posterHeight) * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
+    ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
 
-    // Spiral duvarının son üst noktası, 119. slotun sol alt köşesine
-    // sabitlenir; böylece 118-119 arasında duvar kesintisiz devam eder.
-    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
-    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
-    );
-    const lastSpiralLowerLeft = new THREE.Vector3(
+    const crownLowerLeftGuidePoint = new THREE.Vector3(
       -posterWidth * 0.5,
       -posterHeight * 0.5,
       0.075 * 0.5
-    ).applyQuaternion(lastSpiralRotation).add(
-      new THREE.Vector3(lastSpiralLayout.x, lastSpiralLayout.y, lastSpiralLayout.z)
-    );
+    ).add(new THREE.Vector3(
+      CROWN_SLOT_POSITION.x,
+      CROWN_SLOT_POSITION.y,
+      CROWN_SLOT_POSITION.z
+    ));
+    const crownLowerRightGuidePoint = new THREE.Vector3(
+      posterWidth * 0.5,
+      -posterHeight * 0.5,
+      0.075 * 0.5
+    ).add(new THREE.Vector3(
+      CROWN_SLOT_POSITION.x,
+      CROWN_SLOT_POSITION.y,
+      CROWN_SLOT_POSITION.z
+    ));
 
-    for (let i = 1; i < slotCenters.length; i++) {
-      const current = slotCenters[i];
-      const radial = new THREE.Vector3(current.x, 0, current.z).normalize();
-      const wallCenter = current.clone().addScaledVector(radial, -0.085);
-      const top = i === slotCenters.length - 1
-        ? lastSpiralLowerLeft.clone()
-        : wallCenter.clone();
-      if (i !== slotCenters.length - 1) top.y -= wallTopOffset;
-      const bottom = wallCenter.clone();
-      if (i === slotCenters.length - 1) {
-        bottom.x = lastSpiralLowerLeft.x;
-        bottom.z = lastSpiralLowerLeft.z;
-      }
+    // 120-S2, 120. slotun ön sağ alt köşesine yerleştirilir;
+    // böylece 120-S1 -> 120-S2, alt kenar boyunca uzanır.
+    const slot118Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 118);
+    const slot119Layout = SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119);
+    if (!slot118Layout || !slot119Layout) {
+      throw new Error("118 veya 119. slot yerleşimi bulunamadı.");
+    }
+    const slot118UpperLeftGuidePoint = getSlotUpperLeft(slot118Layout);
+    const slot119UpperLeftGuidePoint = getSlotUpperLeft(slot119Layout);
+    const crownWallMatchPoint = crownLowerRightGuidePoint.clone();
+    crownWallMatchPoint.y = slot118UpperLeftGuidePoint.y;
+
+    const wallGuideLinePoints = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse().map(getSlotUpperLeft),
+      ...SPIRAL_SLOT_LAYOUT.map(getSlotUpperLeft),
+      crownLowerLeftGuidePoint
+    ];
+    const wallGuideLineGeometry = new THREE.BufferGeometry().setFromPoints(
+      wallGuideLinePoints
+    );
+    const wallGuideLine = new THREE.Line(
+      wallGuideLineGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    wallGuideLine.renderOrder = 10;
+
+    // Dört kenarlı kırmızı panel: 119-SÜ, 118-SÜ, 120-S2, 120-S1.
+    const crownPanelVertices = [
+      slot119UpperLeftGuidePoint,
+      slot118UpperLeftGuidePoint,
+      crownWallMatchPoint,
+      crownLowerLeftGuidePoint
+    ];
+    const crownPanelGeometry = new THREE.BufferGeometry();
+    crownPanelGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      crownPanelVertices.flatMap((point) => [point.x, point.y, point.z]),
+      3
+    ));
+    crownPanelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    crownPanelGeometry.computeVertexNormals();
+
+    // Dikdörtgenin eksik kenarı: 119-SÜ -> 120-S1.
+    const crownPanelConnectorGeometry = new THREE.BufferGeometry().setFromPoints([
+      slot119UpperLeftGuidePoint,
+      crownLowerLeftGuidePoint
+    ]);
+    const crownPanelConnectorLine = new THREE.Line(
+      crownPanelConnectorGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    crownPanelConnectorLine.renderOrder = 12;
+
+    // 120-S1 -> 120-S2 kenarı.
+    const crownPanelBaseEdgeGeometry = new THREE.BufferGeometry().setFromPoints([
+      crownLowerLeftGuidePoint,
+      crownWallMatchPoint
+    ]);
+    const crownPanelBaseEdgeLine = new THREE.Line(
+      crownPanelBaseEdgeGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    crownPanelBaseEdgeLine.renderOrder = 12;
+
+    const slot118ToCrownGuideGeometry = new THREE.BufferGeometry().setFromPoints([
+      slot118UpperLeftGuidePoint,
+      crownWallMatchPoint
+    ]);
+    const slot118ToCrownGuideLine = new THREE.Line(
+      slot118ToCrownGuideGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    slot118ToCrownGuideLine.renderOrder = 11;
+
+    // Her köşe noktası 3D görünümde isimlendirilir.
+    // Slot köşeleri: <slot adı>-SÜ; 120. duvar noktaları: 120-S1 / 120-S2.
+    const wallGuideLabels = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse().map((slot) => ({
+        name: `${slot.label}-SÜ`,
+        position: getSlotUpperLeft(slot)
+      })),
+      ...SPIRAL_SLOT_LAYOUT.map((slot) => ({
+        name: `${slot.number}-SÜ`,
+        position: getSlotUpperLeft(slot)
+      })),
+      // Her SÜ noktasından y=0 tabanına indirilen dikmenin alt ucunu
+      // kaynak noktasıyla eşleştirmek için -0 ekiyle etiketle.
+      ...[...SIDE_SLOT_LAYOUT, ...SPIRAL_SLOT_LAYOUT].map((slot) => {
+        const basePosition = getSlotUpperLeft(slot);
+        basePosition.y = 0;
+        const slotName = "label" in slot ? slot.label : String(slot.number);
+        return {
+          name: `${slotName}-SÜ-0`,
+          position: basePosition
+        };
+      }),
+      { name: "120-S1", position: crownLowerLeftGuidePoint },
+      { name: "120-S2", position: crownWallMatchPoint }
+    ];
+
+    // Tek parça spiral duvarın alt ucu A30-120 sağ bağlantısına,
+    // üst ucu 119-120 sol bağlantısına oturur.
+    // İzlenen hat: A30 -> A29 ... -> A -> 1 -> 2 ... -> 119.
+    const wallPositions: number[] = [];
+    const wallIndices: number[] = [];
+    const wallInset = 0.085;
+    const firstSlotBaseY = slotCenters[0].y - posterHeight * 0.5 - 0.025;
+
+    // 120-S1–120-S2 üst kenarından ortak tabana inen kapalı dikey duvar.
+    const crownS1S2BaseLeft = crownLowerLeftGuidePoint.clone();
+    crownS1S2BaseLeft.y = firstSlotBaseY;
+    const crownS1S2BaseRight = crownWallMatchPoint.clone();
+    crownS1S2BaseRight.y = firstSlotBaseY;
+    const crownS1S2ToBaseWallGeometry = new THREE.BufferGeometry();
+    crownS1S2ToBaseWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      crownLowerLeftGuidePoint.x, crownLowerLeftGuidePoint.y, crownLowerLeftGuidePoint.z,
+      crownWallMatchPoint.x, crownWallMatchPoint.y, crownWallMatchPoint.z,
+      crownS1S2BaseRight.x, crownS1S2BaseRight.y, crownS1S2BaseRight.z,
+      crownS1S2BaseLeft.x, crownS1S2BaseLeft.y, crownS1S2BaseLeft.z
+    ], 3));
+    crownS1S2ToBaseWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    crownS1S2ToBaseWallGeometry.computeVertexNormals();
+
+    // 120-S2 noktasından ortak taban seviyesine dikey kırmızı referans çizgisi.
+    // Diğer slot köşeleri ileride bu düşey hat üzerindeki noktalara bağlanacaktır.
+    const crownS2BasePoint = crownWallMatchPoint.clone();
+    crownS2BasePoint.y = firstSlotBaseY;
+    const crownS2VerticalGuideGeometry = new THREE.BufferGeometry().setFromPoints([
+      crownWallMatchPoint,
+      crownS2BasePoint
+    ]);
+    const crownS2VerticalGuideLine = new THREE.Line(
+      crownS2VerticalGuideGeometry,
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    crownS2VerticalGuideLine.renderOrder = 13;
+
+    
+    // Her SÜ köşesini, 120-S2'nin düşey referans hattına kendi yüksekliğinde
+    // yatay (düşey hatta 90 derece) kırmızı çizgiyle bağla.
+    // 118-SÜ bağlantısı slot118ToCrownGuideLine ile zaten çizildi.
+    const slotToCrownS2HorizontalGuideLines: THREE.Line[] = [];
+    const horizontalConnectorSlots = [
+      ...SIDE_SLOT_LAYOUT,
+      ...SPIRAL_SLOT_LAYOUT.filter((slot) => slot.number !== 118)
+    ];
+
+    for (const slot of horizontalConnectorSlots) {
+      const slotUpperLeft = getSlotUpperLeft(slot);
+      const crownS2AtSlotHeight = crownWallMatchPoint.clone();
+      crownS2AtSlotHeight.y = slotUpperLeft.y;
+
+      const connectorGeometry = new THREE.BufferGeometry().setFromPoints([
+        slotUpperLeft,
+        crownS2AtSlotHeight
+      ]);
+      const connectorLine = new THREE.Line(
+        connectorGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      connectorLine.renderOrder = 12;
+      slotToCrownS2HorizontalGuideLines.push(connectorLine);
+    }
+
+    // Her SÜ noktasından aynı X/Z koordinatını koruyarak y=0 tabanına
+    // tam dikey kırmızı bir izdüşüm çizgisi indir.
+    const slotUpperLeftToBaseGuideLines: THREE.Line[] = [];
+    const allUpperLeftSlots = [...SIDE_SLOT_LAYOUT, ...SPIRAL_SLOT_LAYOUT];
+
+    for (const slot of allUpperLeftSlots) {
+      const slotUpperLeft = getSlotUpperLeft(slot);
+      const basePoint = slotUpperLeft.clone();
+      basePoint.y = 0;
+
+      const verticalGeometry = new THREE.BufferGeometry().setFromPoints([
+        slotUpperLeft,
+        basePoint
+      ]);
+      const verticalLine = new THREE.Line(
+        verticalGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      verticalLine.renderOrder = 14;
+      slotUpperLeftToBaseGuideLines.push(verticalLine);
+    }
+
+    // Komşu SÜ noktaları ile bunların y=0 izdüşümleri arasındaki
+    // ön yüzeyleri dörtgen paneller halinde doldur:
+    // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ ve aynı düzen tüm hat boyunca.
+    const slotFrontFacePanels: THREE.Mesh[] = [];
+    // Deneme 8: Bütün duvarlar ve bütün üst yüzeyler için iki sabit ortak materyal.
+    const wallBlueMaterial = new THREE.MeshBasicMaterial({
+      color: 0x1565ff,
+      transparent: false,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+    const topGreenMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00c853,
+      transparent: false,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+
+    // Eski materyal adları aynı ortak materyallere yönlendirilir.
+    const slotFrontFaceMaterial = wallBlueMaterial;
+    const slotSideFaceMaterial = wallBlueMaterial;
+    const a30A29EnclosedFaceMaterial = wallBlueMaterial;
+    const frontFaceSlotsInPathOrder = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
+    ];
+    const frontFacePoints = frontFaceSlotsInPathOrder.map((slot) => {
+      const upperPoint = getSlotUpperLeft(slot);
+      const basePoint = upperPoint.clone();
+      basePoint.y = 0;
+      return { upperPoint, basePoint };
+    });
+
+    // Deneme 6.2: A30-SÜ'den 118-SÜ'ye kadar mevcut ön yüzey panelleri
+    // sabit olarak mavi materyalle ve %100 opaklıkta renklendirilir.
+    const lastBlueFrontFaceIndex = 149; // A30...A, ardından 1-SÜ...119-SÜ
+    const blueFrontFaceMaterial = wallBlueMaterial;
+    for (let i = 1; i < frontFacePoints.length; i++) {
+      if (i > lastBlueFrontFaceIndex) continue;
+      const previous = frontFacePoints[i - 1];
+      const current = frontFacePoints[i];
+      const panelGeometry = new THREE.BufferGeometry();
+      panelGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        previous.basePoint.x, previous.basePoint.y, previous.basePoint.z,
+        current.basePoint.x, current.basePoint.y, current.basePoint.z,
+        current.upperPoint.x, current.upperPoint.y, current.upperPoint.z,
+        previous.upperPoint.x, previous.upperPoint.y, previous.upperPoint.z
+      ], 3));
+      panelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+      panelGeometry.computeVertexNormals();
+
+      const panelMesh = new THREE.Mesh(panelGeometry, blueFrontFaceMaterial);
+      panelMesh.renderOrder = 10;
+      slotFrontFacePanels.push(panelMesh);
+    }
+
+
+    // Yan yüzeyleri aynı dörtgen mantığıyla tüm SÜ noktalarından
+    // 120-S2 düşey hattına kadar doldur:
+    // Her panel: SÜ-0 → SÜ → 120[SÜ yüksekliği] → 120-S2-0.
+    const slotSideFacePanels: THREE.Mesh[] = [];
+    const sideFaceSlots = [...SIDE_SLOT_LAYOUT, ...SPIRAL_SLOT_LAYOUT];
+
+    const crownS2AtZeroHeight = crownWallMatchPoint.clone();
+    crownS2AtZeroHeight.y = 0;
+
+    for (const slot of sideFaceSlots) {
+      // 119-SÜ ile 120-S2 arasındaki eski tabanlı dikdörtgen kaldırılır;
+      // bu alanın yerine 120-S1 bağlantılı yeni duvar oluşturulur.
+      if ("number" in slot && slot.number === 119) continue;
+
+      const slotUpperPoint = getSlotUpperLeft(slot);
+      const slotBasePoint = slotUpperPoint.clone();
+      slotBasePoint.y = 0;
+
+      const crownS2AtSlotHeight = crownWallMatchPoint.clone();
+      crownS2AtSlotHeight.y = slotUpperPoint.y;
+
+      const sideFaceGeometry = new THREE.BufferGeometry();
+      sideFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        slotBasePoint.x, slotBasePoint.y, slotBasePoint.z,
+        slotUpperPoint.x, slotUpperPoint.y, slotUpperPoint.z,
+        crownS2AtSlotHeight.x, crownS2AtSlotHeight.y, crownS2AtSlotHeight.z,
+        crownS2AtZeroHeight.x, crownS2AtZeroHeight.y, crownS2AtZeroHeight.z
+      ], 3));
+      sideFaceGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+      sideFaceGeometry.computeVertexNormals();
+
+      const sideFacePanel = new THREE.Mesh(
+        sideFaceGeometry,
+        slotSideFaceMaterial
+      );
+      sideFacePanel.renderOrder = 6;
+      slotSideFacePanels.push(sideFacePanel);
+    }
+
+    // Yeni 119-120 duvarı: 120-S1 → 119-SÜ → 119-SÜ-0 → 120-S1-0.
+    // Eski 119-SÜ → 120-S2 → 119-SÜ-0 → 120-S2-0 panelinin yerine geçer.
+    const slot119UpperLeft = getSlotUpperLeft(
+      SPIRAL_SLOT_LAYOUT.find((slot) => slot.number === 119)!
+    );
+    const slot119BaseLeft = slot119UpperLeft.clone();
+    slot119BaseLeft.y = 0;
+    const crownS1AtZeroHeight = crownLowerLeftGuidePoint.clone();
+    crownS1AtZeroHeight.y = 0;
+    const slot119ToCrownS1WallGeometry = new THREE.BufferGeometry();
+    slot119ToCrownS1WallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      crownLowerLeftGuidePoint.x, crownLowerLeftGuidePoint.y, crownLowerLeftGuidePoint.z,
+      slot119UpperLeft.x, slot119UpperLeft.y, slot119UpperLeft.z,
+      slot119BaseLeft.x, slot119BaseLeft.y, slot119BaseLeft.z,
+      crownS1AtZeroHeight.x, crownS1AtZeroHeight.y, crownS1AtZeroHeight.z
+    ], 3));
+    slot119ToCrownS1WallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    slot119ToCrownS1WallGeometry.computeVertexNormals();
+
+    // 119-SÜ–120-S1 duvarı diğer mavi ön duvarlarla aynı materyali kullanır.
+    const slot119ToCrownS1WallMaterial = blueFrontFaceMaterial;
+
+    // Taban noktaları arasındaki 0.044 birimlik prizma bağlantıları kaldırıldı.
+    // Taban noktaları ve diğer kılavuz çizgileri korunur.
+    const slotBaseToBaseGuideLines: THREE.Mesh[] = [];
+
+    // A30-SÜ-0 → 120A30-SÜ-0 ve 119-SÜ-0 → 120-S2-0
+    // arasındaki 0.044 birim kare kesitli prizma bağlantıları kaldırıldı.
+    const slotBaseToCrownS2GuideLines: THREE.Mesh[] = [];
+
+    type WallPathPoint = {
+      x: number; y: number; z: number; halfHeight: number;
+      rotationY: number; radialX: number; radialZ: number;
+    };
+
+    const wallPath: WallPathPoint[] = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse().map((slot) => ({
+        x: slot.x, y: slot.y, z: slot.z,
+        halfHeight: slot.height * 0.5,
+        rotationY: slot.rotationY,
+        radialX: slot.x, radialZ: slot.z
+      })),
+      ...SPIRAL_SLOT_LAYOUT.map((slot) => ({
+        x: slot.x, y: slot.y, z: slot.z,
+        halfHeight: posterHeight * 0.5,
+        rotationY: slot.rotationY,
+        radialX: slot.x, radialZ: slot.z
+      }))
+    ];
+
+    for (let i = 0; i < wallPath.length; i++) {
+      const point = wallPath[i];
+      const radial = new THREE.Vector3(point.radialX, 0, point.radialZ).normalize();
+      const center = new THREE.Vector3(point.x, point.y, point.z)
+        .addScaledVector(radial, -wallInset);
+
+      const top = center.clone();
+      const bottom = center.clone();
+      top.y += point.halfHeight;
       bottom.y = firstSlotBaseY;
 
-      wallPositions.push(top.x, top.y, top.z, bottom.x, bottom.y, bottom.z);
+      // Alt/üst uçları mevcut bağlantı panellerinin gerçek kenarlarına hizala.
+      if (i === 0) {
+        const a30 = SIDE_SLOT_LAYOUT[SIDE_SLOT_LAYOUT.length - 1];
+        const a30Rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a30.rotationY, 0));
+        top.copy(new THREE.Vector3(posterWidth * 0.5, a30.height * 0.5, 0.075 * 0.5)
+          .applyQuaternion(a30Rotation)
+          .add(new THREE.Vector3(a30.x, a30.y, a30.z)));
+      } else if (i === wallPath.length - 1) {
+        const last = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
+        const lastRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, last.rotationY, 0));
+        top.copy(new THREE.Vector3(-posterWidth * 0.5, posterHeight * 0.5, 0.075 * 0.5)
+          .applyQuaternion(lastRotation)
+          .add(new THREE.Vector3(last.x, last.y, last.z)));
+      }
 
-      if (i < slotCenters.length - 1) {
-        const index = (i - 1) * 2;
-        wallIndices.push(index, index + 1, index + 2, index + 1, index + 3, index + 2);
+      bottom.x = top.x;
+      bottom.z = top.z;
+      wallPositions.push(
+        top.x, top.y, top.z,
+        bottom.x, bottom.y, bottom.z
+      );
+
+      if (i > 0) {
+        const previous = (i - 1) * 2;
+        const current = i * 2;
+        wallIndices.push(
+          previous, previous + 1, current,
+          previous + 1, current + 1, current
+        );
       }
     }
 
@@ -301,8 +665,6 @@ function BronzeTowerModel() {
     wallGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wallPositions, 3));
     wallGeometry.setIndex(wallIndices);
     wallGeometry.computeVertexNormals();
-
-
 
     const crownPosition = new THREE.Vector3(
       CROWN_SLOT_POSITION.x,
@@ -322,13 +684,19 @@ function BronzeTowerModel() {
 
     // 120. slotun altından ana duvar tabanına kadar inen, slotla aynı
     // genişlikte ve aynı dikey düzlemde bir destek duvarı.
-    const crownWallTopY = crownPosition.y - posterHeight * 0.5 - 0.003;
+    const crownWallTopY = crownWallMatchPoint.y - 0.003;
     const crownWallHeight = crownWallTopY - firstSlotBaseY;
     const crownWallGeometry = new THREE.BoxGeometry(posterWidth, crownWallHeight, 0.075);
     const crownWallPosition = new THREE.Vector3(
       0,
       firstSlotBaseY + crownWallHeight * 0.5,
       0
+    );
+
+    // 119. slotun dönüşü, 119-120 bağlantı panellerinde kullanılır.
+    const lastSpiralLayout = SPIRAL_SLOT_LAYOUT[SPIRAL_SLOT_LAYOUT.length - 1];
+    const lastSpiralRotation = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(0, lastSpiralLayout.rotationY, 0)
     );
 
     // Bağlantı duvarının üst kenarı tam olarak 119. slotun sol üst
@@ -483,18 +851,551 @@ function BronzeTowerModel() {
       wallToCrownConnectors.push({ left, right, fill });
     }
 
+    // A29-A30 arasındaki sağ kenarı, ortak tabana kadar inen yekpare bir
+    // duvarla kapat. Aynı panelin karşılığı 120. slot destek duvarında da oluşur.
+    const a29 = SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A29");
+    const a30 = SIDE_SLOT_LAYOUT.find((slot) => slot.label === "A30");
+    if (!a29 || !a30) throw new Error("A29 veya A30 yerleşimi bulunamadı.");
+
+    const getSideSlotUpperRight = (slot: typeof a29) => new THREE.Vector3(
+      posterWidth * 0.5,
+      slot.height * 0.5,
+      0.075 * 0.5
+    ).applyQuaternion(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, slot.rotationY, 0))
+    ).add(new THREE.Vector3(slot.x, slot.y, slot.z));
+
+    const a29UpperRight = getSideSlotUpperRight(a29);
+    const a30UpperRight = getSideSlotUpperRight(a30);
+
+    // Deneme 9.2: Kırmızı kılavuz, A30-SÜ'den başlayıp hesaplanan A31-SÜ...A44-SÜ
+    // noktalarının tamamından geçer. A44-SÜ, Y=0 taban noktasını temsil eder.
+    const a30SpiralLinePoints = [
+      getSlotUpperLeft(a30),
+      new THREE.Vector3(-10.890838, 0.429664, -1.630302), // A31-SÜ
+      new THREE.Vector3(-11.044312, 0.396216, -0.678389), // A32-SÜ
+      new THREE.Vector3(-11.114468, 0.362768, 0.282966), // A33-SÜ
+      new THREE.Vector3(-11.101256, 0.329320, 1.246445), // A34-SÜ
+      new THREE.Vector3(-11.005266, 0.295872, 2.204831), // A35-SÜ
+      new THREE.Vector3(-10.827707, 0.262424, 3.151063), // A36-SÜ
+      new THREE.Vector3(-10.570380, 0.228976, 4.078282), // A37-SÜ
+      new THREE.Vector3(-10.235651, 0.195528, 4.979888), // A38-SÜ
+      new THREE.Vector3(-9.826415, 0.162080, 5.849575), // A39-SÜ
+      new THREE.Vector3(-9.346062, 0.128632, 6.681377), // A40-SÜ
+      new THREE.Vector3(-8.798441, 0.095184, 7.469704), // A41-SÜ
+      new THREE.Vector3(-8.187811, 0.061736, 8.209371), // A42-SÜ
+      new THREE.Vector3(-7.518807, 0.028288, 8.895625), // A43-SÜ
+      new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
+    ];
+
+    // A44-SÜ referansında yeni dış kemer ve iç sınır konturları.
+    const a44ArchAnchor = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
+    const a44ArchRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
+      .sub(a44ArchAnchor).setY(0).normalize();
+    // İç kemer açıklığını posterin arkasında siyah bir yüzeyle doldur.
+    // Kontur: 0.96 genişlik, 0.06 taban kotu, 0.48 yarıçaplı yarım daire.
+    const a44ArchFillShape = new THREE.Shape();
+    // Geometri, poster grubunun merkezine göre yerel koordinatlarla tanımlanır.
+    a44ArchFillShape.moveTo(-0.48, -0.69);
+    a44ArchFillShape.lineTo(0.48, -0.69);
+    a44ArchFillShape.lineTo(0.48, 0.63);
+    a44ArchFillShape.absarc(0, 0.63, 0.48, 0, Math.PI, false);
+    a44ArchFillShape.lineTo(-0.48, -0.69);
+    a44ArchFillShape.closePath();
+    const a44ArchFillGeometry = new THREE.ShapeGeometry(a44ArchFillShape, 48);
+    const a44ArchFillMaterial = new THREE.MeshBasicMaterial({
+      color: "#000000",
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+
+    // Poster, iç kemerin alt doğrusu (Y=0.06) üzerinden başlar.
+    // 0.96 × 1.38 ölçüsünde; alt kenarı iç alt doğruyla çakışıktır.
+    const a44PosterNormal = new THREE.Vector3()
+      .crossVectors(a44ArchRightDirection, new THREE.Vector3(0, 1, 0))
+      .normalize();
+    const a44PosterQuaternion = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(
+        a44ArchRightDirection,
+        new THREE.Vector3(0, 1, 0),
+        a44PosterNormal
+      )
+    );
+    const a44PosterPosition = a44ArchAnchor.clone()
+      .addScaledVector(a44ArchRightDirection, 0.54)
+      .add(new THREE.Vector3(0, 0.75, 0))
+      .addScaledVector(a44PosterNormal, 0.018);
+
+    // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
+    const a30SpiralGuideLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    a30SpiralGuideLine.renderOrder = 15;
+
+    // Alt kırmızı sınır: A30-SÜ-0 → A31-SÜ-0 ... A43-SÜ-0 → A44-SÜ.
+    // Her taban noktası, ilgili SÜ noktasının Y=0 düzlemine dik izdüşümüdür.
+    const a30SpiralBaseLinePoints = [
+      a30SpiralLinePoints[0].clone().setY(0),
+      new THREE.Vector3(-10.890838, 0, -1.630302), // A31-SÜ0
+      new THREE.Vector3(-11.044312, 0, -0.678389), // A32-SÜ0
+      new THREE.Vector3(-11.114468, 0, 0.282966), // A33-SÜ0
+      new THREE.Vector3(-11.101256, 0, 1.246445), // A34-SÜ0
+      new THREE.Vector3(-11.005266, 0, 2.204831), // A35-SÜ0
+      new THREE.Vector3(-10.827707, 0, 3.151063), // A36-SÜ0
+      new THREE.Vector3(-10.570380, 0, 4.078282), // A37-SÜ0
+      new THREE.Vector3(-10.235651, 0, 4.979888), // A38-SÜ0
+      new THREE.Vector3(-9.826415, 0, 5.849575), // A39-SÜ0
+      new THREE.Vector3(-9.346062, 0, 6.681377), // A40-SÜ0
+      new THREE.Vector3(-8.798441, 0, 7.469704), // A41-SÜ0
+      new THREE.Vector3(-8.187811, 0, 8.209371), // A42-SÜ0
+      new THREE.Vector3(-7.518807, 0, 8.895625), // A43-SÜ0
+      a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone() // A44-SÜ
+    ];
+    const a30SpiralBottomLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(a30SpiralBaseLinePoints),
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    a30SpiralBottomLine.renderOrder = 16;
+
+    // A44-SÜ'nün 120-S2 dikmesi üzerindeki karşılık noktası.
+    // A44-SÜ yüksekliği 0 olduğundan 120'44-SÜ, 120-S2 ekseninin Y=0 izdüşümüdür.
+    const a44ToCrownS2BasePoint = crownWallMatchPoint.clone();
+    a44ToCrownS2BasePoint.y = 0;
+    const a44UpperPoint = a30SpiralLinePoints[a30SpiralLinePoints.length - 1];
+    const a44ToCrownS2GuideLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        a44UpperPoint,
+        a44ToCrownS2BasePoint
+      ]),
+      new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    );
+    a44ToCrownS2GuideLine.renderOrder = 17;
+
+    // A31-SÜ ... A43-SÜ noktalarının 120-S2 dikmesi üzerindeki
+    // karşılıkları aynı yükseklikte oluşturulur ve her çift kırmızı çizgiyle bağlanır.
+    const a31ToA43CrownS2GuideLines = a30SpiralLinePoints.slice(1, -1).map((upperPoint) => {
+      const correspondingPoint = crownWallMatchPoint.clone();
+      correspondingPoint.y = upperPoint.y;
+      const guideLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([upperPoint, correspondingPoint]),
+        new THREE.LineBasicMaterial({ color: 0xff0000, depthTest: false })
+      );
+      guideLine.renderOrder = 17;
+      return guideLine;
+    });
+
+    // Mavi duvar, üst ve alt spiral sınırların ardışık noktaları
+    // arasında ayrı dörtgen paneller oluşturularak doldurulur.
+    const a30A44WallGeometry = new THREE.BufferGeometry();
+    const a30A44WallPositions: number[] = [];
+    const a30A44WallIndices: number[] = [];
+    for (let i = 0; i < a30SpiralLinePoints.length - 1; i++) {
+      const upperStart = a30SpiralLinePoints[i];
+      const upperEnd = a30SpiralLinePoints[i + 1];
+      const baseEnd = a30SpiralBaseLinePoints[i + 1];
+      const baseStart = a30SpiralBaseLinePoints[i];
+      const offset = a30A44WallPositions.length / 3;
+      a30A44WallPositions.push(
+        upperStart.x, upperStart.y, upperStart.z,
+        upperEnd.x, upperEnd.y, upperEnd.z,
+        baseEnd.x, baseEnd.y, baseEnd.z,
+        baseStart.x, baseStart.y, baseStart.z
+      );
+      a30A44WallIndices.push(
+        offset, offset + 1, offset + 2,
+        offset, offset + 2, offset + 3
+      );
+    }
+    a30A44WallGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(a30A44WallPositions, 3)
+    );
+    a30A44WallGeometry.setIndex(a30A44WallIndices);
+    a30A44WallGeometry.computeVertexNormals();
+    const a29BaseRight = a29UpperRight.clone();
+    const a30BaseRight = a30UpperRight.clone();
+    a29BaseRight.y = firstSlotBaseY;
+    a30BaseRight.y = firstSlotBaseY;
+
+    const sideSeriesRightWallGeometry = new THREE.BufferGeometry();
+    sideSeriesRightWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      a29UpperRight.x, a29UpperRight.y, a29UpperRight.z,
+      a29BaseRight.x, a29BaseRight.y, a29BaseRight.z,
+      a30BaseRight.x, a30BaseRight.y, a30BaseRight.z,
+      a30UpperRight.x, a30UpperRight.y, a30UpperRight.z
+    ], 3));
+    sideSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    sideSeriesRightWallGeometry.computeVertexNormals();
+
+    const a29CrownJoinRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      a29.y + a29.height * 0.5,
+      0.075 * 0.5
+    );
+    const a30CrownJoinRight = new THREE.Vector3(
+      posterWidth * 0.5,
+      a30.y + a30.height * 0.5,
+      0.075 * 0.5
+    );
+    const a29CrownBaseRight = a29CrownJoinRight.clone();
+    const a30CrownBaseRight = a30CrownJoinRight.clone();
+    a29CrownBaseRight.y = firstSlotBaseY;
+    a30CrownBaseRight.y = firstSlotBaseY;
+
+    const crownSeriesRightWallGeometry = new THREE.BufferGeometry();
+    crownSeriesRightWallGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      a29CrownJoinRight.x, a29CrownJoinRight.y, a29CrownJoinRight.z,
+      a29CrownBaseRight.x, a29CrownBaseRight.y, a29CrownBaseRight.z,
+      a30CrownBaseRight.x, a30CrownBaseRight.y, a30CrownBaseRight.z,
+      a30CrownJoinRight.x, a30CrownJoinRight.y, a30CrownJoinRight.z
+    ], 3));
+    crownSeriesRightWallGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+    crownSeriesRightWallGeometry.computeVertexNormals();
+
+    // A30-SÜ → A29-SÜ → 120A29-SÜ → 120A30-SÜ
+    // dörtgeni ve aynı düzende hat boyunca devam eden tüm komşu alanlar.
+    // A30-SÜ'den 118-SÜ'ye kadar tüm üst yüzeyler opak yeşil.
+    // Sabit nokta koordinatları ve upperBridgePairHeights değerleri korunur.
+    const upperBridgeGreenMaterial = topGreenMaterial;
+    const crownPanelMaterial = topGreenMaterial;
+    const upperBridgeFacePanels: THREE.Mesh[] = [];
+    const upperBridgeSlots = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
+    ];
+
+    // Karşılıklı SÜ noktalarının yükseklikleri mevcut yerleşimden alınarak sabitlendi.
+    // Sıra: A30...A, ardından 1...119. Her iki uç aynı Y değerini kullanır.
+    const upperBridgePairHeights = [
+      0.463112,
+      0.49656,
+      0.530008,
+      0.563456,
+      0.596904,
+      0.630352,
+      0.6638,
+      0.697248,
+      0.730696,
+      0.764144,
+      0.797592,
+      0.83104,
+      0.864488,
+      0.897936,
+      0.931384,
+      0.964832,
+      0.99828,
+      1.031728,
+      1.065176,
+      1.098624,
+      1.132072,
+      1.16552,
+      1.198968,
+      1.232416,
+      1.265864,
+      1.299312,
+      1.33276,
+      1.366208,
+      1.399656,
+      1.433104,
+      1.466552,
+      1.5,
+      1.533448172280245,
+      1.567088575435664,
+      1.600923431788513,
+      1.634955002422483,
+      1.6691855880894,
+      1.703617530142594,
+      1.738253211497877,
+      1.773095057623132,
+      1.808145537557521,
+      1.843407164961393,
+      1.878882499198017,
+      1.914574146448278,
+      1.950484760859584,
+      1.986617045730219,
+      2.022973754730486,
+      2.059557693162004,
+      2.096371719256613,
+      2.133418745516378,
+      2.170701740096269,
+      2.208223728231159,
+      2.245987793708855,
+      2.283997080390952,
+      2.322254793783388,
+      2.360764202658671,
+      2.399528640731802,
+      2.438551508392088,
+      2.477836274493047,
+      2.517386478202796,
+      2.557205730917373,
+      2.597297718239584,
+      2.637666202026087,
+      2.678315022505552,
+      2.719248100470886,
+      2.760469439548653,
+      2.801983128548957,
+      2.843793343899263,
+      2.885904352165758,
+      2.928320512666069,
+      2.971046280177331,
+      3.014086207743823,
+      3.057444949588585,
+      3.101127264133681,
+      3.145138017134003,
+      3.189482184929783,
+      3.234164857823239,
+      3.279191243585108,
+      3.324566671097068,
+      3.370296594136466,
+      3.416386595310032,
+      3.462842390143705,
+      3.509669831336048,
+      3.556874913183168,
+      3.604463776183517,
+      3.65244271183141,
+      3.700818167608623,
+      3.749596752183981,
+      3.7987852408314,
+      3.848390581077526,
+      3.898419898590713,
+      3.948880503323841,
+      3.999779895924214,
+      4.051125774424589,
+      4.102926041230279,
+      4.155188810418162,
+      4.207922415364494,
+      4.261135416719429,
+      4.314836610747346,
+      4.369035038053298,
+      4.42373999271725,
+      4.478961031859164,
+      4.534707985659573,
+      4.590990967861908,
+      4.647820386784653,
+      4.70520695687331,
+      4.76316171082423,
+      4.821696012314659,
+      4.880821569375698,
+      4.940550448447564,
+      5.000895089159345,
+      5.061868319878542,
+      5.123483374078992,
+      5.185753907579448,
+      5.248694016708942,
+      5.312318257459408,
+      5.376641665690649,
+      5.441679778457791,
+      5.507448656536925,
+      5.573964908230593,
+      5.64124571454143,
+      5.70930885580937,
+      5.778172739915757,
+      5.847856432166267,
+      5.918379686974014,
+      5.989762981474536,
+      6.062027551215806,
+      6.135195428078841,
+      6.209289480598372,
+      6.284333456868152,
+      6.360352030232345,
+      6.437370847982908,
+      6.51541658330348,
+      6.59451699072298,
+      6.674700965367402,
+      6.755998606326331,
+      6.838441284481865,
+      6.922061715182478,
+      7.006894036183098,
+      7.092973891316083,
+      7.180338520406275,
+      7.269026855997833,
+      7.35907962752157,
+      7.450539473600365,
+      7.543451063267712,
+      7.637861226961952,
+      7.733819098257737,
+      7.831376267408451,
+      7.930586947900704,
+      8.03150815736696
+    ];
+
+    for (let i = 1; i < upperBridgeSlots.length; i++) {
+      // 118-SÜ → 119-SÜ aralığının eski kırmızı üst paneli kaldırıldı.
+      if (i === 149) continue;
+      const previousSlot = upperBridgeSlots[i - 1];
+      const currentSlot = upperBridgeSlots[i];
+      const previousUpperPoint = getSlotUpperLeft(previousSlot);
+      const currentUpperPoint = getSlotUpperLeft(currentSlot);
+      const previousPairHeight = upperBridgePairHeights[i - 1];
+      const currentPairHeight = upperBridgePairHeights[i];
+      // Slot tarafı ve 120 dikmesi tarafındaki karşılıklı noktalar aynı sabit Y değerindedir.
+      previousUpperPoint.y = previousPairHeight;
+      currentUpperPoint.y = currentPairHeight;
+      const points = [
+        previousUpperPoint,
+        currentUpperPoint,
+        new THREE.Vector3(posterWidth * 0.5, currentPairHeight, 0.075 * 0.5),
+        new THREE.Vector3(posterWidth * 0.5, previousPairHeight, 0.075 * 0.5)
+      ];
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(
+        points.flatMap((point) => [point.x, point.y, point.z]),
+        3
+      ));
+      geometry.setIndex([0, 1, 2, 0, 2, 3]);
+      geometry.computeVertexNormals();
+
+      // Bütün üst köprü panelleri aynı sabit yeşil materyali kullanır.
+      const panelMaterial = upperBridgeGreenMaterial;
+      const panel = new THREE.Mesh(geometry, panelMaterial);
+      panel.renderOrder = 8;
+      upperBridgeFacePanels.push(panel);
+    }
+
+    // Deneme 5: Kullanıcının belirttiği sekiz noktalı çevrimi doldur.
+    // 120A30-SÜ-0 ve 120A29-SÜ-0 aynı koordinatta birleştiği için
+    // ortak taban noktası geometride tek vertex olarak tutulur.
+    const a30A29EnclosedFaceA30Base = getSlotUpperLeft(a30);
+    a30A29EnclosedFaceA30Base.y = 0;
+    const a30A29EnclosedFaceA29Base = getSlotUpperLeft(a29);
+    a30A29EnclosedFaceA29Base.y = 0;
+    const a30A29EnclosedFacePoints = [
+      getSlotUpperLeft(a30),
+      getSlotUpperLeft(a29),
+      a30A29EnclosedFaceA29Base,
+      a30A29EnclosedFaceA30Base,
+      a30CrownBaseRight.clone(),
+      a29CrownJoinRight.clone(),
+      a30CrownJoinRight.clone()
+    ];
+    const a30A29EnclosedFaceGeometry = new THREE.BufferGeometry();
+    a30A29EnclosedFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      a30A29EnclosedFacePoints.flatMap((point) => [point.x, point.y, point.z]),
+      3
+    ));
+    a30A29EnclosedFaceGeometry.setIndex([
+      0, 1, 2,
+      0, 2, 3,
+      0, 3, 4,
+      0, 4, 5,
+      0, 5, 6
+    ]);
+    a30A29EnclosedFaceGeometry.computeVertexNormals();
+
+    // A31-SÜ ... A44-SÜ boyunca her komşu nokta çifti için,
+    // A29-SÜ / 120'A29-SÜ / 120'A30-SÜ / A30-SÜ düzenindeki
+    // dörtgen yüzeyleri oluştur.
+    const a30A44CrownS2FacePanels: THREE.Mesh[] = [];
+    const a30ToA44UpperPoints = a30SpiralLinePoints.slice(0);
+    for (let i = 0; i < a30ToA44UpperPoints.length - 1; i++) {
+      const currentUpperPoint = a30ToA44UpperPoints[i];
+      const nextUpperPoint = a30ToA44UpperPoints[i + 1];
+      const currentCrownPoint = crownWallMatchPoint.clone();
+      const nextCrownPoint = crownWallMatchPoint.clone();
+      currentCrownPoint.y = currentUpperPoint.y;
+      nextCrownPoint.y = nextUpperPoint.y;
+
+      const panelGeometry = new THREE.BufferGeometry();
+      panelGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        currentUpperPoint.x, currentUpperPoint.y, currentUpperPoint.z,
+        currentCrownPoint.x, currentCrownPoint.y, currentCrownPoint.z,
+        nextCrownPoint.x, nextCrownPoint.y, nextCrownPoint.z,
+        nextUpperPoint.x, nextUpperPoint.y, nextUpperPoint.z
+      ], 3));
+      panelGeometry.setIndex([0, 1, 2, 0, 2, 3]);
+      panelGeometry.computeVertexNormals();
+
+      const panel = new THREE.Mesh(panelGeometry, topGreenMaterial);
+      panel.renderOrder = 10;
+      a30A44CrownS2FacePanels.push(panel);
+    }
+
+    // A30-SÜ-0'dan başlayıp 119-SÜ-0'a kadar tüm komşu taban
+    // noktalarını 120-S2 taban noktasına bağlayan yüzeyleri doldur.
+    // Her aralık, 0.044 yüksekliğinde üçgen bir yüzey olarak oluşturulur.
+    const baseFaceSlotsInPathOrder = [
+      ...SIDE_SLOT_LAYOUT.slice().reverse(),
+      ...SPIRAL_SLOT_LAYOUT
+    ];
+    const baseFacePositions: number[] = [];
+    const baseFaceIndices: number[] = [];
+    const baseFaceAnchor = crownLowerRightGuidePoint.clone();
+    baseFaceAnchor.y = 0.044;
+
+    for (let i = 1; i < baseFaceSlotsInPathOrder.length; i++) {
+      const previousBasePoint = getSlotUpperLeft(baseFaceSlotsInPathOrder[i - 1]);
+      const currentBasePoint = getSlotUpperLeft(baseFaceSlotsInPathOrder[i]);
+      previousBasePoint.y = 0.044;
+      currentBasePoint.y = 0.044;
+
+      const vertexOffset = baseFacePositions.length / 3;
+      baseFacePositions.push(
+        previousBasePoint.x, previousBasePoint.y, previousBasePoint.z,
+        currentBasePoint.x, currentBasePoint.y, currentBasePoint.z,
+        baseFaceAnchor.x, baseFaceAnchor.y, baseFaceAnchor.z
+      );
+      baseFaceIndices.push(vertexOffset, vertexOffset + 1, vertexOffset + 2);
+    }
+
+    const a30A29BaseFaceGeometry = new THREE.BufferGeometry();
+    a30A29BaseFaceGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      baseFacePositions,
+      3
+    ));
+    a30A29BaseFaceGeometry.setIndex(baseFaceIndices);
+    a30A29BaseFaceGeometry.computeVertexNormals();
+
     return {
       slots,
       slotLabels,
       aSlotPosition,
       descendingSideSlots,
       wallGeometry,
+      wallGuideLine,
+      crownS2VerticalGuideLine,
+      slotToCrownS2HorizontalGuideLines,
+      slotUpperLeftToBaseGuideLines,
+      slotFrontFacePanels,
+      slotSideFacePanels,
+      slot119ToCrownS1WallGeometry,
+      slot119ToCrownS1WallMaterial,
+      blueFrontFaceMaterial,
+      slotFrontFaceMaterial,
+      slotBaseToBaseGuideLines,
+      slotBaseToCrownS2GuideLines,
+      slot118ToCrownGuideLine,
+      crownPanelGeometry,
+      crownS1S2ToBaseWallGeometry,
+      crownPanelConnectorLine,
+      crownPanelBaseEdgeLine,
+      wallGuideLabels,
       crownWallGeometry,
       crownWallPosition,
       wallConnectorGeometry,
       wallRightConnectorGeometry,
       wallConnectorFillGeometry,
       wallToCrownConnectors,
+      // SIDE_SLOT_LAYOUT son elemanı A30'dur; .left yüzeyi A30-SÜ → 120A30-SÜ duvarıdır.
+      a30ToCrownWallGeometry: wallToCrownConnectors[wallToCrownConnectors.length - 1].left,
+      sideSeriesRightWallGeometry,
+      crownSeriesRightWallGeometry,
+      a30A29BaseFaceGeometry,
+      a30SpiralGuideLine,
+      a30SpiralBottomLine,
+      a44ArchFillGeometry,
+      a44ArchFillMaterial,
+      a44PosterPosition,
+      a44PosterQuaternion,
+      a44ToCrownS2GuideLine,
+      a31ToA43CrownS2GuideLines,
+      a30A44WallGeometry,
+      upperBridgeFacePanels,
+      upperBridgeGreenMaterial,
+      crownPanelMaterial,
+      a30A29EnclosedFaceGeometry,
+      a30A44CrownS2FacePanels,
+      a30A29EnclosedFaceMaterial,
     };
   }, []);
 
@@ -508,69 +1409,153 @@ function BronzeTowerModel() {
     emissive: accent,
     emissiveIntensity: 0.12
   }), [accent]);
-  const wallMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: "#168cff",
-    metalness: 0.18,
-    roughness: 0.24,
-    transparent: false,
-    opacity: 1,
-    transmission: 0,
-    thickness: 0.35,
-    side: THREE.DoubleSide,
-    depthWrite: true
-  }), []);
+
+
 
   return (
     <group>
-      <mesh geometry={dims.wallGeometry} material={wallMaterial} />
-      <mesh
-        geometry={dims.crownWallGeometry}
-        material={wallMaterial}
-        position={dims.crownWallPosition}
-      />
-      <mesh geometry={dims.wallConnectorGeometry} material={wallMaterial} />
-      <mesh geometry={dims.wallRightConnectorGeometry} material={wallMaterial} />
-      <mesh geometry={dims.wallConnectorFillGeometry} material={wallMaterial} />
-      {dims.wallToCrownConnectors.map((connector, index) => (
-        <group key={index}>
-          <mesh geometry={connector.left} material={wallMaterial} />
-          <mesh geometry={connector.right} material={wallMaterial} />
-          <mesh geometry={connector.fill} material={wallMaterial} />
-        </group>
+      {/* Sabit mavi yüzeyler: useMemo içinde bir kez oluşturulur, tekrar renderda üretilmez. */}
+      {dims.slotFrontFacePanels.map((panel, index) => (
+        <primitive key={`blue-front-face-panel-${index}`} object={panel} />
       ))}
-      <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
+      {dims.slotSideFacePanels.map((panel, index) => (
+        <primitive key={`blue-side-face-panel-${index}`} object={panel} />
+      ))}
       <mesh
-        geometry={aSlotGeometry}
-        material={slotMaterial}
-        position={dims.aSlotPosition}
-        rotation={[0, SIDE_SLOT_LAYOUT[0].rotationY, 0]}
+        geometry={dims.slot119ToCrownS1WallGeometry}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
       />
-      {dims.descendingSideSlots.map((slot, index) => (
-        <mesh
-          key={`A${index + 1}`}
-          position={slot.position}
-          rotation={[0, slot.rotationY, 0]}
-          material={slotMaterial}
-        >
-          <boxGeometry args={[0.92, slot.height, 0.075]} />
+      {dims.upperBridgeFacePanels.map((panel, index) => (
+        <primitive key={`upper-bridge-face-${index}`} object={panel} />
+      ))}
+      <mesh
+        geometry={dims.crownPanelGeometry}
+        material={dims.crownPanelMaterial}
+        renderOrder={9}
+      />
+      <mesh
+        geometry={dims.crownS1S2ToBaseWallGeometry}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
+      />
+      <mesh
+        geometry={dims.a30A44WallGeometry}
+        material={dims.blueFrontFaceMaterial}
+        renderOrder={10}
+      />
+      <group
+        position={dims.a44PosterPosition}
+        quaternion={dims.a44PosterQuaternion}
+      >
+        <mesh position={[0, 0, -0.012]} geometry={dims.a44ArchFillGeometry} material={dims.a44ArchFillMaterial} />
+      </group>
+      <group
+        position={dims.a44PosterPosition}
+        quaternion={dims.a44PosterQuaternion}
+      >
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[0.96, 1.38]} />
+          <meshStandardMaterial
+            color="#101827"
+            emissive="#17243a"
+            emissiveIntensity={0.32}
+            roughness={0.82}
+            side={THREE.DoubleSide}
+          />
         </mesh>
-      ))}
-      {dims.slotLabels.map((label) => (
+        <mesh position={[0, 0, 0.006]}>
+          <planeGeometry args={[0.92, 1.34]} />
+          <meshBasicMaterial color="#263c50" side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, 0.28, 0.012]}>
+          <circleGeometry args={[0.26, 48]} />
+          <meshBasicMaterial color="#d39b55" />
+        </mesh>
+        <mesh position={[0, 0.28, 0.016]}>
+          <circleGeometry args={[0.205, 48]} />
+          <meshBasicMaterial color="#263c50" />
+        </mesh>
         <Text
-          key={label.number}
-          position={label.position}
-          rotation={label.rotation}
-          fontSize={0.24}
-          color="#ffffff"
-          outlineColor="#090b12"
-          outlineWidth={0.012}
+          position={[0, -0.12, 0.02]}
+          fontSize={0.105}
+          color="#f4dfb4"
           anchorX="center"
           anchorY="middle"
-          renderOrder={2}
+          textAlign="center"
+          lineHeight={1.15}
+          maxWidth={0.78}
         >
-          {label.number}
+          CINE
+          {"\\n"}
+          BABYLON
+        </Text>
+        <Text
+          position={[0, -0.43, 0.02]}
+          fontSize={0.045}
+          color="#d39b55"
+          anchorX="center"
+          anchorY="middle"
+        >
+          A SAMPLE POSTER
+        </Text>
+      </group>
+      {dims.a30A44CrownS2FacePanels.map((panel, index) => (
+        <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
+      ))}
+
+      {dims.wallGuideLabels.map((label) => (
+        <Text
+          key={label.name}
+          position={label.position.clone().add(new THREE.Vector3(0.08, 0.06, 0.04))}
+          fontSize={0.13}
+          color="#ff4b4b"
+          outlineColor="#090b12"
+          outlineWidth={0.012}
+          anchorX="left"
+          anchorY="middle"
+          renderOrder={12}
+        >
+          {label.name}
         </Text>
       ))}
+      {SHOW_SLOTS && (
+        <>
+          <InstancedSlots matrices={dims.slots} geometry={slotGeometry} material={slotMaterial} />
+          <mesh
+            geometry={aSlotGeometry}
+            material={slotMaterial}
+            position={dims.aSlotPosition}
+            rotation={[0, SIDE_SLOT_LAYOUT[0].rotationY, 0]}
+          />
+          {dims.descendingSideSlots.map((slot, index) => (
+            <mesh
+              key={`A${index + 1}`}
+              position={slot.position}
+              rotation={[0, slot.rotationY, 0]}
+              material={slotMaterial}
+            >
+              <boxGeometry args={[0.92, slot.height, 0.075]} />
+            </mesh>
+          ))}
+          {dims.slotLabels.map((label) => (
+            <Text
+              key={label.number}
+              position={label.position}
+              rotation={label.rotation}
+              fontSize={0.24}
+              color="#ffffff"
+              outlineColor="#090b12"
+              outlineWidth={0.012}
+              anchorX="center"
+              anchorY="middle"
+              renderOrder={2}
+            >
+              {label.number}
+            </Text>
+          ))}
+        </>
+      )}
     </group>
   );
 }
@@ -612,7 +1597,7 @@ export default function BabelTowerArchitecture() {
       <BronzeTowerModel />
       <Environment preset="city" />
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
-        minDistance={radius * 3.25} maxDistance={height * 18}
+        zoomSpeed={1.4} minDistance={radius * 1.5} maxDistance={height * 18}
         maxPolarAngle={Math.PI * 0.49} target={[0, height * 0.48, 0]} />
     </Canvas>
   );
