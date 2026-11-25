@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import StepPoster from "./StepPoster";
 import StaircaseCamera from "./StaircaseCamera";
@@ -11,12 +11,12 @@ const STAIRCASE_CONFIG = {
   stepDepth: 1.0,
   totalTurn: (196 * Math.PI) / 180,
   startAngle: 0,
-  cameraPolarAngle: Math.PI / 4,
-  cameraDistance: 2.5 * 4,
+  cameraHeight: 1.8,
+  cameraPolarOffsetDegrees: 7,
   cameraFov: 38
 };
 
-// Each tread spans one equal angular sector; neighboring trapezoids share radial edges.
+// Preserve the verified trapezoid geometry: each tread owns one equal angular sector.
 const ANGULAR_STEP = STAIRCASE_CONFIG.totalTurn / STAIRCASE_CONFIG.totalSteps;
 
 interface StepData {
@@ -28,6 +28,7 @@ interface StepData {
 
 function StaircaseScene() {
   const sequence = usePosterSequence(STAIRCASE_CONFIG.totalSteps);
+  const [activeStep, setActiveStep] = useState(0);
   const steps = useMemo<StepData[]>(
     () => sequence.map(({ index }): StepData => {
       const theta = STAIRCASE_CONFIG.startAngle + index * ANGULAR_STEP;
@@ -44,6 +45,11 @@ function StaircaseScene() {
     }),
     [sequence]
   );
+  const handleStepChange = useCallback((direction: number) => {
+    setActiveStep((current) =>
+      Math.max(0, Math.min(STAIRCASE_CONFIG.totalSteps - 1, current + direction))
+    );
+  }, []);
 
   return (
     <>
@@ -69,26 +75,23 @@ function StaircaseScene() {
         />
       ))}
       <StaircaseCamera
-        polarAngle={STAIRCASE_CONFIG.cameraPolarAngle}
-        distance={STAIRCASE_CONFIG.cameraDistance}
-        targetY={-((STAIRCASE_CONFIG.totalSteps - 1) * STAIRCASE_CONFIG.stepHeight) / 2}
+        steps={steps}
+        activeStep={activeStep}
+        onStepChange={handleStepChange}
+        cameraHeight={STAIRCASE_CONFIG.cameraHeight}
+        polarOffsetDegrees={STAIRCASE_CONFIG.cameraPolarOffsetDegrees}
       />
     </>
   );
 }
 
 export default function SpiralStaircase() {
-  const targetY = -((STAIRCASE_CONFIG.totalSteps - 1) * STAIRCASE_CONFIG.stepHeight) / 2;
   return (
     <Canvas
       shadows
       dpr={[1, 1.75]}
       camera={{
-        position: [
-          STAIRCASE_CONFIG.cameraDistance * Math.sin(STAIRCASE_CONFIG.cameraPolarAngle),
-          targetY + STAIRCASE_CONFIG.cameraDistance * Math.cos(STAIRCASE_CONFIG.cameraPolarAngle),
-          0
-        ],
+        position: [2.5, STAIRCASE_CONFIG.cameraHeight, 0],
         fov: STAIRCASE_CONFIG.cameraFov,
         near: 0.1,
         far: 100
