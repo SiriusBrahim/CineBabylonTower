@@ -943,8 +943,8 @@ function BronzeTowerModel() {
     );
     a44InnerArchOutline.renderOrder = 32;
 
-    // Kemer açıklığının içine örnek poster: iç konturdan pay bırakılarak yerleştirilir.
-    // Poster ölçüsü, belirlenen slot ölçüsüyle aynıdır: 0.96 × 1.38 birim.
+    // Poster, iç kemerin alt doğrusu (Y=0.06) üzerinden başlar.
+    // 0.96 × 1.38 ölçüsünde; alt kenarı iç alt doğruyla çakışıktır.
     const a44PosterNormal = new THREE.Vector3()
       .crossVectors(a44ArchRightDirection, new THREE.Vector3(0, 1, 0))
       .normalize();
@@ -957,7 +957,7 @@ function BronzeTowerModel() {
     );
     const a44PosterPosition = a44ArchAnchor.clone()
       .addScaledVector(a44ArchRightDirection, 0.54)
-      .add(new THREE.Vector3(0, 0.69, 0))
+      .add(new THREE.Vector3(0, 0.75, 0))
       .addScaledVector(a44PosterNormal, 0.018);
 
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
