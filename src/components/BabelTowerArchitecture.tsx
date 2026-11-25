@@ -663,15 +663,19 @@ function BronzeTowerModel() {
     // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ ve aynı düzen tüm hat boyunca.
     const slotFrontFacePanels: THREE.Mesh[] = [];
     // Deneme 8: Bütün duvarlar ve bütün üst yüzeyler için iki sabit ortak materyal.
-    const wallBlueMaterial = new THREE.MeshBasicMaterial({
-      color: 0x1565ff,
+    const wallBlueMaterial = new THREE.MeshStandardMaterial({
+      color: "#B89B72",
+      roughness: 0.90,
+      metalness: 0.05,
       transparent: false,
       opacity: 1,
       side: THREE.DoubleSide,
       depthWrite: true
     });
-    const topGreenMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00c853,
+    const topGreenMaterial = new THREE.MeshStandardMaterial({
+      color: "#95664A",
+      roughness: 0.94,
+      metalness: 0.0,
       transparent: false,
       opacity: 1,
       side: THREE.DoubleSide,
