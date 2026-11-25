@@ -15,28 +15,6 @@ const BRONZE_TOWER = {
   accentColor: "#cd7f32"
 };
 
-function InstancedSlots({ matrices, geometry, material }: {
-  matrices: THREE.Matrix4[];
-  geometry: THREE.BufferGeometry;
-  material: THREE.Material;
-}) {
-  const mesh = useMemo(() => {
-    const instance = new THREE.InstancedMesh(geometry, material, matrices.length);
-    const slotColor = new THREE.Color();
-    matrices.forEach((matrix, index) => {
-      instance.setMatrixAt(index, matrix);
-      // Her yuvaya komşularından ayırt edilebilen, dengeli bir renk ver.
-      slotColor.setHSL((index * 0.61803398875) % 1, 0.62, 0.56);
-      instance.setColorAt(index, slotColor);
-    });
-    instance.instanceMatrix.needsUpdate = true;
-    if (instance.instanceColor) instance.instanceColor.needsUpdate = true;
-    instance.computeBoundingSphere();
-    return instance;
-  }, [geometry, material, matrices]);
-  return <primitive object={mesh} />;
-}
-
 // Kemerli poster yuvası: geometri Group'un sol alt köşesine göre tanımlanır.
 function createArchRingShape(outerWidth: number, innerWidth: number) {
   const shape = new THREE.Shape();
@@ -199,6 +177,50 @@ const SlotNiche = memo(function SlotNiche({
     </group>
   );
 });
+
+// Tepe slotu, spiralden bağımsız +Z normaline bakan dikey bir yüzeydir.
+// Aynı yerel matris ve paylaşılan niş geometrileri kullanılarak görsel tutarlılık korunur.
+function CrownNiche() {
+  const localMatrix = useMemo(() => {
+    const centerPos = new THREE.Vector3(0, 8.72150815736696, 0);
+    const normal = new THREE.Vector3(0, 0, 1);
+    const surfaceCenter = centerPos.addScaledVector(normal, 0.12);
+    return computeLocalMatrix(surfaceCenter, normal);
+  }, []);
+
+  return (
+    <group matrix={localMatrix} matrixAutoUpdate={false} dispose={null}>
+      <mesh
+        position={[0.48, 0.69, -0.04]}
+        geometry={sharedPosterGeo}
+        material={sharedPosterMat}
+      />
+      <mesh
+        position={[0, 0, -0.01]}
+        geometry={sharedNicheGeo}
+        material={sharedNicheMat}
+      />
+      <mesh geometry={sharedFrameGeo} material={sharedFrameMat} />
+      <mesh
+        position={[0, 0, 0.03]}
+        geometry={sharedBorderGeo}
+        material={sharedBorderMat}
+      />
+      <Text
+        position={[-0.15, 2.0, 0.07]}
+        fontSize={0.12}
+        color="#d39b55"
+        anchorX="center"
+        anchorY="middle"
+        outlineColor="#090b12"
+        outlineWidth={0.008}
+        renderOrder={3}
+      >
+        120
+      </Text>
+    </group>
+  );
+}
 
 const SPIRAL_SLOT_LAYOUT: {
   number: number;
@@ -378,7 +400,6 @@ function BronzeTowerModel() {
     const posterHeight = 1.38;
     // Slotların konumları SPIRAL_SLOT_LAYOUT içinde sabit koordinatlar olarak tutulur.
     // Duvar ve diğer mimari parçalar aynı koordinat kaynağını kullanır.
-    const slots: THREE.Matrix4[] = [];
     const slotCenters: THREE.Vector3[] = [];
     const slotLabels: { position: THREE.Vector3; rotation: THREE.Euler; number: number | string }[] = [];
     const aSlotLayout = SIDE_SLOT_LAYOUT[0];
@@ -408,12 +429,6 @@ function BronzeTowerModel() {
       // Slotların duvar içinde kalmaması için yalnızca görsel kopyalarını
       // mavi duvarın dış yüzeyine doğru 0.12 birim taşı.
       const visibleSlotCenter = slotCenter.clone().addScaledVector(frontNormal, 0.12);
-      slots.push(new THREE.Matrix4().compose(
-        visibleSlotCenter,
-        new THREE.Quaternion().setFromEuler(slotRotation),
-        new THREE.Vector3(1, 1, 1)
-      ));
-
       slotLabels.push({
         position: visibleSlotCenter.clone().addScaledVector(frontNormal, 0.045),
         rotation: slotRotation.clone(),
@@ -838,11 +853,6 @@ function BronzeTowerModel() {
       CROWN_SLOT_POSITION.y,
       CROWN_SLOT_POSITION.z
     );
-    slots.push(new THREE.Matrix4().compose(
-      crownPosition,
-      new THREE.Quaternion(),
-      new THREE.Vector3(1, 1, 1)
-    ));
     slotLabels.push({
       position: crownPosition.clone().add(new THREE.Vector3(0, 0, 0.045)),
       rotation: new THREE.Euler(0, 0, 0),
@@ -1514,7 +1524,6 @@ function BronzeTowerModel() {
     a30A29BaseFaceGeometry.computeVertexNormals();
 
     return {
-      slots,
       slotLabels,
       aSlotPosition,
       descendingSideSlots,
@@ -1565,17 +1574,6 @@ function BronzeTowerModel() {
       a30A29EnclosedFaceMaterial,
     };
   }, []);
-
-  const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
-  const slotGeometry = useMemo(() => new THREE.BoxGeometry(0.92, 1.38, 0.075), []);
-  const slotMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    metalness: 0.68,
-    roughness: 0.38,
-    emissive: accent,
-    emissiveIntensity: 0.12
-  }), [accent]);
-
 
 
   return (
@@ -1698,13 +1696,9 @@ function BronzeTowerModel() {
                 slotNumber={slot.number}
               />
           ))}
-          <InstancedSlots
-            matrices={dims.slots.slice(SPIRAL_SLOT_LAYOUT.length)}
-            geometry={slotGeometry}
-            material={slotMaterial}
-          />
+          <CrownNiche />
           {dims.slotLabels.filter((label) =>
-            typeof label.number !== "number" || label.number > SPIRAL_SLOT_LAYOUT.length
+            typeof label.number !== "number"
           ).map((label, index) => (
             <Text
               key={`slot-label-${index}-${label.number}`}
