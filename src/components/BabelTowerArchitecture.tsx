@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, OrbitControls, Text } from "@react-three/drei";
+import { Environment, Html, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
 const SHOW_DEBUG_GUIDES = false; // Production için false, geliştirme için true
@@ -179,6 +179,8 @@ interface SlotNicheProps {
   theta: number;
   slotNumber: number;
   posterMaterial: THREE.MeshStandardMaterial;
+  onHover: (slotNumber: number | null) => void;
+  onSelect: (slotNumber: number) => void;
 }
 
 const SlotNiche = memo(function SlotNiche({
@@ -187,7 +189,9 @@ const SlotNiche = memo(function SlotNiche({
   z,
   theta,
   slotNumber,
-  posterMaterial
+  posterMaterial,
+  onHover,
+  onSelect
 }: SlotNicheProps) {
   const localMatrix = useMemo(() => {
     const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
@@ -197,7 +201,23 @@ const SlotNiche = memo(function SlotNiche({
   }, [x, y, z, theta]);
 
   return (
-    <group matrix={localMatrix} matrixAutoUpdate={false} dispose={null}>
+    <group
+      matrix={localMatrix}
+      matrixAutoUpdate={false}
+      dispose={null}
+      onPointerOver={(event) => {
+        event.stopPropagation();
+        if (event.nativeEvent.pointerType !== "touch") onHover(slotNumber);
+      }}
+      onPointerOut={(event) => {
+        event.stopPropagation();
+        if (event.nativeEvent.pointerType !== "touch") onHover(null);
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(slotNumber);
+      }}
+    >
       <mesh
         position={[0.48, 0.69, -0.04]}
         geometry={sharedPosterGeo}
@@ -232,7 +252,15 @@ const SlotNiche = memo(function SlotNiche({
 
 // Tepe slotu, spiralden bağımsız +Z normaline bakan dikey bir yüzeydir.
 // Aynı yerel matris ve paylaşılan niş geometrileri kullanılarak görsel tutarlılık korunur.
-function CrownNiche({ posterMaterial }: { posterMaterial: THREE.MeshStandardMaterial }) {
+function CrownNiche({
+  posterMaterial,
+  onHover,
+  onSelect
+}: {
+  posterMaterial: THREE.MeshStandardMaterial;
+  onHover: (slotNumber: number | null) => void;
+  onSelect: (slotNumber: number) => void;
+}) {
   const localMatrix = useMemo(() => {
     const centerPos = new THREE.Vector3(0, 8.72150815736696, 0);
     const normal = new THREE.Vector3(0, 0, 1);
@@ -241,7 +269,23 @@ function CrownNiche({ posterMaterial }: { posterMaterial: THREE.MeshStandardMate
   }, []);
 
   return (
-    <group matrix={localMatrix} matrixAutoUpdate={false} dispose={null}>
+    <group
+      matrix={localMatrix}
+      matrixAutoUpdate={false}
+      dispose={null}
+      onPointerOver={(event) => {
+        event.stopPropagation();
+        if (event.nativeEvent.pointerType !== "touch") onHover(120);
+      }}
+      onPointerOut={(event) => {
+        event.stopPropagation();
+        if (event.nativeEvent.pointerType !== "touch") onHover(null);
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(120);
+      }}
+    >
       <mesh
         position={[0.48, 0.69, -0.04]}
         geometry={sharedPosterGeo}
@@ -270,6 +314,106 @@ function CrownNiche({ posterMaterial }: { posterMaterial: THREE.MeshStandardMate
       >
         120
       </Text>
+    </group>
+  );
+}
+
+
+// C9: Slot transformu, nişlerin gerçek dünya koordinatlarını ve C8 yerleşimini kullanır.
+function getNicheLocalMatrix(slotNumber: number) {
+  if (slotNumber === 120) {
+    const center = new THREE.Vector3(0, 8.72150815736696, 0);
+    const normal = new THREE.Vector3(0, 0, 1);
+    return computeLocalMatrix(center.addScaledVector(normal, 0.0375), normal);
+  }
+  const slot = SPIRAL_SLOT_LAYOUT.find((item) => item.number === slotNumber);
+  if (!slot) return new THREE.Matrix4();
+  const normal = new THREE.Vector3(Math.cos(slot.theta), 0, Math.sin(slot.theta));
+  const center = new THREE.Vector3(slot.x, slot.y, slot.z);
+  return computeLocalMatrix(center.addScaledVector(normal, 0.0375), normal);
+}
+
+function NicheHighlight({ slotNumber }: { slotNumber: number | null }) {
+  const material = useMemo(() => {
+    const cloned = sharedFrameMat.clone();
+    cloned.color.set("#cd7f32");
+    cloned.emissive = new THREE.Color("#cd7f32");
+    cloned.emissiveIntensity = 0.15;
+    return cloned;
+  }, []);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const currentIntensity = useRef(0.15);
+  const currentScale = useRef(1);
+  const localMatrix = useMemo(
+    () => slotNumber === null ? new THREE.Matrix4() : getNicheLocalMatrix(slotNumber),
+    [slotNumber]
+  );
+
+  useEffect(() => () => material.dispose(), [material]);
+
+  useFrame((_, delta) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const entering = slotNumber !== null;
+    const targetIntensity = entering ? 1.2 : 0.15;
+    const targetScale = entering ? 1.08 : 1;
+    const speed = entering ? 8 : 5;
+    currentIntensity.current = THREE.MathUtils.damp(
+      currentIntensity.current, targetIntensity, speed, delta
+    );
+    currentScale.current = THREE.MathUtils.damp(
+      currentScale.current, targetScale, speed, delta
+    );
+    material.emissiveIntensity = currentIntensity.current;
+    mesh.scale.setScalar(currentScale.current);
+    if (entering) mesh.visible = true;
+    else if (currentIntensity.current < 0.16) mesh.visible = false;
+  });
+
+  return (
+    <group matrix={localMatrix} matrixAutoUpdate={false}>
+      <mesh
+        ref={meshRef}
+        geometry={sharedFrameGeo}
+        material={material}
+        position={[0, 0, 0.045]}
+        visible={false}
+        renderOrder={4}
+        raycast={() => null}
+      />
+    </group>
+  );
+}
+
+function NicheTooltip({ slotNumber }: { slotNumber: number | null }) {
+  const localMatrix = useMemo(
+    () => slotNumber === null ? new THREE.Matrix4() : getNicheLocalMatrix(slotNumber),
+    [slotNumber]
+  );
+  if (slotNumber === null) return null;
+
+  return (
+    <group matrix={localMatrix} matrixAutoUpdate={false}>
+      <Html
+        position={[0.48, 2.18, 0.08]}
+        center
+        distanceFactor={12}
+        style={{ pointerEvents: "none" }}
+      >
+        <div style={{
+          background: "rgba(15, 23, 42, 0.92)",
+          border: "1px solid #cd7f32",
+          borderRadius: 6,
+          padding: "8px 12px",
+          color: "#f1f5f9",
+          fontSize: 13,
+          whiteSpace: "nowrap",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
+        }}>
+          <strong style={{ display: "block", fontSize: 14 }}>The Last Tower</strong>
+          <span style={{ color: "#cd7f32", fontSize: 11 }}>Poster #{slotNumber}</span>
+        </div>
+      </Html>
     </group>
   );
 }
@@ -446,7 +590,17 @@ const SIDE_SLOT_LAYOUT: {
 
 const CROWN_SLOT_POSITION = { x: 0, y: 8.72150815736696, z: 0, rotationY: 0 };
 
-function BronzeTowerModel() {
+function BronzeTowerModel({
+  hoveredNiche,
+  selectedNiche,
+  setHoveredNiche,
+  setSelectedNiche
+}: {
+  hoveredNiche: number | null;
+  selectedNiche: number | null;
+  setHoveredNiche: (slotNumber: number | null) => void;
+  setSelectedNiche: (slotNumber: number | null) => void;
+}) {
   // C5.1: Poster eşleştirme haritası
   const posterMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -2039,9 +2193,21 @@ function BronzeTowerModel() {
                 theta={slot.theta}
                 slotNumber={slot.number}
                 posterMaterial={getPosterMaterial(slot.number)}
+                onHover={setHoveredNiche}
+                onSelect={(slotNumber) => setSelectedNiche(
+                  selectedNiche === slotNumber ? null : slotNumber
+                )}
               />
           ))}
-          <CrownNiche posterMaterial={getPosterMaterial(120)} />
+          <CrownNiche
+            posterMaterial={getPosterMaterial(120)}
+            onHover={setHoveredNiche}
+            onSelect={(slotNumber) => setSelectedNiche(
+              selectedNiche === slotNumber ? null : slotNumber
+            )}
+          />
+          <NicheHighlight slotNumber={hoveredNiche ?? selectedNiche} />
+          <NicheTooltip slotNumber={selectedNiche} />
           {dims.slotLabels.filter((label) =>
             typeof label.number !== "number"
           ).map((label, index) => (
@@ -2067,6 +2233,9 @@ function BronzeTowerModel() {
 }
 
 export default function BabelTowerArchitecture() {
+  const [hoveredNiche, setHoveredNiche] = useState<number | null>(null);
+  const [selectedNiche, setSelectedNiche] = useState<number | null>(null);
+
   // Kamera ve sis değerleri yeni spiral geometrisinin gerçek ölçülerinden türetilir.
   const posterWidth = 0.92;
   const posterHeight = 1.38;
@@ -2090,7 +2259,13 @@ export default function BabelTowerArchitecture() {
   const radius = baseRadius;
 
   return (
-    <Canvas shadows dpr={[1, 1.7]}
+    <Canvas
+      shadows
+      dpr={[1, 1.7]}
+      onPointerMissed={() => {
+        setHoveredNiche(null);
+        setSelectedNiche(null);
+      }}
       camera={{ position: [radius * 3.3, height * 1.8, radius * 4.8], fov: 50 }}>
       <color attach="background" args={["#090b12"]} />
       <ambientLight intensity={0.35} />
@@ -2100,7 +2275,12 @@ export default function BabelTowerArchitecture() {
         intensity={height * 0.1} color={BRONZE_TOWER.accentColor} />
       <pointLight position={[radius, height * 0.9, radius * 1.5]}
         intensity={height * 0.065} color="#ffaa33" />
-      <BronzeTowerModel />
+      <BronzeTowerModel
+        hoveredNiche={hoveredNiche}
+        selectedNiche={selectedNiche}
+        setHoveredNiche={setHoveredNiche}
+        setSelectedNiche={setSelectedNiche}
+      />
       <Environment preset="sunset" />
       <OrbitControls makeDefault enableDamping dampingFactor={0.06}
         zoomSpeed={1.4} minDistance={radius * 1.5} maxDistance={height * 18}
