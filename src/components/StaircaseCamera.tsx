@@ -52,7 +52,7 @@ export default function StaircaseCamera({
       dragStartY.current = null;
       if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.15) return;
       // Dragging right advances down the staircase; dragging left returns upward.
-      onStepChange(dx < 0 ? 1 : -1);
+      onStepChange(dx > 0 ? 1 : -1);
     };
     const handlePointerCancel = () => {
       dragStartX.current = null;
