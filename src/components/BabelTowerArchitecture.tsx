@@ -398,63 +398,6 @@ const SIDE_SLOT_LAYOUT: {
 const CROWN_SLOT_POSITION = { x: 0, y: 8.72150815736696, z: 0, rotationY: 0 };
 
 function BronzeTowerModel() {
-  const [posterTexture, setPosterTexture] = useState<THREE.Texture | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load(
-      "/posters/sample.svg",
-      (loadedTexture) => {
-        if (cancelled) {
-          loadedTexture.dispose();
-          return;
-        }
-        loadedTexture.colorSpace = THREE.SRGBColorSpace;
-        loadedTexture.flipY = true;
-        loadedTexture.needsUpdate = true;
-        setPosterTexture(loadedTexture);
-      },
-      undefined,
-      (error) => {
-        if (!cancelled) {
-          console.warn("Poster yüklenemedi:", error);
-          setPosterTexture(null);
-        }
-      }
-    );
-
-    return () => {
-      cancelled = true;
-      texture.dispose();
-    };
-  }, []);
-
-  const sharedPosterMat = useMemo(() => {
-    if (!posterTexture) {
-      return new THREE.MeshStandardMaterial({
-        color: "#0f172a",
-        roughness: 0.85,
-        metalness: 0.0,
-        side: THREE.DoubleSide
-      });
-    }
-
-    return new THREE.MeshStandardMaterial({
-      map: posterTexture,
-      color: "#ffffff",
-      roughness: 0.85,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
-  }, [posterTexture]);
-
-  useEffect(() => {
-    return () => {
-      sharedPosterMat.dispose();
-    };
-  }, [sharedPosterMat]);
-
   // C5.1: Poster eşleştirme haritası
   const posterMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -570,6 +513,50 @@ function BronzeTowerModel() {
     console.log("Cache boyutu:", textureCache.size);
     console.log("URL'ler:", uniquePosterUrls);
   }, [uniquePosterUrls, posterLoadStatus, textureCache]);
+
+  // C5.3: Aynı poster URL'sini kullanan tüm nişler aynı materyali paylaşır.
+  const posterMaterialCache = useMemo(() => {
+    const materials = new Map<string, THREE.MeshStandardMaterial>();
+
+    textureCache.forEach((texture, url) => {
+      materials.set(url, new THREE.MeshStandardMaterial({
+        map: texture,
+        color: "#ffffff",
+        roughness: 0.85,
+        metalness: 0.0,
+        side: THREE.DoubleSide
+      }));
+    });
+
+    return materials;
+  }, [textureCache]);
+
+  // C5.3: Yüklenemeyen veya henüz yüklenmemiş posterler için ortak fallback.
+  const fallbackPosterMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#0f172a",
+    roughness: 0.85,
+    metalness: 0.0,
+    side: THREE.DoubleSide
+  }), []);
+
+  useEffect(() => {
+    return () => {
+      posterMaterialCache.forEach((material) => material.dispose());
+    };
+  }, [posterMaterialCache]);
+
+  useEffect(() => {
+    return () => {
+      fallbackPosterMaterial.dispose();
+    };
+  }, [fallbackPosterMaterial]);
+
+  // Slot numarasına göre poster materyalini seç; başarısız URL'lerde fallback kullan.
+  const getPosterMaterial = (slotNumber: number) => {
+    const posterUrl = posterMap.get(slotNumber);
+    return (posterUrl && posterMaterialCache.get(posterUrl)) || fallbackPosterMaterial;
+  };
+
 
   const dims = useMemo(() => {
     const posterWidth = 0.92;
@@ -1874,10 +1861,10 @@ function BronzeTowerModel() {
                 z={slot.z}
                 theta={slot.theta}
                 slotNumber={slot.number}
-                posterMaterial={sharedPosterMat}
+                posterMaterial={getPosterMaterial(slot.number)}
               />
           ))}
-          <CrownNiche posterMaterial={sharedPosterMat} />
+          <CrownNiche posterMaterial={getPosterMaterial(120)} />
           {dims.slotLabels.filter((label) =>
             typeof label.number !== "number"
           ).map((label, index) => (
