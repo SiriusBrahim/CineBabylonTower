@@ -892,61 +892,23 @@ function BronzeTowerModel() {
     const a44SlotAnchor = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
     const a44SlotRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
       .sub(a44SlotAnchor).setY(0).normalize();
-    // Yerel ölçüler: 0.96 genişlik, 0.90 düz yan duvar, R=0.48 yarım daire.
-    const a44ArchedSlotLocalPoints = [
+    // Kemerin içi boş bırakılır. İçine yalnızca 0.96 × 1.38 ölçülerinde
+    // sarı dikdörtgen slot çerçevesi çizilir.
+    const a44SlotRectanglePoints = [
       new THREE.Vector2(0, 0),
       new THREE.Vector2(0.96, 0),
-      new THREE.Vector2(0.96, 0.90),
-      ...Array.from({ length: 17 }, (_, index) => {
-        const angle = (Math.PI * index) / 16;
-        return new THREE.Vector2(
-          0.48 + 0.48 * Math.cos(angle),
-          0.90 + 0.48 * Math.sin(angle)
-        );
-      }),
+      new THREE.Vector2(0.96, 1.38),
+      new THREE.Vector2(0, 1.38),
       new THREE.Vector2(0, 0)
     ];
-    const a44ArchedSlotPoints = a44ArchedSlotLocalPoints.map(({ x, y }) =>
-      a44SlotAnchor.clone().addScaledVector(a44SlotRightDirection, x).add(new THREE.Vector3(0, y, 0))
+    const a44SlotRectangleWorldPoints = a44SlotRectanglePoints.map(({ x, y }) =>
+      a44SlotAnchor.clone()
+        .addScaledVector(a44SlotRightDirection, x)
+        .add(new THREE.Vector3(0, y, 0))
     );
-
-    // Slot alanı: kemerli sınırın içini tam 0.96 × 1.38 ölçüsünde doldurur.
-    const a44SlotShape = new THREE.Shape();
-    a44SlotShape.moveTo(0, 0);
-    a44SlotShape.lineTo(0.96, 0);
-    a44SlotShape.lineTo(0.96, 0.90);
-    a44SlotShape.absarc(0.48, 0.90, 0.48, 0, Math.PI, false);
-    a44SlotShape.closePath();
-    const a44SlotAreaGeometry = new THREE.ShapeGeometry(a44SlotShape, 32);
-    const a44SlotNormal = new THREE.Vector3().crossVectors(
-      a44SlotRightDirection,
-      new THREE.Vector3(0, 1, 0)
-    ).normalize();
-    const a44SlotBasis = new THREE.Matrix4().makeBasis(
-      a44SlotRightDirection,
-      new THREE.Vector3(0, 1, 0),
-      a44SlotNormal
-    );
-    a44SlotAreaGeometry.applyMatrix4(a44SlotBasis);
-    a44SlotAreaGeometry.translate(
-      a44SlotAnchor.x + a44SlotNormal.x * 0.012,
-      a44SlotAnchor.y + a44SlotNormal.y * 0.012,
-      a44SlotAnchor.z + a44SlotNormal.z * 0.012
-    );
-    const a44SlotAreaMaterial = new THREE.MeshBasicMaterial({
-      color: "#f2c94c",
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.82,
-      depthTest: false,
-      depthWrite: false
-    });
-    const a44SlotArea = new THREE.Mesh(a44SlotAreaGeometry, a44SlotAreaMaterial);
-    a44SlotArea.renderOrder = 30;
-
     const a44ArchedSlotOutline = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(a44ArchedSlotPoints),
-      new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
+      new THREE.BufferGeometry().setFromPoints(a44SlotRectangleWorldPoints),
+      new THREE.LineBasicMaterial({ color: "#ffff00", depthTest: true })
     );
     a44ArchedSlotOutline.renderOrder = 31;
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
@@ -1407,7 +1369,6 @@ function BronzeTowerModel() {
       a30SpiralGuideLine,
       a30SpiralBottomLine,
       a44ArchedSlotOutline,
-      a44SlotArea,
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1468,7 +1429,6 @@ function BronzeTowerModel() {
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
-      <primitive object={dims.a44SlotArea} />
       <primitive object={dims.a44ArchedSlotOutline} />
 
       {dims.wallGuideLabels.map((label) => (
