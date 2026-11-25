@@ -888,57 +888,10 @@ function BronzeTowerModel() {
       new THREE.Vector3(-6.796378, 0, 9.524174) // A44-SÜ
     ];
 
-    // Z1-Z15 noktaları kullanıcının tarif ettiği mesafe ve yönlerle kurulur.
-    const z1Point = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
-    const zRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
-      .sub(z1Point).setY(0).normalize();
-    const z2Point = z1Point.clone().addScaledVector(zRightDirection, 0.1);
-    const z3Point = z2Point.clone().addScaledVector(zRightDirection, 0.92);
-
-    const z4Point = z1Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const z5Point = z4Point.clone().addScaledVector(zRightDirection, 0.1);
-    const z6Point = z5Point.clone().addScaledVector(zRightDirection, 0.92);
-
-    const z7Point = z4Point.clone().add(new THREE.Vector3(0, posterHeight, 0));
-    const z8Point = z7Point.clone().addScaledVector(zRightDirection, 0.1);
-    const z9Point = z8Point.clone().addScaledVector(zRightDirection, 0.92);
-
-    const z10Point = z7Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const z11Point = z10Point.clone().addScaledVector(zRightDirection, 0.1);
-    const z12Point = z11Point.clone().addScaledVector(zRightDirection, 0.92);
-
-    const z13Point = z10Point.clone().add(new THREE.Vector3(0, 0.1, 0));
-    const z14Point = z13Point.clone().addScaledVector(zRightDirection, 0.1);
-    const z15Point = z14Point.clone().addScaledVector(zRightDirection, 0.92);
-    // Z3-Z15 doğrusunun 0.10 birim sağında, aynı yüksekliklerde paralel uç noktalar.
-    const z16Point = z3Point.clone().addScaledVector(zRightDirection, 0.1);
-    const z17Point = z15Point.clone().addScaledVector(zRightDirection, 0.1);
-    // Z18-Z20, Z17 noktasından aşağı doğru belirtilen düşey aralıklarla yerleştirilir.
-    const z18Point = z17Point.clone().add(new THREE.Vector3(0, -0.1, 0));
-    const z19Point = z18Point.clone().add(new THREE.Vector3(0, -0.1, 0));
-    const z20Point = z19Point.clone().add(new THREE.Vector3(0, -1.38, 0));
-
-    const makeZLine = (start: THREE.Vector3, end: THREE.Vector3) => {
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([start, end]),
-        new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
-      );
-      line.renderOrder = 28;
-      return line;
-    };
-
-    // Beş yatay sıra ve üç kesintisiz dikey hat.
-    const z1ToZ3Line = makeZLine(z1Point, z3Point);
-    const z4ToZ6Line = makeZLine(z4Point, z6Point);
-    const z7ToZ9Line = makeZLine(z7Point, z9Point);
-    const z10ToZ12Line = makeZLine(z10Point, z12Point);
-    const z13ToZ15Line = makeZLine(z13Point, z15Point);
-    const z1ToZ13Line = makeZLine(z1Point, z13Point);
-    const z2ToZ14Line = makeZLine(z2Point, z14Point);
-    const z3ToZ15Line = makeZLine(z3Point, z15Point);
-    const z16ToZ17Line = makeZLine(z16Point, z17Point);
-
-    // Kemerli slot: sol alt köşe A44-SÜ (Z1) noktasına sabitlenir.
+    // A44-SÜ noktasına sabitlenen kemerli slot; Z1-Z20 referans çizimleri kaldırıldı.
+    const a44SlotAnchor = a30SpiralLinePoints[a30SpiralLinePoints.length - 1].clone();
+    const a44SlotRightDirection = new THREE.Vector3(-6.021561, 0, 10.093715)
+      .sub(a44SlotAnchor).setY(0).normalize();
     // Yerel ölçüler: 0.96 genişlik, 0.90 düz yan duvar, R=0.48 yarım daire.
     const a44ArchedSlotLocalPoints = [
       new THREE.Vector2(0, 0),
@@ -954,20 +907,13 @@ function BronzeTowerModel() {
       new THREE.Vector2(0, 0)
     ];
     const a44ArchedSlotPoints = a44ArchedSlotLocalPoints.map(({ x, y }) =>
-      z1Point.clone().addScaledVector(zRightDirection, x).add(new THREE.Vector3(0, y, 0))
+      a44SlotAnchor.clone().addScaledVector(a44SlotRightDirection, x).add(new THREE.Vector3(0, y, 0))
     );
     const a44ArchedSlotOutline = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a44ArchedSlotPoints),
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
     );
     a44ArchedSlotOutline.renderOrder = 29;
-    // Z noktaları arasında kullanıcının belirttiği bağlantılar.
-    const z13ToZ17Line = makeZLine(z13Point, z17Point);
-    const z1ToZ18Line = makeZLine(z1Point, z18Point);
-    const z7ToZ19Line = makeZLine(z7Point, z19Point);
-    const z4ToZ20Line = makeZLine(z4Point, z20Point);
-    const z1ToZ16Line = makeZLine(z1Point, z16Point);
-
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
@@ -1425,41 +1371,7 @@ function BronzeTowerModel() {
       a30A29BaseFaceGeometry,
       a30SpiralGuideLine,
       a30SpiralBottomLine,
-      z1ToZ3Line,
-      z4ToZ6Line,
-      z7ToZ9Line,
-      z10ToZ12Line,
-      z13ToZ15Line,
-      z1ToZ13Line,
-      z2ToZ14Line,
-      z3ToZ15Line,
-      z16ToZ17Line,
-      z13ToZ17Line,
-      z1ToZ18Line,
-      z7ToZ19Line,
-      z4ToZ20Line,
-      z1ToZ16Line,
       a44ArchedSlotOutline,
-      z18LabelPosition: z18Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z19LabelPosition: z19Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z20LabelPosition: z20Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z16LabelPosition: z16Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z17LabelPosition: z17Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z1LabelPosition: z1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z2LabelPosition: z2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z3LabelPosition: z3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z4LabelPosition: z4Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z5LabelPosition: z5Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z6LabelPosition: z6Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z7LabelPosition: z7Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z8LabelPosition: z8Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z9LabelPosition: z9Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z10LabelPosition: z10Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z11LabelPosition: z11Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z12LabelPosition: z12Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z13LabelPosition: z13Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z14LabelPosition: z14Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
-      z15LabelPosition: z15Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       a44ToCrownS2GuideLine,
       a31ToA43CrownS2GuideLines,
       a30A44WallGeometry,
@@ -1520,50 +1432,8 @@ function BronzeTowerModel() {
       {dims.a30A44CrownS2FacePanels.map((panel, index) => (
         <primitive key={`a31-a44-crown-s2-face-${index}`} object={panel} />
       ))}
-      <primitive object={dims.z1ToZ3Line} />
-      <primitive object={dims.z4ToZ6Line} />
-      <primitive object={dims.z7ToZ9Line} />
-      <primitive object={dims.z10ToZ12Line} />
-      <primitive object={dims.z13ToZ15Line} />
-      <primitive object={dims.z1ToZ13Line} />
-      <primitive object={dims.z2ToZ14Line} />
-      <primitive object={dims.z3ToZ15Line} />
-      <primitive object={dims.z16ToZ17Line} />
-      <primitive object={dims.z13ToZ17Line} />
-      <primitive object={dims.z1ToZ18Line} />
-      <primitive object={dims.z7ToZ19Line} />
-      <primitive object={dims.z4ToZ20Line} />
-      <primitive object={dims.z1ToZ16Line} />
       <primitive object={dims.a44ArchedSlotOutline} />
-      {([
-        // Z1-Z15 etiketleri kullanıcının tarif ettiği sıra ve koordinatlara göre tekil atanır.
-        ["Z1", dims.z1LabelPosition],
-        ["Z2", dims.z2LabelPosition],
-        ["Z3", dims.z3LabelPosition],
-        ["Z4", dims.z4LabelPosition],
-        ["Z5", dims.z5LabelPosition],
-        ["Z6", dims.z6LabelPosition],
-        ["Z7", dims.z7LabelPosition],
-        ["Z8", dims.z8LabelPosition],
-        ["Z9", dims.z9LabelPosition],
-        ["Z10", dims.z10LabelPosition],
-        ["Z11", dims.z11LabelPosition],
-        ["Z12", dims.z12LabelPosition],
-        ["Z13", dims.z13LabelPosition],
-        ["Z14", dims.z14LabelPosition],
-        ["Z15", dims.z15LabelPosition],
-        ["Z16", dims.z16LabelPosition],
-        ["Z17", dims.z17LabelPosition],
-        ["Z18", dims.z18LabelPosition],
-        ["Z19", dims.z19LabelPosition],
-        ["Z20", dims.z20LabelPosition],
-      ] as [string, THREE.Vector3][]).map(([name, position]) => (
-        <Text key={name} position={position} fontSize={0.075} color="#ff00ff"
-          outlineColor="#090b12" outlineWidth={0.007} anchorX="left"
-          anchorY="middle" renderOrder={27}>
-          {name}
-        </Text>
-      ))}
+
       {dims.wallGuideLabels.map((label) => (
         <Text
           key={label.name}
