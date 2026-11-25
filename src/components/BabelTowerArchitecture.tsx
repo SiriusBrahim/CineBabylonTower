@@ -1519,6 +1519,29 @@ function BronzeTowerModel() {
           {label.name}
         </Text>
       ))}
+      {/* 1. slotun duvarın dışında kalan yüzeydeki sınırını test etmek için kırmızı çerçeve. */}
+      <group
+        position={[9.2728879323750562, 0.80999999999999994, 0]}
+        rotation={[0, Math.PI / 2, 0]}
+        renderOrder={30}
+      >
+        <mesh position={[0, 0.69, 0.09]}>
+          <boxGeometry args={[0.97, 0.025, 0.018]} />
+          <meshBasicMaterial color="#ff0000" depthTest={false} />
+        </mesh>
+        <mesh position={[0, -0.69, 0.09]}>
+          <boxGeometry args={[0.97, 0.025, 0.018]} />
+          <meshBasicMaterial color="#ff0000" depthTest={false} />
+        </mesh>
+        <mesh position={[-0.46, 0, 0.09]}>
+          <boxGeometry args={[0.025, 1.38, 0.018]} />
+          <meshBasicMaterial color="#ff0000" depthTest={false} />
+        </mesh>
+        <mesh position={[0.46, 0, 0.09]}>
+          <boxGeometry args={[0.025, 1.38, 0.018]} />
+          <meshBasicMaterial color="#ff0000" depthTest={false} />
+        </mesh>
+      </group>
       {SHOW_FIRST_SLOT && (
         <>
           {/* İlk spiral slotu tek başına göster; A serisi ve diğer slotlar kapalı kalır. */}
