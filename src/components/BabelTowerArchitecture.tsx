@@ -1567,7 +1567,7 @@ function BronzeTowerModel() {
   }, []);
 
   const nicheNumbers = useMemo(
-    () => new Set(Array.from({ length: 90 }, (_, i) => i + 1)),
+    () => new Set(Array.from({ length: 119 }, (_, i) => i + 1)),
     []
   );
   const accent = useMemo(() => new THREE.Color(BRONZE_TOWER.accentColor), []);
