@@ -5,17 +5,18 @@ import { useThree } from "@react-three/fiber";
 interface StaircaseCameraProps {
   polarAngle: number;
   distance: number;
+  targetY: number;
 }
 
 export default function StaircaseCamera({
   polarAngle,
-  distance
+  distance,
+  targetY
 }: StaircaseCameraProps) {
   const controlsRef = useRef<any>(null);
   const { camera } = useThree();
 
   useEffect(() => {
-    const targetY = -3.6;
     camera.position.set(
       distance * Math.sin(polarAngle),
       targetY + distance * Math.cos(polarAngle),
@@ -27,7 +28,7 @@ export default function StaircaseCamera({
       controlsRef.current.target.set(0, targetY, 0);
       controlsRef.current.update();
     }
-  }, [camera, polarAngle, distance]);
+  }, [camera, polarAngle, distance, targetY]);
 
   return (
     <OrbitControls
