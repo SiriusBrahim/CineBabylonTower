@@ -1,9 +1,9 @@
-import BabelTowerArchitecture from "./components/BabelTowerArchitecture";
+import SpiralStaircase from "./components/SpiralStaircase";
 
 export default function App() {
   return (
     <main className="tower-only">
-      <BabelTowerArchitecture />
+      <SpiralStaircase />
     </main>
   );
 }
