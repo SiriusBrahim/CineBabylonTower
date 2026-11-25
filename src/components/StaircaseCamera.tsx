@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { OrbitControls, useThree } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 
 interface StaircaseCameraProps {
   polarAngle: number;
