@@ -143,7 +143,7 @@ const SlotNiche = memo(function SlotNiche({
   const localMatrix = useMemo(() => {
     const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
     const centerPos = new THREE.Vector3(x, y, z);
-    const surfaceCenter = centerPos.addScaledVector(normal, 0.12);
+    const surfaceCenter = centerPos.addScaledVector(normal, -0.0125);
     return computeLocalMatrix(surfaceCenter, normal);
   }, [x, y, z, theta]);
 
@@ -469,6 +469,7 @@ function BronzeTowerModel() {
       requestedUrlsRef.current.clear();
       loadingUrlsRef.current.clear();
       failedUrlsRef.current.clear();
+      posterQueueRef.current.clear();
     };
   }, []);
 
@@ -484,53 +485,90 @@ function BronzeTowerModel() {
     }
   }, []);
 
-  const requestPoster = useCallback((url: string) => {
-    if (
-      requestedUrlsRef.current.has(url) ||
-      loadingUrlsRef.current.has(url) ||
-      failedUrlsRef.current.has(url) ||
-      textureCacheRef.current.has(url)
-    ) {
-      return;
-    }
+  type PosterQueueItem = { priority: number; attempts: number; nextAttemptAt: number };
+  const posterQueueRef = useRef<Map<string, PosterQueueItem>>(new Map());
+  const MAX_CONCURRENT_POSTER_LOADS = 3;
+  const MAX_POSTER_ATTEMPTS = 3; // ilk deneme + en fazla iki tekrar
 
+  const processPosterQueue = useCallback(() => {
     const loader = textureLoaderRef.current;
     if (!loader || !mountedRef.current) return;
 
-    requestedUrlsRef.current.add(url);
-    loadingUrlsRef.current.add(url);
-    setPosterLoadStatus("loading");
-    const generation = loadGenerationRef.current;
+    const now = performance.now();
+    const available = Array.from(posterQueueRef.current.entries())
+      .filter(([, item]) => item.nextAttemptAt <= now)
+      .sort((a, b) => b[1].priority - a[1].priority);
 
-    loader.load(
-      url,
-      (texture) => {
-        loadingUrlsRef.current.delete(url);
+    while (
+      loadingUrlsRef.current.size < MAX_CONCURRENT_POSTER_LOADS &&
+      available.length > 0
+    ) {
+      const [url, item] = available.shift()!;
+      posterQueueRef.current.delete(url);
+      if (textureCacheRef.current.has(url) || loadingUrlsRef.current.has(url)) continue;
 
-        if (!mountedRef.current || generation !== loadGenerationRef.current) {
-          texture.dispose();
-          return;
+      loadingUrlsRef.current.add(url);
+      requestedUrlsRef.current.add(url);
+      setPosterLoadStatus("loading");
+      const generation = loadGenerationRef.current;
+
+      loader.load(
+        url,
+        (texture) => {
+          loadingUrlsRef.current.delete(url);
+          if (!mountedRef.current || generation !== loadGenerationRef.current) {
+            texture.dispose();
+            return;
+          }
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.flipY = true;
+          texture.needsUpdate = true;
+          textureCacheRef.current.set(url, texture);
+          failedUrlsRef.current.delete(url);
+          setTextureCache(new Map(textureCacheRef.current));
+          updatePosterLoadStatus();
+          processPosterQueue();
+        },
+        undefined,
+        (error) => {
+          loadingUrlsRef.current.delete(url);
+          if (!mountedRef.current || generation !== loadGenerationRef.current) return;
+
+          const attempts = item.attempts + 1;
+          if (attempts < MAX_POSTER_ATTEMPTS) {
+            posterQueueRef.current.set(url, {
+              priority: item.priority,
+              attempts,
+              nextAttemptAt: performance.now() + 500 * (2 ** (attempts - 1))
+            });
+            console.warn(`Poster yüklemesi başarısız; tekrar denenecek (${attempts}/2): ${url}`, error);
+          } else {
+            failedUrlsRef.current.add(url);
+            console.warn(`Poster yüklenemedi; tekrar deneme sınırı aşıldı: ${url}`, error);
+          }
+          updatePosterLoadStatus();
+          processPosterQueue();
         }
-
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.flipY = true;
-        texture.needsUpdate = true;
-        textureCacheRef.current.set(url, texture);
-        setTextureCache(new Map(textureCacheRef.current));
-        updatePosterLoadStatus();
-      },
-      undefined,
-      (error) => {
-        loadingUrlsRef.current.delete(url);
-
-        if (!mountedRef.current || generation !== loadGenerationRef.current) return;
-
-        failedUrlsRef.current.add(url);
-        console.warn(`Poster yüklenemedi: ${url}`, error);
-        updatePosterLoadStatus();
-      }
-    );
+      );
+    }
   }, [updatePosterLoadStatus]);
+
+  const enqueuePoster = useCallback((url: string, priority: number) => {
+    if (
+      textureCacheRef.current.has(url) ||
+      loadingUrlsRef.current.has(url) ||
+      failedUrlsRef.current.has(url)
+    ) return;
+
+    const existing = posterQueueRef.current.get(url);
+    if (!existing || priority > existing.priority) {
+      posterQueueRef.current.set(url, {
+        priority: Math.max(priority, existing?.priority ?? 0),
+        attempts: existing?.attempts ?? 0,
+        nextAttemptAt: existing?.nextAttemptAt ?? 0
+      });
+    }
+  }, []);
 
   // Niş poster merkezleri, SlotNiche/CrownNiche yerel matrisleriyle aynı koordinat sistemindedir.
   const posterVisibilityTargets = useMemo(() => {
@@ -553,7 +591,7 @@ function BronzeTowerModel() {
     return targets;
   }, [posterMap]);
 
-  // Tek bir frustum kontrolü bütün nişleri tarar; aynı URL yalnızca ilk görünürlükte yüklenir.
+  // C7: Görüş alanındaki posterleri yakınlık ve ekrandaki yaklaşık boyuta göre sırala.
   const visibilityFrustum = useMemo(() => new THREE.Frustum(), []);
   const projectionScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
 
@@ -563,18 +601,23 @@ function BronzeTowerModel() {
     visibilityFrustum.setFromProjectionMatrix(projectionScreenMatrix);
 
     for (const target of posterVisibilityTargets) {
-      if (target.url && visibilityFrustum.intersectsSphere(target.sphere)) {
-        requestPoster(target.url);
-      }
+      if (!target.url || !visibilityFrustum.intersectsSphere(target.sphere)) continue;
+      const distance = Math.max(camera.position.distanceTo(target.sphere.center), 0.1);
+      const projectedSize = target.sphere.radius / distance;
+      const priority = (1 / distance) + projectedSize * 2;
+      enqueuePoster(target.url, priority);
     }
+    processPosterQueue();
   });
 
   // C6: Lazy-loading durumunu ve gerçek yükleme sayılarını izle.
   useEffect(() => {
-    console.log("C6 Lazy Poster Loading:");
+    console.log("C7 Poster Loading Manager:");
     console.log("Toplam benzersiz poster:", uniquePosterUrls.length);
     console.log("İstenen poster:", requestedUrlsRef.current.size);
     console.log("Yüklenen poster:", textureCache.size);
+    console.log("Kuyruktaki poster:", posterQueueRef.current.size);
+    console.log("Eşzamanlı yükleme:", loadingUrlsRef.current.size, "/", MAX_CONCURRENT_POSTER_LOADS);
     console.log("Başarısız poster:", failedUrlsRef.current.size);
     console.log("Yükleme durumu:", posterLoadStatus);
   }, [uniquePosterUrls, posterLoadStatus, textureCache]);
