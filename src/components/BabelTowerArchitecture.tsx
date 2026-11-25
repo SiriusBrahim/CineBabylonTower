@@ -910,6 +910,9 @@ function BronzeTowerModel() {
     const z13Point = z10Point.clone().add(new THREE.Vector3(0, 0.1, 0));
     const z14Point = z13Point.clone().addScaledVector(zRightDirection, 0.1);
     const z15Point = z14Point.clone().addScaledVector(zRightDirection, 0.92);
+    // Z3-Z15 doğrusunun 0.10 birim sağında, aynı yüksekliklerde paralel uç noktalar.
+    const z16Point = z3Point.clone().addScaledVector(zRightDirection, 0.1);
+    const z17Point = z15Point.clone().addScaledVector(zRightDirection, 0.1);
 
     const makeZLine = (start: THREE.Vector3, end: THREE.Vector3) => {
       const line = new THREE.Line(
@@ -929,6 +932,7 @@ function BronzeTowerModel() {
     const z1ToZ13Line = makeZLine(z1Point, z13Point);
     const z2ToZ14Line = makeZLine(z2Point, z14Point);
     const z3ToZ15Line = makeZLine(z3Point, z15Point);
+    const z16ToZ17Line = makeZLine(z16Point, z17Point);
 
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
@@ -1395,6 +1399,9 @@ function BronzeTowerModel() {
       z1ToZ13Line,
       z2ToZ14Line,
       z3ToZ15Line,
+      z16ToZ17Line,
+      z16LabelPosition: z16Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z17LabelPosition: z17Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z1LabelPosition: z1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z2LabelPosition: z2Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z3LabelPosition: z3Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1478,6 +1485,7 @@ function BronzeTowerModel() {
       <primitive object={dims.z1ToZ13Line} />
       <primitive object={dims.z2ToZ14Line} />
       <primitive object={dims.z3ToZ15Line} />
+      <primitive object={dims.z16ToZ17Line} />
       {([
         // Z1-Z15 etiketleri kullanıcının tarif ettiği sıra ve koordinatlara göre tekil atanır.
         ["Z1", dims.z1LabelPosition],
@@ -1495,6 +1503,8 @@ function BronzeTowerModel() {
         ["Z13", dims.z13LabelPosition],
         ["Z14", dims.z14LabelPosition],
         ["Z15", dims.z15LabelPosition],
+        ["Z16", dims.z16LabelPosition],
+        ["Z17", dims.z17LabelPosition],
       ] as [string, THREE.Vector3][]).map(([name, position]) => (
         <Text key={name} position={position} fontSize={0.075} color="#ff00ff"
           outlineColor="#090b12" outlineWidth={0.007} anchorX="left"
