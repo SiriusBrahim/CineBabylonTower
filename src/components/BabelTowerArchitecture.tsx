@@ -37,6 +37,138 @@ function InstancedSlots({ matrices, geometry, material }: {
   return <primitive object={mesh} />;
 }
 
+// Slot #1 için kemerli poster yuvası: şekiller Group'un sol alt köşesine göre tanımlanır.
+function createArchRingShape(outerWidth: number, innerWidth: number) {
+  const shape = new THREE.Shape();
+  const straightHeight = 1.38;
+  const centerX = 0.48;
+  const outRadius = outerWidth / 2;
+  const inRadius = innerWidth / 2;
+
+  // Dış çevre: CCW.
+  shape.moveTo(centerX - outRadius, 0);
+  shape.lineTo(centerX + outRadius, 0);
+  shape.lineTo(centerX + outRadius, straightHeight);
+  shape.absarc(centerX, straightHeight, outRadius, 0, Math.PI, false);
+  shape.lineTo(centerX - outRadius, straightHeight);
+  shape.closePath();
+
+  // İç delik: aynı üst kemeri CW yönde izler.
+  const hole = new THREE.Path();
+  hole.moveTo(centerX - inRadius, 0);
+  hole.lineTo(centerX - inRadius, straightHeight);
+  hole.absarc(centerX, straightHeight, inRadius, Math.PI, 0, true);
+  hole.lineTo(centerX + inRadius, 0);
+  hole.closePath();
+  shape.holes.push(hole);
+
+  return shape;
+}
+
+function createNicheCapShape() {
+  const shape = new THREE.Shape();
+  const radius = 0.48;
+  const springY = 1.38;
+  const centerX = 0.48;
+
+  shape.moveTo(centerX - radius, springY);
+  shape.lineTo(centerX + radius, springY);
+  shape.absarc(centerX, springY, radius, 0, Math.PI, false);
+  shape.closePath();
+
+  return shape;
+}
+
+function computeLocalMatrix(centerPos: THREE.Vector3, normal: THREE.Vector3) {
+  const normalizedNormal = normal.clone().normalize();
+  const Y = new THREE.Vector3(0, 1, 0);
+  const X = new THREE.Vector3().crossVectors(Y, normalizedNormal);
+
+  if (X.length() < 0.001) {
+    X.crossVectors(new THREE.Vector3(1, 0, 0), normalizedNormal);
+  }
+  X.normalize();
+
+  const Z = new THREE.Vector3().crossVectors(X, Y).normalize();
+
+  const det = X.dot(new THREE.Vector3().crossVectors(Y, Z));
+  if (Math.abs(det - 1.0) > 0.001) {
+    console.warn("Slot #1 baz matrisi determinantı beklenen değerde değil:", det);
+  }
+
+  const normalAlignment = Z.dot(normalizedNormal);
+  if (normalAlignment < 0.999) {
+    console.warn("Slot #1 yerel Z ekseni duvar normalinden sapıyor:", normalAlignment);
+  }
+
+  const bottomLeft = centerPos.clone()
+    .addScaledVector(X, -0.48)
+    .addScaledVector(Y, -0.69);
+
+  const matrix = new THREE.Matrix4();
+  matrix.set(
+    X.x, Y.x, Z.x, bottomLeft.x,
+    X.y, Y.y, Z.y, bottomLeft.y,
+    X.z, Y.z, Z.z, bottomLeft.z,
+    0,   0,   0,   1
+  );
+
+  return matrix;
+}
+
+function Slot1Prototype() {
+  const centerPos = useMemo(() => new THREE.Vector3(9.2728879323750562, 0.81, 0), []);
+  const normal = useMemo(() => new THREE.Vector3(1, 0, 0), []);
+  const localMatrix = useMemo(
+    () => computeLocalMatrix(centerPos, normal),
+    [centerPos, normal]
+  );
+
+  const nicheGeo = useMemo(
+    () => new THREE.ShapeGeometry(createNicheCapShape()),
+    []
+  );
+  const frameGeo = useMemo(
+    () => new THREE.ExtrudeGeometry(createArchRingShape(1.08, 0.96), {
+      depth: 0.03,
+      bevelEnabled: false
+    }),
+    []
+  );
+  const borderGeo = useMemo(
+    () => new THREE.ExtrudeGeometry(createArchRingShape(1.16, 1.08), {
+      depth: 0.02,
+      bevelEnabled: false
+    }),
+    []
+  );
+
+  const frameMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#8B7355", roughness: 0.8 }),
+    []
+  );
+  const borderMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: "#6B5344", roughness: 0.9 }),
+    []
+  );
+
+  return (
+    <group matrix={localMatrix} matrixAutoUpdate={false}>
+      <mesh position={[0.48, 0.69, -0.04]}>
+        <planeGeometry args={[0.96, 1.38]} />
+        <meshStandardMaterial color="#101827" side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh position={[0, 0, -0.01]} geometry={nicheGeo}>
+        <meshStandardMaterial color="#050505" side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh geometry={frameGeo} material={frameMat} />
+      <mesh position={[0, 0, 0.03]} geometry={borderGeo} material={borderMat} />
+    </group>
+  );
+}
+
 const SPIRAL_SLOT_LAYOUT: {
   number: number;
   x: number;
@@ -1526,11 +1658,12 @@ function BronzeTowerModel() {
         <>
           {/* 1-120 arasındaki tüm spiral slotları birlikte göster. */}
           <InstancedSlots
-            matrices={dims.slots}
+            matrices={dims.slots.filter((_, index) => index !== 0)}
             geometry={slotGeometry}
             material={slotMaterial}
           />
-          {dims.slotLabels.map((label, index) => (
+          <Slot1Prototype />
+          {dims.slotLabels.filter((label) => label.number !== 1).map((label, index) => (
             <Text
               key={`slot-label-${index}-${label.number}`}
               position={label.position}
