@@ -913,6 +913,10 @@ function BronzeTowerModel() {
     // Z3-Z15 doğrusunun 0.10 birim sağında, aynı yüksekliklerde paralel uç noktalar.
     const z16Point = z3Point.clone().addScaledVector(zRightDirection, 0.1);
     const z17Point = z15Point.clone().addScaledVector(zRightDirection, 0.1);
+    // Z18-Z20, Z17 noktasından aşağı doğru belirtilen düşey aralıklarla yerleştirilir.
+    const z18Point = z17Point.clone().add(new THREE.Vector3(0, -0.1, 0));
+    const z19Point = z18Point.clone().add(new THREE.Vector3(0, -0.1, 0));
+    const z20Point = z19Point.clone().add(new THREE.Vector3(0, -1.38, 0));
 
     const makeZLine = (start: THREE.Vector3, end: THREE.Vector3) => {
       const line = new THREE.Line(
@@ -933,6 +937,12 @@ function BronzeTowerModel() {
     const z2ToZ14Line = makeZLine(z2Point, z14Point);
     const z3ToZ15Line = makeZLine(z3Point, z15Point);
     const z16ToZ17Line = makeZLine(z16Point, z17Point);
+    // Z noktaları arasında kullanıcının belirttiği bağlantılar.
+    const z13ToZ17Line = makeZLine(z13Point, z17Point);
+    const z1ToZ18Line = makeZLine(z1Point, z18Point);
+    const z7ToZ19Line = makeZLine(z7Point, z19Point);
+    const z4ToZ20Line = makeZLine(z4Point, z20Point);
+    const z1ToZ16Line = makeZLine(z1Point, z16Point);
 
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
@@ -1400,6 +1410,14 @@ function BronzeTowerModel() {
       z2ToZ14Line,
       z3ToZ15Line,
       z16ToZ17Line,
+      z13ToZ17Line,
+      z1ToZ18Line,
+      z7ToZ19Line,
+      z4ToZ20Line,
+      z1ToZ16Line,
+      z18LabelPosition: z18Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z19LabelPosition: z19Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
+      z20LabelPosition: z20Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z16LabelPosition: z16Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z17LabelPosition: z17Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
       z1LabelPosition: z1Point.clone().add(new THREE.Vector3(0.08, 0.04, 0)),
@@ -1486,6 +1504,11 @@ function BronzeTowerModel() {
       <primitive object={dims.z2ToZ14Line} />
       <primitive object={dims.z3ToZ15Line} />
       <primitive object={dims.z16ToZ17Line} />
+      <primitive object={dims.z13ToZ17Line} />
+      <primitive object={dims.z1ToZ18Line} />
+      <primitive object={dims.z7ToZ19Line} />
+      <primitive object={dims.z4ToZ20Line} />
+      <primitive object={dims.z1ToZ16Line} />
       {([
         // Z1-Z15 etiketleri kullanıcının tarif ettiği sıra ve koordinatlara göre tekil atanır.
         ["Z1", dims.z1LabelPosition],
@@ -1505,6 +1528,9 @@ function BronzeTowerModel() {
         ["Z15", dims.z15LabelPosition],
         ["Z16", dims.z16LabelPosition],
         ["Z17", dims.z17LabelPosition],
+        ["Z18", dims.z18LabelPosition],
+        ["Z19", dims.z19LabelPosition],
+        ["Z20", dims.z20LabelPosition],
       ] as [string, THREE.Vector3][]).map(([name, position]) => (
         <Text key={name} position={position} fontSize={0.075} color="#ff00ff"
           outlineColor="#090b12" outlineWidth={0.007} anchorX="left"
