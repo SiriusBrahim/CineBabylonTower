@@ -240,15 +240,19 @@ function BronzeTowerModel() {
       const slotCenter = new THREE.Vector3(layout.x, layout.y, layout.z);
       slotCenters.push(slotCenter.clone());
       const slotRotation = new THREE.Euler(0, layout.rotationY, 0);
+      const frontNormal = new THREE.Vector3(Math.cos(layout.theta), 0, Math.sin(layout.theta));
+
+      // Slotların duvar içinde kalmaması için yalnızca görsel kopyalarını
+      // mavi duvarın dış yüzeyine doğru 0.12 birim taşı.
+      const visibleSlotCenter = slotCenter.clone().addScaledVector(frontNormal, 0.12);
       slots.push(new THREE.Matrix4().compose(
-        slotCenter,
+        visibleSlotCenter,
         new THREE.Quaternion().setFromEuler(slotRotation),
         new THREE.Vector3(1, 1, 1)
       ));
 
-      const frontNormal = new THREE.Vector3(Math.cos(layout.theta), 0, Math.sin(layout.theta));
       slotLabels.push({
-        position: slotCenter.clone().addScaledVector(frontNormal, 0.045),
+        position: visibleSlotCenter.clone().addScaledVector(frontNormal, 0.045),
         rotation: slotRotation.clone(),
         number: layout.number
       });
@@ -1518,29 +1522,6 @@ function BronzeTowerModel() {
           {label.name}
         </Text>
       ))}
-      {/* 1. slotun duvarın dışında kalan yüzeydeki sınırını test etmek için kırmızı çerçeve. */}
-      <group
-        position={[9.2728879323750562, 0.80999999999999994, 0]}
-        rotation={[0, Math.PI / 2, 0]}
-        renderOrder={30}
-      >
-        <mesh position={[0, 0.69, 0.09]}>
-          <boxGeometry args={[0.97, 0.025, 0.018]} />
-          <meshBasicMaterial color="#ff0000" depthTest={false} />
-        </mesh>
-        <mesh position={[0, -0.69, 0.09]}>
-          <boxGeometry args={[0.97, 0.025, 0.018]} />
-          <meshBasicMaterial color="#ff0000" depthTest={false} />
-        </mesh>
-        <mesh position={[-0.46, 0, 0.09]}>
-          <boxGeometry args={[0.025, 1.38, 0.018]} />
-          <meshBasicMaterial color="#ff0000" depthTest={false} />
-        </mesh>
-        <mesh position={[0.46, 0, 0.09]}>
-          <boxGeometry args={[0.025, 1.38, 0.018]} />
-          <meshBasicMaterial color="#ff0000" depthTest={false} />
-        </mesh>
-      </group>
       {SHOW_ALL_SLOTS && (
         <>
           {/* 1-120 arasındaki tüm spiral slotları birlikte göster. */}
