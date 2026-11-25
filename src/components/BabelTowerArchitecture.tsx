@@ -3,8 +3,8 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
-// Yalnızca 1. spiral slot görünür; diğer slotların yerleşim verileri korunur.
-const SHOW_FIRST_SLOT = true;
+// Tüm spiral slotlar ve 120 numaralı tepe slotu görünür.
+const SHOW_ALL_SLOTS = true;
 
 const BRONZE_TOWER = {
   name: "Bronz Kule",
@@ -1541,32 +1541,30 @@ function BronzeTowerModel() {
           <meshBasicMaterial color="#ff0000" depthTest={false} />
         </mesh>
       </group>
-      {SHOW_FIRST_SLOT && (
+      {SHOW_ALL_SLOTS && (
         <>
-          {/* İlk spiral slotu tek başına göster; A serisi ve diğer slotlar kapalı kalır. */}
+          {/* 1-120 arasındaki tüm spiral slotları birlikte göster. */}
           <InstancedSlots
-            matrices={dims.slots.slice(0, 1)}
+            matrices={dims.slots}
             geometry={slotGeometry}
             material={slotMaterial}
           />
-          {dims.slotLabels
-            .filter((label) => label.number === 1)
-            .map((label) => (
-              <Text
-                key={label.number}
-                position={label.position}
-                rotation={label.rotation}
-                fontSize={0.24}
-                color="#ffffff"
-                outlineColor="#090b12"
-                outlineWidth={0.012}
-                anchorX="center"
-                anchorY="middle"
-                renderOrder={2}
-              >
-                {label.number}
-              </Text>
-            ))}
+          {dims.slotLabels.map((label, index) => (
+            <Text
+              key={`slot-label-${index}-${label.number}`}
+              position={label.position}
+              rotation={label.rotation}
+              fontSize={0.24}
+              color="#ffffff"
+              outlineColor="#090b12"
+              outlineWidth={0.012}
+              anchorX="center"
+              anchorY="middle"
+              renderOrder={2}
+            >
+              {label.number}
+            </Text>
+          ))}
         </>
       )}
     </group>
