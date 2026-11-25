@@ -1,5 +1,5 @@
-import { memo, useMemo } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { memo, useEffect, useMemo, useState } from "react";
+import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -398,11 +398,48 @@ const SIDE_SLOT_LAYOUT: {
 const CROWN_SLOT_POSITION = { x: 0, y: 8.72150815736696, z: 0, rotationY: 0 };
 
 function BronzeTowerModel() {
-  const posterTexture = useLoader(THREE.TextureLoader, "/posters/sample.svg");
+  const [posterTexture, setPosterTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load(
+      "/posters/sample.svg",
+      (loadedTexture) => {
+        if (cancelled) {
+          loadedTexture.dispose();
+          return;
+        }
+        loadedTexture.colorSpace = THREE.SRGBColorSpace;
+        loadedTexture.flipY = true;
+        loadedTexture.needsUpdate = true;
+        setPosterTexture(loadedTexture);
+      },
+      undefined,
+      (error) => {
+        if (!cancelled) {
+          console.warn("Poster yüklenemedi:", error);
+          setPosterTexture(null);
+        }
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      texture.dispose();
+    };
+  }, []);
+
   const sharedPosterMat = useMemo(() => {
-    posterTexture.colorSpace = THREE.SRGBColorSpace;
-    posterTexture.flipY = true;
-    posterTexture.needsUpdate = true;
+    if (!posterTexture) {
+      return new THREE.MeshStandardMaterial({
+        color: "#0f172a",
+        roughness: 0.85,
+        metalness: 0.0,
+        side: THREE.DoubleSide
+      });
+    }
+
     return new THREE.MeshStandardMaterial({
       map: posterTexture,
       color: "#ffffff",
@@ -411,6 +448,12 @@ function BronzeTowerModel() {
       side: THREE.DoubleSide
     });
   }, [posterTexture]);
+
+  useEffect(() => {
+    return () => {
+      sharedPosterMat.dispose();
+    };
+  }, [sharedPosterMat]);
 
   const dims = useMemo(() => {
     const posterWidth = 0.92;
