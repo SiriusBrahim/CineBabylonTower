@@ -19,22 +19,23 @@ export default function StepPoster({
   width,
   depth
 }: StepPosterProps) {
+  // Local X is radial depth; local Y becomes tangential width after mesh rotation.
   const platformGeometry = useMemo(() => {
-    const halfWidth = width / 2;
-    const halfDepth = depth / 2;
+    const halfRadialDepth = depth / 2;
+    const halfTangentialWidth = width / 2;
     const shape = new THREE.Shape();
 
-    shape.moveTo(-halfWidth, -halfDepth);
-    shape.lineTo(halfWidth, -halfDepth);
-    shape.lineTo(halfWidth, halfDepth);
-    shape.lineTo(-halfWidth, halfDepth);
+    shape.moveTo(-halfRadialDepth, -halfTangentialWidth);
+    shape.lineTo(halfRadialDepth, -halfTangentialWidth);
+    shape.lineTo(halfRadialDepth, halfTangentialWidth);
+    shape.lineTo(-halfRadialDepth, halfTangentialWidth);
     shape.closePath();
 
     const opening = new THREE.Path();
-    opening.moveTo(-halfWidth + BORDER, -halfDepth + BORDER);
-    opening.lineTo(-halfWidth + BORDER, halfDepth - BORDER);
-    opening.lineTo(halfWidth - BORDER, halfDepth - BORDER);
-    opening.lineTo(halfWidth - BORDER, -halfDepth + BORDER);
+    opening.moveTo(-halfRadialDepth + BORDER, -halfTangentialWidth + BORDER);
+    opening.lineTo(-halfRadialDepth + BORDER, halfTangentialWidth - BORDER);
+    opening.lineTo(halfRadialDepth - BORDER, halfTangentialWidth - BORDER);
+    opening.lineTo(halfRadialDepth - BORDER, -halfTangentialWidth + BORDER);
     opening.closePath();
     shape.holes.push(opening);
 
@@ -46,7 +47,7 @@ export default function StepPoster({
   }, [width, depth]);
 
   const posterGeometry = useMemo(
-    () => new THREE.PlaneGeometry(width - BORDER * 2, depth - BORDER * 2),
+    () => new THREE.PlaneGeometry(depth - BORDER * 2, width - BORDER * 2),
     [width, depth]
   );
 
