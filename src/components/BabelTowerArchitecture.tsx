@@ -933,21 +933,22 @@ function BronzeTowerModel() {
       a44SlotAnchor.y + a44SlotNormal.y * 0.012,
       a44SlotAnchor.z + a44SlotNormal.z * 0.012
     );
-    const a44SlotAreaMaterial = new THREE.MeshStandardMaterial({
-      color: "#17212b",
-      metalness: 0.18,
-      roughness: 0.72,
+    const a44SlotAreaMaterial = new THREE.MeshBasicMaterial({
+      color: "#f2c94c",
       side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.82,
+      depthTest: false,
       depthWrite: false
     });
     const a44SlotArea = new THREE.Mesh(a44SlotAreaGeometry, a44SlotAreaMaterial);
-    a44SlotArea.renderOrder = 28;
+    a44SlotArea.renderOrder = 30;
 
     const a44ArchedSlotOutline = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a44ArchedSlotPoints),
       new THREE.LineBasicMaterial({ color: "#ff00ff", depthTest: false })
     );
-    a44ArchedSlotOutline.renderOrder = 29;
+    a44ArchedSlotOutline.renderOrder = 31;
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
     const a30SpiralGuideLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(a30SpiralLinePoints),
