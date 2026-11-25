@@ -143,7 +143,7 @@ const SlotNiche = memo(function SlotNiche({
   const localMatrix = useMemo(() => {
     const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
     const centerPos = new THREE.Vector3(x, y, z);
-    const surfaceCenter = centerPos.addScaledVector(normal, -0.0125);
+    const surfaceCenter = centerPos.addScaledVector(normal, 0.12);
     return computeLocalMatrix(surfaceCenter, normal);
   }, [x, y, z, theta]);
 
