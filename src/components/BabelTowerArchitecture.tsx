@@ -213,9 +213,16 @@ const SlotNiche = memo(function SlotNiche({
         event.stopPropagation();
         if (event.nativeEvent.pointerType !== "touch") onHover(null);
       }}
+      onPointerDown={(event) => {
+        if (event.nativeEvent.pointerType === "touch") {
+          event.stopPropagation();
+          onSelect(slotNumber);
+        }
+      }}
       onClick={(event) => {
         event.stopPropagation();
-        onSelect(slotNumber);
+        // Touch seçimi pointerdown'da yapılır; click'te ikinci kez toggle edilmez.
+        if (event.nativeEvent.pointerType !== "touch") onSelect(slotNumber);
       }}
     >
       <mesh
@@ -281,9 +288,16 @@ function CrownNiche({
         event.stopPropagation();
         if (event.nativeEvent.pointerType !== "touch") onHover(null);
       }}
+      onPointerDown={(event) => {
+        if (event.nativeEvent.pointerType === "touch") {
+          event.stopPropagation();
+          onSelect(120);
+        }
+      }}
       onClick={(event) => {
         event.stopPropagation();
-        onSelect(120);
+        // Touch seçimi pointerdown'da yapılır; click'te ikinci kez toggle edilmez.
+        if (event.nativeEvent.pointerType !== "touch") onSelect(120);
       }}
     >
       <mesh
@@ -344,10 +358,14 @@ function NicheHighlight({ slotNumber }: { slotNumber: number | null }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const currentIntensity = useRef(0.15);
   const currentScale = useRef(1);
-  const localMatrix = useMemo(
-    () => slotNumber === null ? new THREE.Matrix4() : getNicheLocalMatrix(slotNumber),
-    [slotNumber]
-  );
+  // Slot null olduğunda son dönüşümü koru; çıkış animasyonu aynı nişte tamamlanır.
+  const lastLocalMatrix = useRef(new THREE.Matrix4());
+  const localMatrix = useMemo(() => {
+    if (slotNumber !== null) {
+      lastLocalMatrix.current = getNicheLocalMatrix(slotNumber);
+    }
+    return lastLocalMatrix.current;
+  }, [slotNumber]);
 
   useEffect(() => () => material.dispose(), [material]);
 
