@@ -28,7 +28,7 @@ function StaircaseScene() {
 
   const steps = useMemo<StepData[]>(
     () =>
-      sequence.map(({ index }) => {
+      sequence.map(({ index }): StepData => {
         const theta =
           STAIRCASE_CONFIG.startAngle + index * STAIRCASE_CONFIG.angularStep;
         const y = -index * STAIRCASE_CONFIG.stepHeight;
