@@ -58,6 +58,7 @@ function createNicheCapShape() {
 }
 
 
+// C8: Mevcut kemer çerçevesi ve bordür zaten ayrı paylaşılan mesh katmanlarıdır; korunur.
 // SlotNiche örneklerinin tamamı aynı GPU kaynaklarını paylaşır.
 const sharedNicheGeo = new THREE.ShapeGeometry(createNicheCapShape());
 const sharedFrameGeo = new THREE.ExtrudeGeometry(
@@ -123,6 +124,54 @@ function computeLocalMatrix(centerPos: THREE.Vector3, normal: THREE.Vector3) {
   return matrix;
 }
 
+/**
+ * C8: World-space poster cutouts. Each vec4 stores center xyz and horizontal orientation theta.
+ * The local horizontal axis matches computeLocalMatrix(): (sin(theta), 0, -cos(theta)).
+ */
+function createPosterWallMaskMaterial(slotData: Float32Array) {
+  const material = new THREE.MeshStandardMaterial({
+    color: "#B89B72", roughness: 0.90, metalness: 0.05,
+    transparent: false, opacity: 1, side: THREE.DoubleSide, depthWrite: true
+  });
+
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uPosterSlots = { value: slotData };
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <common>",
+      `#include <common>
+varying vec3 vPosterWallWorldPosition;`
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
+vPosterWallWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <common>",
+      `#include <common>
+varying vec3 vPosterWallWorldPosition;
+uniform vec4 uPosterSlots[120];`
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <clipping_planes_fragment>",
+      `#include <clipping_planes_fragment>
+      for (int i = 0; i < 120; i++) {
+        vec4 slot = uPosterSlots[i];
+        vec2 delta = vec2(vPosterWallWorldPosition.x - slot.x, vPosterWallWorldPosition.z - slot.z);
+        float localX = sin(slot.w) * delta.x - cos(slot.w) * delta.y;
+        float localY = vPosterWallWorldPosition.y - slot.y;
+        bool insidePosterRect = abs(localX) <= 0.48 && localY >= -0.69 && localY <= 0.69;
+        float archY = localY - 0.69;
+        bool insideArch = localY > 0.69 && localY <= 1.17 &&
+          (localX * localX + archY * archY) <= (0.48 * 0.48);
+        if (insidePosterRect || insideArch) discard;
+      }`
+    );
+  };
+  material.customProgramCacheKey = () => "c8-poster-wall-mask-v1";
+  return material;
+}
+
 interface SlotNicheProps {
   x: number;
   y: number;
@@ -143,7 +192,7 @@ const SlotNiche = memo(function SlotNiche({
   const localMatrix = useMemo(() => {
     const normal = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta));
     const centerPos = new THREE.Vector3(x, y, z);
-    const surfaceCenter = centerPos.addScaledVector(normal, 0.12);
+    const surfaceCenter = centerPos.addScaledVector(normal, 0.0375);
     return computeLocalMatrix(surfaceCenter, normal);
   }, [x, y, z, theta]);
 
@@ -187,7 +236,7 @@ function CrownNiche({ posterMaterial }: { posterMaterial: THREE.MeshStandardMate
   const localMatrix = useMemo(() => {
     const centerPos = new THREE.Vector3(0, 8.72150815736696, 0);
     const normal = new THREE.Vector3(0, 0, 1);
-    const surfaceCenter = centerPos.addScaledVector(normal, 0.12);
+    const surfaceCenter = centerPos.addScaledVector(normal, 0.0375);
     return computeLocalMatrix(surfaceCenter, normal);
   }, []);
 
@@ -574,7 +623,7 @@ function BronzeTowerModel() {
   const posterVisibilityTargets = useMemo(() => {
     const targets = SPIRAL_SLOT_LAYOUT.map((slot) => {
       const normal = new THREE.Vector3(Math.cos(slot.theta), 0, Math.sin(slot.theta));
-      const position = new THREE.Vector3(slot.x, slot.y, slot.z).addScaledVector(normal, 0.08);
+      const position = new THREE.Vector3(slot.x, slot.y, slot.z).addScaledVector(normal, 0.0375);
       return {
         slotNumber: slot.number,
         url: posterMap.get(slot.number),
@@ -585,7 +634,7 @@ function BronzeTowerModel() {
     targets.push({
       slotNumber: 120,
       url: posterMap.get(120),
-      sphere: new THREE.Sphere(new THREE.Vector3(0, 8.72150815736696, 0.08), 0.95)
+      sphere: new THREE.Sphere(new THREE.Vector3(0, 8.72150815736696, 0.0375), 0.95)
     });
 
     return targets;
@@ -927,6 +976,24 @@ function BronzeTowerModel() {
     // ön yüzeyleri dörtgen paneller halinde doldur:
     // A30-SÜ-0 → A29-SÜ-0 → A29-SÜ → A30-SÜ ve aynı düzen tüm hat boyunca.
     const slotFrontFacePanels: THREE.Mesh[] = [];
+    // C8: 119 spiral nişi + 120. tepe nişi için yönelimli world-space maske verisi.
+    // Her kayıt [centerX, centerY, centerZ, theta] biçiminde tutulur.
+    const posterMaskSlotData = new Float32Array(120 * 4);
+    for (const slot of SPIRAL_SLOT_LAYOUT) {
+      const offset = (slot.number - 1) * 4;
+      const normalX = Math.cos(slot.theta);
+      const normalZ = Math.sin(slot.theta);
+      posterMaskSlotData[offset] = slot.x + normalX * 0.0375;
+      posterMaskSlotData[offset + 1] = slot.y;
+      posterMaskSlotData[offset + 2] = slot.z + normalZ * 0.0375;
+      posterMaskSlotData[offset + 3] = slot.theta;
+    }
+    // CrownNiche +Z yönüne bakar; yatay eksen için theta = PI/2.
+    posterMaskSlotData[119 * 4] = CROWN_SLOT_POSITION.x;
+    posterMaskSlotData[119 * 4 + 1] = CROWN_SLOT_POSITION.y;
+    posterMaskSlotData[119 * 4 + 2] = CROWN_SLOT_POSITION.z + 0.0375;
+    posterMaskSlotData[119 * 4 + 3] = Math.PI / 2;
+
     // Deneme 8: Bütün duvarlar ve bütün üst yüzeyler için iki sabit ortak materyal.
     const wallBlueMaterial = new THREE.MeshStandardMaterial({
       color: "#B89B72",
@@ -947,8 +1014,10 @@ function BronzeTowerModel() {
       depthWrite: true
     });
 
-    // Eski materyal adları aynı ortak materyallere yönlendirilir.
-    const slotFrontFaceMaterial = wallBlueMaterial;
+    // C8: Poster açıklıkları yalnızca ön duvar panellerinin PBR shader'ında kesilir.
+    // Yan ve kapalı yüzeyler orijinal duvar materyalini kullanmaya devam eder.
+    const posterWallMaterial = createPosterWallMaskMaterial(posterMaskSlotData);
+    const slotFrontFaceMaterial = posterWallMaterial;
     const slotSideFaceMaterial = wallBlueMaterial;
     const a30A29EnclosedFaceMaterial = wallBlueMaterial;
     const frontFaceSlotsInPathOrder = [
@@ -965,7 +1034,7 @@ function BronzeTowerModel() {
     // Deneme 6.2: A30-SÜ'den 118-SÜ'ye kadar mevcut ön yüzey panelleri
     // sabit olarak mavi materyalle ve %100 opaklıkta renklendirilir.
     const lastBlueFrontFaceIndex = 149; // A30...A, ardından 1-SÜ...119-SÜ
-    const blueFrontFaceMaterial = wallBlueMaterial;
+    const blueFrontFaceMaterial = posterWallMaterial;
     for (let i = 1; i < frontFacePoints.length; i++) {
       if (i > lastBlueFrontFaceIndex) continue;
       const previous = frontFacePoints[i - 1];
