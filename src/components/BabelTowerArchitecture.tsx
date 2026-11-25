@@ -944,7 +944,7 @@ function BronzeTowerModel() {
     a44InnerArchOutline.renderOrder = 32;
 
     // Kemer açıklığının içine örnek poster: iç konturdan pay bırakılarak yerleştirilir.
-    // Poster 0.88 × 1.28 birimdir; altı Y=0.08, üstü Y=1.36 seviyesindedir.
+    // Poster ölçüsü, belirlenen slot ölçüsüyle aynıdır: 0.96 × 1.38 birim.
     const a44PosterNormal = new THREE.Vector3()
       .crossVectors(a44ArchRightDirection, new THREE.Vector3(0, 1, 0))
       .normalize();
@@ -957,7 +957,7 @@ function BronzeTowerModel() {
     );
     const a44PosterPosition = a44ArchAnchor.clone()
       .addScaledVector(a44ArchRightDirection, 0.54)
-      .add(new THREE.Vector3(0, 0.72, 0))
+      .add(new THREE.Vector3(0, 0.69, 0))
       .addScaledVector(a44PosterNormal, 0.018);
 
     // Üst kırmızı sınır: A30-SÜ → A31...A44-SÜ.
@@ -1485,7 +1485,7 @@ function BronzeTowerModel() {
         quaternion={dims.a44PosterQuaternion}
       >
         <mesh position={[0, 0, 0]}>
-          <planeGeometry args={[0.88, 1.28]} />
+          <planeGeometry args={[0.96, 1.38]} />
           <meshStandardMaterial
             color="#101827"
             emissive="#17243a"
@@ -1495,15 +1495,15 @@ function BronzeTowerModel() {
           />
         </mesh>
         <mesh position={[0, 0, 0.006]}>
-          <planeGeometry args={[0.84, 1.24]} />
+          <planeGeometry args={[0.92, 1.34]} />
           <meshBasicMaterial color="#263c50" side={THREE.DoubleSide} />
         </mesh>
         <mesh position={[0, 0.28, 0.012]}>
-          <circleGeometry args={[0.245, 48]} />
+          <circleGeometry args={[0.26, 48]} />
           <meshBasicMaterial color="#d39b55" />
         </mesh>
         <mesh position={[0, 0.28, 0.016]}>
-          <circleGeometry args={[0.19, 48]} />
+          <circleGeometry args={[0.205, 48]} />
           <meshBasicMaterial color="#263c50" />
         </mesh>
         <Text
