@@ -1,17 +1,19 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import StepPoster from "./StepPoster";
 import { usePosterSequence } from "./PosterSequence";
 
 const STAIRCASE_CONFIG = {
   totalSteps: 10,
-  stepWidth: 2.55,
-  stepDepth: 1.35,
-  stepHeight: 0.58,
-  cameraPosition: [0, 4.1, 8.2] as [number, number, number],
-  cameraFov: 42,
-  turnPerStep: THREE.MathUtils.degToRad(1.5)
+  visibleLowerSteps: 4,
+  stepWidth: 1.55,
+  stepDepth: 0.98,
+  stepHeight: 0.34,
+  spiralRadius: 2.45,
+  anglePerStep: (Math.PI * 2) / 10,
+  cameraHeight: 13,
+  cameraFov: 42
 };
 
 interface StaircaseModelProps {
@@ -22,39 +24,62 @@ function StaircaseModel({ activeStep }: StaircaseModelProps) {
   const sequence = usePosterSequence(STAIRCASE_CONFIG.totalSteps);
   const staircaseRef = useRef<THREE.Group>(null);
 
-  const visibleSteps = useMemo(
-    () => sequence.filter(({ index }) => index <= activeStep),
-    [sequence, activeStep]
-  );
+  const visibleSteps = useMemo(() => {
+    const firstVisible = Math.max(
+      0,
+      activeStep - STAIRCASE_CONFIG.visibleLowerSteps
+    );
+    return sequence.filter(
+      ({ index }) => index >= firstVisible && index <= activeStep
+    );
+  }, [sequence, activeStep]);
 
   useFrame((_, delta) => {
     if (!staircaseRef.current) return;
-    const targetRotation = activeStep * STAIRCASE_CONFIG.turnPerStep;
+    const targetRotation = -activeStep * STAIRCASE_CONFIG.anglePerStep;
     staircaseRef.current.rotation.y = THREE.MathUtils.damp(
       staircaseRef.current.rotation.y,
       targetRotation,
-      4.5,
+      5,
       delta
     );
   });
 
   return (
     <group ref={staircaseRef}>
-      {visibleSteps.map(({ index }) => (
-        <StepPoster
-          key={index}
-          index={index}
-          width={STAIRCASE_CONFIG.stepWidth}
-          depth={STAIRCASE_CONFIG.stepDepth}
-          position={[
-            0,
-            (index - activeStep) * STAIRCASE_CONFIG.stepHeight,
-            (activeStep - index) * STAIRCASE_CONFIG.stepDepth
-          ]}
-        />
-      ))}
+      {visibleSteps.map(({ index }) => {
+        const angle = index * STAIRCASE_CONFIG.anglePerStep;
+        return (
+          <StepPoster
+            key={index}
+            index={index}
+            width={STAIRCASE_CONFIG.stepWidth}
+            depth={STAIRCASE_CONFIG.stepDepth}
+            rotation={angle}
+            position={[
+              Math.sin(angle) * STAIRCASE_CONFIG.spiralRadius,
+              (index - activeStep) * STAIRCASE_CONFIG.stepHeight,
+              Math.cos(angle) * STAIRCASE_CONFIG.spiralRadius
+            ]}
+          />
+        );
+      })}
     </group>
   );
+}
+
+function FixedTopDownCamera() {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    // The camera looks straight down the Y axis: exactly 90 degrees to the floor.
+    camera.position.set(0, STAIRCASE_CONFIG.cameraHeight, 0);
+    camera.up.set(0, 0, -1);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
+  return null;
 }
 
 export default function SpiralStaircase() {
@@ -65,27 +90,29 @@ export default function SpiralStaircase() {
   }, [maxStep]);
 
   return (
-    <section className="staircase-stage" aria-label="Poster staircase">
+    <section className="staircase-stage" aria-label="Spiral poster staircase">
       <Canvas
         shadows
         dpr={[1, 1.5]}
         camera={{
-          position: STAIRCASE_CONFIG.cameraPosition,
+          position: [0, STAIRCASE_CONFIG.cameraHeight, 0],
           fov: STAIRCASE_CONFIG.cameraFov,
           near: 0.1,
-          far: 60
+          far: 60,
+          up: [0, 0, -1]
         }}
       >
         <color attach="background" args={["#090b12"]} />
-        <ambientLight intensity={0.68} />
-        <hemisphereLight args={["#dce5f4", "#17131a", 0.28]} />
+        <ambientLight intensity={0.72} />
+        <hemisphereLight args={["#dce5f4", "#17131a", 0.3]} />
         <directionalLight
-          position={[5, 9, 6]}
-          intensity={1.5}
+          position={[-3, 10, 4]}
+          intensity={1.65}
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
         />
+        <FixedTopDownCamera />
         <StaircaseModel activeStep={activeStep} />
       </Canvas>
 
