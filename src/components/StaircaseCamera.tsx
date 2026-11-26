@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -17,6 +17,7 @@ interface StaircaseCameraProps {
 
 const DRAG_THRESHOLD = 42;
 const CAMERA_LERP = 0.14;
+const STEP_WIDTH = 1.05;
 
 export default function StaircaseCamera({
   steps,
@@ -25,15 +26,20 @@ export default function StaircaseCamera({
   cameraHeight = 1.8,
   polarOffsetDegrees = 7
 }: StaircaseCameraProps) {
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
   const dragStartX = useRef<number | null>(null);
   const dragStartY = useRef<number | null>(null);
   const target = useMemo(() => new THREE.Vector3(), []);
   const desiredPosition = useMemo(() => new THREE.Vector3(), []);
-  const lookObject = useMemo(() => new THREE.Object3D(), []);
+  // A Camera (not Object3D) is essential here: Camera.lookAt points its -Z axis at the target.
+  const lookCamera = useMemo(() => new THREE.PerspectiveCamera(), []);
   const desiredQuaternion = useMemo(() => new THREE.Quaternion(), []);
-  const up = useMemo(() => new THREE.Vector3(), []);
+  const screenUp = useMemo(() => new THREE.Vector3(), []);
   const active = steps[Math.max(0, Math.min(activeStep, steps.length - 1))];
+
+  const advanceStep = useCallback((direction: number) => {
+    onStepChange(direction);
+  }, [onStepChange]);
 
   useEffect(() => {
     const element = gl.domElement;
@@ -51,8 +57,7 @@ export default function StaircaseCamera({
       dragStartX.current = null;
       dragStartY.current = null;
       if (Math.abs(dx) < DRAG_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.15) return;
-      // Dragging right advances down the staircase; dragging left returns upward.
-      onStepChange(dx > 0 ? 1 : -1);
+      advanceStep(dx > 0 ? 1 : -1);
     };
     const handlePointerCancel = () => {
       dragStartX.current = null;
@@ -68,31 +73,41 @@ export default function StaircaseCamera({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerCancel);
     };
-  }, [gl, onStepChange]);
+  }, [gl, advanceStep]);
 
   useFrame(() => {
     if (!active) return;
     const [x, y, z] = active.position;
     target.set(x, y, z);
+
     const theta = active.theta;
     const radialX = Math.cos(theta);
     const radialZ = Math.sin(theta);
     const tilt = THREE.MathUtils.degToRad(polarOffsetDegrees);
-    const horizontalOffset = cameraHeight * Math.tan(tilt);
+
+    // Fit the complete tread on narrow portrait screens while keeping it as large as possible.
+    const aspect = Math.max(0.35, size.width / Math.max(1, size.height));
+    const fitHeight = STEP_WIDTH / (2 * Math.tan(THREE.MathUtils.degToRad(19)) * aspect);
+    const effectiveHeight = Math.max(cameraHeight, fitHeight * 1.08);
+    const horizontalOffset = effectiveHeight * Math.tan(tilt);
 
     desiredPosition.set(
       x + radialX * horizontalOffset,
-      y + cameraHeight,
+      y + effectiveHeight,
       z + radialZ * horizontalOffset
     );
     camera.position.lerp(desiredPosition, CAMERA_LERP);
 
-    // Keep the active tread's radial direction vertical on screen.
-    up.set(radialX, 0, radialZ).normalize();
-    lookObject.position.copy(camera.position);
-    lookObject.up.copy(up);
-    lookObject.lookAt(target);
-    desiredQuaternion.copy(lookObject.quaternion);
+    // Project the radial axis into the camera image plane as its screen-up direction.
+    screenUp.set(
+      radialX * Math.cos(tilt),
+      -Math.sin(tilt),
+      radialZ * Math.cos(tilt)
+    ).normalize();
+    lookCamera.position.copy(desiredPosition);
+    lookCamera.up.copy(screenUp);
+    lookCamera.lookAt(target);
+    desiredQuaternion.copy(lookCamera.quaternion);
     camera.quaternion.slerp(desiredQuaternion, CAMERA_LERP);
   });
 
