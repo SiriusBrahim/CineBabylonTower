@@ -4,16 +4,18 @@ import * as THREE from "three";
 interface StepPosterProps {
   index: number;
   position: [number, number, number];
+  rotation: number;
   width: number;
   depth: number;
 }
 
-const PLATFORM_HEIGHT = 0.16;
-const POSTER_INSET = 0.09;
+const PLATFORM_HEIGHT = 0.14;
+const POSTER_INSET = 0.08;
 
 export default function StepPoster({
   index,
   position,
+  rotation,
   width,
   depth
 }: StepPosterProps) {
@@ -23,7 +25,7 @@ export default function StepPoster({
   }, [index]);
 
   return (
-    <group position={position}>
+    <group position={position} rotation={[0, rotation, 0]}>
       <mesh
         position={[0, -PLATFORM_HEIGHT / 2, 0]}
         castShadow
@@ -36,6 +38,7 @@ export default function StepPoster({
           roughness={0.42}
         />
       </mesh>
+      {/* Poster slot lies flat on the horizontal tread surface. */}
       <mesh position={[0, 0.002, 0]} receiveShadow>
         <boxGeometry
           args={[
