@@ -52,13 +52,13 @@ button { font: inherit; }
   transition: opacity 1.8s ease, filter 1.8s ease;
 }
 .atmosphere-earth {
-  opacity: calc(1 - var(--tower-progress) * .8);
+  opacity: var(--earth-opacity);
   background:
     radial-gradient(ellipse at 50% 92%, rgba(173, 105, 49, .2), transparent 48%),
     linear-gradient(180deg, transparent 34%, rgba(76, 49, 34, .18) 75%, rgba(8, 7, 8, .75));
 }
 .atmosphere-clouds {
-  opacity: calc(.08 + var(--tower-progress) * .72);
+  opacity: var(--cloud-opacity);
   background:
     radial-gradient(ellipse at 14% 38%, rgba(180, 192, 208, .13), transparent 30%),
     radial-gradient(ellipse at 86% 44%, rgba(174, 188, 206, .16), transparent 34%),
@@ -66,7 +66,7 @@ button { font: inherit; }
   filter: blur(28px);
 }
 .atmosphere-space {
-  opacity: calc(var(--tower-progress) * .95);
+  opacity: var(--space-opacity);
   background:
     radial-gradient(ellipse at 50% 5%, rgba(71, 103, 163, .24), transparent 42%),
     radial-gradient(ellipse at 18% 18%, rgba(94, 71, 146, .14), transparent 28%),
@@ -260,7 +260,7 @@ button { font: inherit; }
   filter: drop-shadow(0 0 9px #ffc76e);
 }
 .tower-clouds { fill: rgba(172, 186, 204, .08); filter: blur(13px); }
-.sky-stars { opacity: calc(.2 + var(--tower-progress) * .8); transition: opacity 1.8s ease; }
+.sky-stars { opacity: var(--star-opacity); transition: opacity 1.8s ease; }
 .sky-star {
   fill: #dce8ff;
   opacity: .65;
