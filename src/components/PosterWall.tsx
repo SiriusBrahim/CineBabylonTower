@@ -22,7 +22,6 @@ function TowerSlot({ floor, slot, watched, locked, complete }: SlotProps) {
   const posterWidth = Math.max(9, slotWidth - posterInset * 2);
   const posterHeight = 35;
   const hue = (floor * 29 + slot * 17 + 28) % 360;
-  const id = `slot-${floor}-${slot}`;
 
   return (
     <g className={`tower-slot ${watched ? "is-watched" : "is-empty"} ${locked ? "is-locked" : ""} ${complete ? "is-complete" : ""}`}>
@@ -37,7 +36,6 @@ function TowerSlot({ floor, slot, watched, locked, complete }: SlotProps) {
         />
       )}
       <rect
-        id={id}
         x={x + 1.5}
         y={y + 1.5}
         width={slotWidth - 3}
