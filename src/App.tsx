@@ -1,9 +1,5 @@
-import SpiralStaircase from "./components/SpiralStaircase";
+import PosterRow from "./components/PosterRow";
 
 export default function App() {
-  return (
-    <main className="tower-only">
-      <SpiralStaircase />
-    </main>
-  );
+  return <PosterRow />;
 }
