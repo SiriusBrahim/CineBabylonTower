@@ -61,8 +61,11 @@ const CORNER_LABELS = [
 
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
-  const x = (index - (POSTER_COUNT - 1) / 2) * SPACING;
-  const y = index * 0.1;
+  const baseX = (index - (POSTER_COUNT - 1) / 2) * SPACING;
+  const baseY = index * 0.1;
+  // Test 1: align slot 2's B corner with slot 1's E corner.
+  const x = index === 1 ? baseX - 2 * SPACING + POSTER_WIDTH : baseX;
+  const y = index === 1 ? -POSTER_THICKNESS : baseY;
   const showCornerLabels = index < 3;
 
   return (
