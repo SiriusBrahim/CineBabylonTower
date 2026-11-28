@@ -96,7 +96,10 @@ function StoneSupports() {
 function TowerArtwork({ watchedCount }: { watchedCount: number }) {
   const posters = useMemo(() => Array.from({ length: TOTAL_POSTERS }, (_, i) => i), []);
   const rearRoute = useMemo(() => routePath(false), []);
-  const frontRoute = useMemo(() => routePath(true), []);\n  const progress = watchedCount > 1 ? (watchedCount - 1) / (TOTAL_POSTERS - 1) : 0;\n  const backProgressRoute = useMemo(() => routePath(false, progress), [progress]);\n  const frontProgressRoute = useMemo(() => routePath(true, progress), [progress]);
+  const frontRoute = useMemo(() => routePath(true), []);
+  const progress = watchedCount > 1 ? (watchedCount - 1) / (TOTAL_POSTERS - 1) : 0;
+  const backProgressRoute = useMemo(() => routePath(false, progress), [progress]);
+  const frontProgressRoute = useMemo(() => routePath(true, progress), [progress]);
 
   return (
     <svg className="babylon-svg" viewBox="0 0 1000 900" role="img" aria-label={`Beş turlu sarmal Babil Sinema Kulesi. ${watchedCount} / 100 poster yuvası dolu.`}>
@@ -154,7 +157,8 @@ function TowerArtwork({ watchedCount }: { watchedCount: number }) {
         <path d={rearRoute} className="ramp-band" />
         <path d={rearRoute} className="ramp-edge" />
       </g>
-      <g className="helix-progress helix-progress-back"><path d={backProgressRoute} className="ramp-progress" /></g>\n      <g className="poster-layer poster-layer-back">
+      <g className="helix-progress helix-progress-back"><path d={backProgressRoute} className="ramp-progress" /></g>
+      <g className="poster-layer poster-layer-back">
         {posters.map((index) => {
           const p = helixPoint(index / (TOTAL_POSTERS - 1));
           return p.depth < .5 ? <TowerPoster key={index} index={index} watched={index < watchedCount} latest={index === watchedCount - 1} /> : null;
@@ -165,7 +169,8 @@ function TowerArtwork({ watchedCount }: { watchedCount: number }) {
         <path d={frontRoute} className="ramp-band" />
         <path d={frontRoute} className="ramp-edge" />
       </g>
-      <g className="helix-progress helix-progress-front"><path d={frontProgressRoute} className="ramp-progress" /></g>\n      <g className="poster-layer poster-layer-front">
+      <g className="helix-progress helix-progress-front"><path d={frontProgressRoute} className="ramp-progress" /></g>
+      <g className="poster-layer poster-layer-front">
         {posters.map((index) => {
           const p = helixPoint(index / (TOTAL_POSTERS - 1));
           return p.depth >= .5 ? <TowerPoster key={index} index={index} watched={index < watchedCount} latest={index === watchedCount - 1} /> : null;
