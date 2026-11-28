@@ -234,12 +234,6 @@ function SpiralClimbControls() {
     const smoothing = 1 - Math.exp(-8 * delta);
     currentStep.current += (targetStep.current - currentStep.current) * smoothing;
 
-    const lowerIndex = Math.floor(currentStep.current);
-    const upperIndex = Math.min(lowerIndex + 1, POSTER_COUNT - 1);
-    const fraction = currentStep.current - lowerIndex;
-    const from = SPIRAL_SLOT_CENTERS[lowerIndex];
-    const to = SPIRAL_SLOT_CENTERS[upperIndex];
-
     // Yarım basamak geriden başla; ilerledikçe aynı spiral yolu takip et.
     const pathStep = currentStep.current - 0.5;
     const pathLower = Math.max(0, Math.floor(pathStep));
