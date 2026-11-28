@@ -8,7 +8,6 @@ const POSTER_WIDTH = 1.22;
 const POSTER_HEIGHT = 1.82;
 const POSTER_THICKNESS = 0.1;
 const POSTER_GAP = 0.22;
-const SPACING = POSTER_WIDTH + POSTER_GAP;
 
 function createPosterTexture(index: number) {
   const canvas = document.createElement("canvas");
@@ -58,12 +57,6 @@ const CORNER_LABELS = [
   { label: "G", x: 1, y: -1, z: 1 },
   { label: "H", x: -1, y: -1, z: 1 },
 ];
-
-function toWorldPoint(point: [number, number, number]): [number, number, number] {
-  // User coordinates are expressed relative to slot 1's A-H coordinate frame.
-  // Map that frame onto slot 1's existing world-space position without moving slot 1.
-  return [point[0] - 71.89, point[1] - 0.05, 0.91 - point[2]];
-}
 
 type Point3 = [number, number, number];
 type SlotPoints = [Point3, Point3, Point3, Point3, Point3, Point3, Point3, Point3];
@@ -133,6 +126,40 @@ function generateSpiralSlots(): SlotPoints[] {
 
 const SPIRAL_SLOT_POINTS = generateSpiralSlots();
 
+// Merdivenin tüm köşelerinin X/Y/Z sınırlarından sahne merkezini hesapla.
+// Böylece başlangıç noktasına göre değil, 100 basamağın tamamına göre ortalanır.
+const SPIRAL_BOUNDS = SPIRAL_SLOT_POINTS.flatMap((slot) => slot).reduce(
+  (bounds, point) => ({
+    minX: Math.min(bounds.minX, point[0]),
+    maxX: Math.max(bounds.maxX, point[0]),
+    minY: Math.min(bounds.minY, point[1]),
+    maxY: Math.max(bounds.maxY, point[1]),
+    minZ: Math.min(bounds.minZ, point[2]),
+    maxZ: Math.max(bounds.maxZ, point[2]),
+  }),
+  {
+    minX: Infinity, maxX: -Infinity,
+    minY: Infinity, maxY: -Infinity,
+    minZ: Infinity, maxZ: -Infinity,
+  },
+);
+
+const SPIRAL_CENTER = {
+  x: (SPIRAL_BOUNDS.minX + SPIRAL_BOUNDS.maxX) / 2,
+  y: (SPIRAL_BOUNDS.minY + SPIRAL_BOUNDS.maxY) / 2,
+  z: (SPIRAL_BOUNDS.minZ + SPIRAL_BOUNDS.maxZ) / 2,
+};
+
+function toWorldPoint(point: Point3): Point3 {
+  // X/Y/Z eksenlerinde tüm 100 basamağın geometrik merkezini orijine taşı.
+  // Z ekseni, sahnenin mevcut kamera yönüyle uyumlu olması için ters çevrilir.
+  return [
+    point[0] - SPIRAL_CENTER.x,
+    point[1] - SPIRAL_CENTER.y,
+    SPIRAL_CENTER.z - point[2],
+  ];
+}
+
 function createSlotGeometry(points: SlotPoints) {
   const geometry = new THREE.BufferGeometry();
   const vertices = points.map(toWorldPoint);
@@ -161,85 +188,44 @@ function createSlotGeometry(points: SlotPoints) {
 
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
-  const baseX = (index - (POSTER_COUNT - 1) / 2) * SPACING;
-  const baseY = index * POSTER_THICKNESS;
   const slotPoints = SPIRAL_SLOT_POINTS[index];
   const spiralGeometry = useMemo(
-    () => (index === 0 ? null : createSlotGeometry(slotPoints)),
-    [index, slotPoints],
+    () => createSlotGeometry(slotPoints),
+    [slotPoints],
   );
 
   // İlk üç basamağın köşe etiketleri görünür; diğer basamaklar etiketsizdir.
   const showCornerLabels = index < 3;
 
-  if (index > 0 && spiralGeometry) {
-    const labelPoints = slotPoints.map(toWorldPoint);
-    const labelOffsets = [
-      [-0.045, 0.075, -0.045],
-      [0.045, 0.075, -0.045],
-      [0.045, 0.075, 0.045],
-      [-0.045, 0.075, 0.045],
-      [-0.045, -0.075, -0.045],
-      [0.045, -0.075, -0.045],
-      [0.045, -0.075, 0.045],
-      [-0.045, -0.075, 0.045],
-    ];
-
-    return (
-      <group>
-        <mesh geometry={spiralGeometry} castShadow receiveShadow>
-          <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
-          <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
-        </mesh>
-        {showCornerLabels && labelPoints.map((point, i) => (
-          <Billboard key={i} position={[
-            point[0] + labelOffsets[i][0],
-            point[1] + labelOffsets[i][1],
-            point[2] + labelOffsets[i][2],
-          ]}>
-            <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
-              {"ABCDEFGH"[i]}
-            </Text>
-          </Billboard>
-        ))}
-      </group>
-    );
-  }
-
-  const x = baseX;
-  const y = baseY;
+  const labelPoints = showCornerLabels ? slotPoints.map(toWorldPoint) : [];
+  const labelOffsets = [
+    [-0.045, 0.075, -0.045],
+    [0.045, 0.075, -0.045],
+    [0.045, 0.075, 0.045],
+    [-0.045, 0.075, 0.045],
+    [-0.045, -0.075, -0.045],
+    [0.045, -0.075, -0.045],
+    [0.045, -0.075, 0.045],
+    [-0.045, -0.075, 0.045],
+  ];
 
   return (
-    <group position={[x, y, 0]}>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[POSTER_WIDTH, POSTER_THICKNESS, POSTER_HEIGHT]} />
-        <meshStandardMaterial color="#24252b" metalness={0.18} roughness={0.72} />
+    <group>
+      <mesh geometry={spiralGeometry} castShadow receiveShadow>
+        <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
+        <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
       </mesh>
-      <mesh position={[0, POSTER_THICKNESS / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[POSTER_WIDTH - 0.07, POSTER_HEIGHT - 0.07]} />
-        <meshStandardMaterial map={texture} roughness={0.82} metalness={0.01} />
-      </mesh>
-      <mesh position={[0, -POSTER_THICKNESS / 2 - 0.001, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[POSTER_WIDTH - 0.07, POSTER_HEIGHT - 0.07]} />
-        <meshStandardMaterial color="#17191f" roughness={0.9} />
-      </mesh>
-      {showCornerLabels &&
-        CORNER_LABELS.map(({ label, x: sx, y: sy, z: sz }) => {
-          const offset = 0.075;
-          const position: [number, number, number] = [
-            sx * (POSTER_WIDTH / 2 + offset),
-            sy * (POSTER_THICKNESS / 2 + offset),
-            sz * (POSTER_HEIGHT / 2 + offset),
-          ];
-
-          return (
-            <Billboard key={label} position={position}>
-              <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
-                {label}
-              </Text>
-            </Billboard>
-          );
-        })}
+      {showCornerLabels && labelPoints.map((point, i) => (
+        <Billboard key={i} position={[
+          point[0] + labelOffsets[i][0],
+          point[1] + labelOffsets[i][1],
+          point[2] + labelOffsets[i][2],
+        ]}>
+          <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
+            {"ABCDEFGH"[i]}
+          </Text>
+        </Billboard>
+      ))}
     </group>
   );
 }
@@ -250,10 +236,6 @@ function PosterLine() {
       {Array.from({ length: POSTER_COUNT }, (_, index) => (
         <Poster key={index} index={index} />
       ))}
-      <mesh position={[0, -0.16, 0]} receiveShadow>
-        <boxGeometry args={[POSTER_COUNT * SPACING + 2, 0.12, POSTER_HEIGHT + 0.7]} />
-        <meshStandardMaterial color="#292a30" metalness={0.35} roughness={0.72} />
-      </mesh>
     </group>
   );
 }
