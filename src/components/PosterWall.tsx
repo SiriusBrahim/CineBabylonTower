@@ -85,7 +85,7 @@ function createSlot2Geometry() {
     0, 1, 1, 1, 1, 0, 0, 0,
   ];
   const indices = [
-    0, 1, 2, 0, 2, 3, // top
+    0, 2, 1, 0, 3, 2, // top face normal points upward
     4, 6, 5, 4, 7, 6, // bottom
     0, 4, 5, 0, 5, 1, // front
     1, 5, 6, 1, 6, 2, // right
@@ -106,9 +106,10 @@ function Poster({ index }: { index: number }) {
   const baseX = (index - (POSTER_COUNT - 1) / 2) * SPACING;
   const baseY = index * 0.1;
   const showCornerLabels = index < 3;
+  const slot2Geometry = useMemo(() => createSlot2Geometry(), []);
 
   if (index === 1) {
-    const geometry = useMemo(() => createSlot2Geometry(), []);
+    const geometry = slot2Geometry;
     const labelPoints = SLOT_2_POINTS.map(toWorldPoint);
     const labelOffsets = [
       [-0.045, 0.075, -0.045],
