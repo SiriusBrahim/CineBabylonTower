@@ -65,56 +65,75 @@ function toWorldPoint(point: [number, number, number]): [number, number, number]
   return [point[0] - 71.89, point[1] - 0.05, 0.91 - point[2]];
 }
 
-const SLOT_2_POINTS: [number, number, number][] = [
-  [1.2200, 0.20, 1.8200], // A
-  [2.4311, 0.20, 1.9675], // B
-  [2.6511, 0.20, 0.1608], // C
-  [1.4400, 0.20, 0.0133], // D
-  [1.2200, 0.10, 1.8200], // E
-  [2.4311, 0.10, 1.9675], // F
-  [2.6511, 0.10, 0.1608], // G
-  [1.4400, 0.10, 0.0133], // H
-];
+type Point3 = [number, number, number];
+type SlotPoints = [Point3, Point3, Point3, Point3, Point3, Point3, Point3, Point3];
 
+const SPIRAL_ANGLE = Math.asin(POSTER_GAP / POSTER_HEIGHT);
 
-const SLOT_3_POINTS: [number, number, number][] = [
-  [2.4311, 0.30, 1.9675], // A
-  [3.6154, 0.30, 2.2603], // B
-  [4.0522, 0.30, 0.4935], // C
-  [2.8679, 0.30, 0.2007], // D
-  [2.4311, 0.20, 1.9675], // E
-  [3.6154, 0.20, 2.2603], // F
-  [4.0522, 0.20, 0.4935], // G
-  [2.8679, 0.20, 0.2007], // H
-];
+/**
+ * Slot 1'in B köşesinden başlayarak 2–100 arasındaki bütün basamakları
+ * formülden üretir. Koordinatlar ara adımlarda yuvarlanmaz.
+ *
+ * Köşe sırası: A, B, C, D (üst); E, F, G, H (alt).
+ */
+function generateSpiralSlots(): SlotPoints[] {
+  const slots: SlotPoints[] = [];
 
-function createSlot2Geometry() {
-  const geometry = new THREE.BufferGeometry();
-  const vertices = SLOT_2_POINTS.map(toWorldPoint);
-  const positions = vertices.flat();
-  const uvs = [
-    0, 1, 1, 1, 1, 0, 0, 0,
-    0, 1, 1, 1, 1, 0, 0, 0,
+  // Slot 1, kullanıcının verdiği koordinat sisteminde sabit başlangıçtır.
+  const slot1: SlotPoints = [
+    [0, 0.1, 1.82], [1.22, 0.1, 1.82],
+    [1.22, 0.1, 0], [0, 0.1, 0],
+    [0, 0, 1.82], [1.22, 0, 1.82],
+    [1.22, 0, 0], [0, 0, 0],
   ];
-  const indices = [
-    0, 2, 1, 0, 3, 2, // top face normal points upward
-    4, 6, 5, 4, 7, 6, // bottom
-    0, 4, 5, 0, 5, 1, // front
-    1, 5, 6, 1, 6, 2, // right
-    2, 6, 7, 2, 7, 3, // back
-    3, 7, 4, 3, 4, 0, // left
-  ];
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.addGroup(0, 6, 1);
-  geometry.addGroup(6, 30, 0);
-  geometry.computeVertexNormals();
-  return geometry;
+  slots.push(slot1);
+
+  // E₂ = B₁. Her yeni E noktası önceki slotun hesaplanmış B noktasıdır.
+  let pivot: Point3 = [...slot1[1]];
+
+  for (let n = 2; n <= POSTER_COUNT; n += 1) {
+    const alpha = (n - 1) * SPIRAL_ANGLE;
+    const cos = Math.cos(alpha);
+    const sin = Math.sin(alpha);
+
+    const right: Point3 = [cos, 0, sin];
+    const back: Point3 = [sin, 0, -cos];
+
+    const E: Point3 = [pivot[0], (n - 1) * POSTER_THICKNESS, pivot[2]];
+    const F: Point3 = [
+      E[0] + POSTER_WIDTH * right[0],
+      E[1],
+      E[2] + POSTER_WIDTH * right[2],
+    ];
+    const H: Point3 = [
+      E[0] + POSTER_HEIGHT * back[0],
+      E[1],
+      E[2] + POSTER_HEIGHT * back[2],
+    ];
+    const G: Point3 = [
+      F[0] + POSTER_HEIGHT * back[0],
+      E[1],
+      F[2] + POSTER_HEIGHT * back[2],
+    ];
+
+    const lift = POSTER_THICKNESS;
+    const A: Point3 = [E[0], E[1] + lift, E[2]];
+    const B: Point3 = [F[0], F[1] + lift, F[2]];
+    const C: Point3 = [G[0], G[1] + lift, G[2]];
+    const D: Point3 = [H[0], H[1] + lift, H[2]];
+
+    slots.push([A, B, C, D, E, F, G, H]);
+
+    // Bir sonraki basamağın E noktası bu B ile birebir aynı değerleri alır.
+    pivot = B;
+  }
+
+  return slots;
 }
 
+const SPIRAL_SLOT_POINTS = generateSpiralSlots();
 
-function createSlotGeometry(points: [number, number, number][]) {
+function createSlotGeometry(points: SlotPoints) {
   const geometry = new THREE.BufferGeometry();
   const vertices = points.map(toWorldPoint);
   const positions = vertices.flat();
@@ -123,13 +142,14 @@ function createSlotGeometry(points: [number, number, number][]) {
     0, 1, 1, 1, 1, 0, 0, 0,
   ];
   const indices = [
-    0, 2, 1, 0, 3, 2,
-    4, 6, 5, 4, 7, 6,
-    0, 4, 5, 0, 5, 1,
-    1, 5, 6, 1, 6, 2,
-    2, 6, 7, 2, 7, 3,
-    3, 7, 4, 3, 4, 0,
+    0, 2, 1, 0, 3, 2, // üst yüzey
+    4, 6, 5, 4, 7, 6, // alt yüzey
+    0, 4, 5, 0, 5, 1, // ön yüz
+    1, 5, 6, 1, 6, 2, // sağ yüz
+    2, 6, 7, 2, 7, 3, // arka yüz
+    3, 7, 4, 3, 4, 0, // sol yüz
   ];
+
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
@@ -139,18 +159,21 @@ function createSlotGeometry(points: [number, number, number][]) {
   return geometry;
 }
 
-
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
   const baseX = (index - (POSTER_COUNT - 1) / 2) * SPACING;
-  const baseY = index * 0.1;
+  const baseY = index * POSTER_THICKNESS;
+  const slotPoints = SPIRAL_SLOT_POINTS[index];
+  const spiralGeometry = useMemo(
+    () => (index === 0 ? null : createSlotGeometry(slotPoints)),
+    [index, slotPoints],
+  );
+
+  // İlk üç basamağın köşe etiketleri görünür; diğer basamaklar etiketsizdir.
   const showCornerLabels = index < 3;
-  const slot2Geometry = useMemo(() => createSlot2Geometry(), []);
-  const slot3Geometry = useMemo(() => createSlotGeometry(SLOT_3_POINTS), []);
 
-  if (index === 1) {
-    const geometry = slot2Geometry;
-    const labelPoints = SLOT_2_POINTS.map(toWorldPoint);
+  if (index > 0 && spiralGeometry) {
+    const labelPoints = slotPoints.map(toWorldPoint);
     const labelOffsets = [
       [-0.045, 0.075, -0.045],
       [0.045, 0.075, -0.045],
@@ -161,47 +184,14 @@ function Poster({ index }: { index: number }) {
       [0.045, -0.075, 0.045],
       [-0.045, -0.075, 0.045],
     ];
+
     return (
       <group>
-        <mesh geometry={geometry} castShadow receiveShadow>
+        <mesh geometry={spiralGeometry} castShadow receiveShadow>
           <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
           <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
         </mesh>
-        {labelPoints.map((point, i) => (
-          <Billboard key={i} position={[
-            point[0] + labelOffsets[i][0],
-            point[1] + labelOffsets[i][1],
-            point[2] + labelOffsets[i][2],
-          ]}>
-            <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
-              {"ABCDEFGH"[i]}
-            </Text>
-          </Billboard>
-        ))}
-      </group>
-    );
-  }
-
-
-  if (index === 2) {
-    const labelPoints = SLOT_3_POINTS.map(toWorldPoint);
-    const labelOffsets = [
-      [-0.045, 0.075, -0.045],
-      [0.045, 0.075, -0.045],
-      [0.045, 0.075, 0.045],
-      [-0.045, 0.075, 0.045],
-      [-0.045, -0.075, -0.045],
-      [0.045, -0.075, -0.045],
-      [0.045, -0.075, 0.045],
-      [-0.045, -0.075, 0.045],
-    ];
-    return (
-      <group>
-        <mesh geometry={slot3Geometry} castShadow receiveShadow>
-          <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
-          <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
-        </mesh>
-        {labelPoints.map((point, i) => (
+        {showCornerLabels && labelPoints.map((point, i) => (
           <Billboard key={i} position={[
             point[0] + labelOffsets[i][0],
             point[1] + labelOffsets[i][1],
