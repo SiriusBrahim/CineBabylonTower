@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
-import { Billboard, OrbitControls, Text } from "@react-three/drei";
+import { useEffect, useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Billboard, Text } from "@react-three/drei";
 import * as THREE from "three";
 
 const POSTER_COUNT = 100;
@@ -150,7 +150,118 @@ function toWorldPoint(point: Point3): Point3 {
   ];
 }
 
-function createSlotGeometry(points: SlotPoints) {
+
+const SPIRAL_SLOT_CENTERS = SPIRAL_SLOT_POINTS.map((slot) => {
+  const worldPoints = slot.map(toWorldPoint);
+  const center = worldPoints.reduce(
+    (sum, point) => ({
+      x: sum.x + point[0] / worldPoints.length,
+      y: sum.y + point[1] / worldPoints.length,
+      z: sum.z + point[2] / worldPoints.length,
+    }),
+    { x: 0, y: 0, z: 0 },
+  );
+  return new THREE.Vector3(center.x, center.y, center.z);
+});
+
+const STEP_TURN_RADIANS = SPIRAL_ANGLE;
+
+function SpiralClimbControls() {
+  const { camera, gl } = useThree();
+  const targetStep = useRef(0);
+  const currentStep = useRef(0);
+  const dragState = useRef({ active: false, lastX: 0 });
+  const cameraPosition = useMemo(() => new THREE.Vector3(), []);
+  const lookTarget = useMemo(() => new THREE.Vector3(), []);
+
+  useEffect(() => {
+    const element = gl.domElement;
+    const clampStep = (value: number) =>
+      THREE.MathUtils.clamp(value, 0, POSTER_COUNT - 1);
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      dragState.current = { active: true, lastX: event.clientX };
+      element.setPointerCapture?.(event.pointerId);
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragState.current.active) return;
+      const deltaX = event.clientX - dragState.current.lastX;
+      dragState.current.lastX = event.clientX;
+      // Sağa sürükleme pozitif yaw ve merdivende ileri hareket üretir.
+      targetStep.current = clampStep(
+        targetStep.current + (deltaX * 0.006) / STEP_TURN_RADIANS,
+      );
+    };
+    const stopDragging = () => {
+      dragState.current.active = false;
+    };
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      // Aşağı kaydırma tırmanır, yukarı kaydırma aynı rotadan geri indirir.
+      targetStep.current = clampStep(
+        targetStep.current + (event.deltaY * 0.002) / STEP_TURN_RADIANS,
+      );
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      if (event.repeat) return;
+      targetStep.current = clampStep(
+        targetStep.current + (event.key === "ArrowRight" ? 1 : -1),
+      );
+    };
+
+    element.addEventListener("pointerdown", onPointerDown);
+    element.addEventListener("pointermove", onPointerMove);
+    element.addEventListener("pointerup", stopDragging);
+    element.addEventListener("pointercancel", stopDragging);
+    element.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      element.removeEventListener("pointerdown", onPointerDown);
+      element.removeEventListener("pointermove", onPointerMove);
+      element.removeEventListener("pointerup", stopDragging);
+      element.removeEventListener("pointercancel", stopDragging);
+      element.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [gl]);
+
+  useFrame((_, delta) => {
+    // Smoothing is frame-rate independent; fractional step values follow the spiral arc.
+    const smoothing = 1 - Math.exp(-8 * delta);
+    currentStep.current += (targetStep.current - currentStep.current) * smoothing;
+
+    const lowerIndex = Math.floor(currentStep.current);
+    const upperIndex = Math.min(lowerIndex + 1, POSTER_COUNT - 1);
+    const fraction = currentStep.current - lowerIndex;
+    const from = SPIRAL_SLOT_CENTERS[lowerIndex];
+    const to = SPIRAL_SLOT_CENTERS[upperIndex];
+
+    cameraPosition.lerpVectors(from, to, fraction);
+    cameraPosition.y += 1.6;
+
+    // Bakış noktası rotanın 2.5 basamak ilerisinde ve hafifçe yukarıdadır.
+    const lookStep = Math.min(currentStep.current + 2.5, POSTER_COUNT - 1);
+    const lookLower = Math.floor(lookStep);
+    const lookUpper = Math.min(lookLower + 1, POSTER_COUNT - 1);
+    const lookFraction = lookStep - lookLower;
+    lookTarget.lerpVectors(
+      SPIRAL_SLOT_CENTERS[lookLower],
+      SPIRAL_SLOT_CENTERS[lookUpper],
+      lookFraction,
+    );
+    lookTarget.y += 0.35;
+
+    camera.position.copy(cameraPosition);
+    camera.lookAt(lookTarget);
+  });
+
+  return null;
+}
+\nfunction createSlotGeometry(points: SlotPoints) {
   const geometry = new THREE.BufferGeometry();
   const vertices = points.map(toWorldPoint);
   const positions = vertices.flat();
@@ -236,39 +347,26 @@ export default function PosterWall() {
       <header className="poster-3d-header">
         <span className="eyebrow">CINE BABYLON TOWER · FOUNDATION</span>
         <h1>100 Poster · 3D View</h1>
-        <p>Posterler X ekseninde yatay; kamera Y ve Z yönlerinde serbestçe gezebilir.</p>
+        <p>Birinci şahıs sarmal tırmanış: sağa dönerek yüksel, sola dönerek aynı rotadan in.</p>
       </header>
       <div className="poster-3d-stage">
         <Canvas
           shadows
           dpr={[1, 1.5]}
-          camera={{ position: [0, 18, 24], fov: 42, near: 0.1, far: 500, up: [0, 1, 0] }}
+          camera={{ position: [0, 0, 0], fov: 72, near: 0.1, far: 500, up: [0, 1, 0] }}
         >
           <color attach="background" args={["#0b0d12"]} />
           <ambientLight intensity={1.25} />
           <directionalLight position={[-5, 18, 8]} intensity={2.1} castShadow />
           <pointLight position={[0, 8, -8]} intensity={12} color="#8c9fc9" />
           <PosterLine />
-          <OrbitControls
-            makeDefault
-            enableRotate
-            enablePan
-            enableZoom
-            minPolarAngle={0.12}
-            maxPolarAngle={Math.PI / 2 - 0.04}
-            minDistance={5}
-            maxDistance={180}
-            rotateSpeed={0.65}
-            panSpeed={0.8}
-            zoomSpeed={0.9}
-            target={[0, 0, 0]}
-          />
+          <SpiralClimbControls />
         </Canvas>
       </div>
       <footer className="poster-3d-footer">
         <span>100 ADET</span>
         <span>X EKSENİ · YATAY DİZİLİM</span>
-        <span>Çevir: 3D açı · Kaydır: konum · Yakınlaştır: detay</span>
+        <span>Sağa sürükle / → / aşağı kaydır: tırman · Sola sürükle / ← / yukarı kaydır: in</span>
       </footer>
     </main>
   );
