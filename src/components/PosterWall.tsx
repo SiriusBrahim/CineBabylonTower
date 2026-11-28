@@ -59,13 +59,90 @@ const CORNER_LABELS = [
   { label: "H", x: -1, y: -1, z: 1 },
 ];
 
+function toWorldPoint(point: [number, number, number]): [number, number, number] {
+  // User coordinates are expressed relative to slot 1's A-H coordinate frame.
+  // Map that frame onto slot 1's existing world-space position without moving slot 1.
+  return [point[0] - 71.89, point[1] - 0.05, 0.91 - point[2]];
+}
+
+const SLOT_2_POINTS: [number, number, number][] = [
+  [1.2200, 0.20, 1.8200], // A
+  [2.4311, 0.20, 1.9675], // B
+  [2.6511, 0.20, 0.1608], // C
+  [1.4400, 0.20, 0.0133], // D
+  [1.2200, 0.10, 1.8200], // E
+  [2.4311, 0.10, 1.9675], // F
+  [2.6511, 0.10, 0.1608], // G
+  [1.4400, 0.10, 0.0133], // H
+];
+
+function createSlot2Geometry() {
+  const geometry = new THREE.BufferGeometry();
+  const vertices = SLOT_2_POINTS.map(toWorldPoint);
+  const positions = vertices.flat();
+  const uvs = [
+    0, 1, 1, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 1, 0, 0, 0,
+  ];
+  const indices = [
+    0, 1, 2, 0, 2, 3, // top
+    4, 6, 5, 4, 7, 6, // bottom
+    0, 4, 5, 0, 5, 1, // front
+    1, 5, 6, 1, 6, 2, // right
+    2, 6, 7, 2, 7, 3, // back
+    3, 7, 4, 3, 4, 0, // left
+  ];
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.addGroup(0, 6, 1);
+  geometry.addGroup(6, 30, 0);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
   const baseX = (index - (POSTER_COUNT - 1) / 2) * SPACING;
   const baseY = index * 0.1;
+  const showCornerLabels = index < 3;
+
+  if (index === 1) {
+    const geometry = useMemo(() => createSlot2Geometry(), []);
+    const labelPoints = SLOT_2_POINTS.map(toWorldPoint);
+    const labelOffsets = [
+      [-0.045, 0.075, -0.045],
+      [0.045, 0.075, -0.045],
+      [0.045, 0.075, 0.045],
+      [-0.045, 0.075, 0.045],
+      [-0.045, -0.075, -0.045],
+      [0.045, -0.075, -0.045],
+      [0.045, -0.075, 0.045],
+      [-0.045, -0.075, 0.045],
+    ];
+    return (
+      <group>
+        <mesh geometry={geometry} castShadow receiveShadow>
+          <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
+          <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
+        </mesh>
+        {labelPoints.map((point, i) => (
+          <Billboard key={i} position={[
+            point[0] + labelOffsets[i][0],
+            point[1] + labelOffsets[i][1],
+            point[2] + labelOffsets[i][2],
+          ]}>
+            <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
+              {"ABCDEFGH"[i]}
+            </Text>
+          </Billboard>
+        ))}
+      </group>
+    );
+  }
+
   const x = baseX;
   const y = baseY;
-  const showCornerLabels = index < 3;
 
   return (
     <group position={[x, y, 0]}>
@@ -92,14 +169,7 @@ function Poster({ index }: { index: number }) {
 
           return (
             <Billboard key={label} position={position}>
-              <Text
-                fontSize={0.12}
-                color="#ffd98a"
-                outlineColor="#17191f"
-                outlineWidth={0.012}
-                anchorX="center"
-                anchorY="middle"
-              >
+              <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
                 {label}
               </Text>
             </Billboard>
