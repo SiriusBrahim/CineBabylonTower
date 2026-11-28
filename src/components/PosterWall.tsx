@@ -54,12 +54,10 @@ function Poster({ index }: { index: number }) {
 
   return (
     <group position={[x, 0, 0]}>
-      {/* Poster slab: width on X, thickness on Y, height on Z. */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[POSTER_WIDTH, POSTER_THICKNESS, POSTER_HEIGHT]} />
         <meshStandardMaterial color="#24252b" metalness={0.18} roughness={0.72} />
       </mesh>
-      {/* Artwork faces upward (+Y), so the top-down camera sees it. */}
       <mesh position={[0, POSTER_THICKNESS / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[POSTER_WIDTH - 0.07, POSTER_HEIGHT - 0.07]} />
         <meshStandardMaterial map={texture} roughness={0.82} metalness={0.01} />
@@ -91,14 +89,14 @@ export default function PosterWall() {
     <main className="poster-3d-page">
       <header className="poster-3d-header">
         <span className="eyebrow">CINE BABYLON TOWER · FOUNDATION</span>
-        <h1>100 Poster · Top View</h1>
-        <p>Posterler yatay düzlemde, X ekseni boyunca tek sıra halinde.</p>
+        <h1>100 Poster · 3D View</h1>
+        <p>Posterler X ekseninde yatay; kamera Y ve Z yönlerinde serbestçe gezebilir.</p>
       </header>
       <div className="poster-3d-stage">
         <Canvas
           shadows
           dpr={[1, 1.5]}
-          camera={{ position: [0, 34, 0], fov: 42, near: 0.1, far: 500, up: [0, 0, -1] }}
+          camera={{ position: [0, 18, 24], fov: 42, near: 0.1, far: 500, up: [0, 1, 0] }}
         >
           <color attach="background" args={["#0b0d12"]} />
           <ambientLight intensity={1.25} />
@@ -107,19 +105,24 @@ export default function PosterWall() {
           <PosterLine />
           <OrbitControls
             makeDefault
-            enableRotate={false}
+            enableRotate
             enablePan
             enableZoom
-            minDistance={8}
+            minPolarAngle={0.12}
+            maxPolarAngle={Math.PI / 2 - 0.04}
+            minDistance={5}
             maxDistance={180}
+            rotateSpeed={0.65}
+            panSpeed={0.8}
+            zoomSpeed={0.9}
             target={[0, 0, 0]}
           />
         </Canvas>
       </div>
       <footer className="poster-3d-footer">
         <span>100 ADET</span>
-        <span>X EKSENİ · YATAY DÜZLEM</span>
-        <span>Yukarıdan görünüm · Kaydır / yakınlaştır</span>
+        <span>X EKSENİ · YATAY DİZİLİM</span>
+        <span>Çevir: 3D açı · Kaydır: konum · Yakınlaştır: detay</span>
       </footer>
     </main>
   );
