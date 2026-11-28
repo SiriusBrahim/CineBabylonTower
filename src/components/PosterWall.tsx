@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 const POSTER_COUNT = 100;
 const POSTER_WIDTH = 1.22;
 const POSTER_HEIGHT = 1.82;
+const POSTER_THICKNESS = 0.1;
 const POSTER_GAP = 0.22;
 const SPACING = POSTER_WIDTH + POSTER_GAP;
 
@@ -53,15 +54,17 @@ function Poster({ index }: { index: number }) {
 
   return (
     <group position={[x, 0, 0]}>
+      {/* Poster slab: width on X, thickness on Y, height on Z. */}
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[POSTER_WIDTH, POSTER_HEIGHT, 0.09]} />
-        <meshStandardMaterial color="#24252b" metalness={0.28} roughness={0.48} />
+        <boxGeometry args={[POSTER_WIDTH, POSTER_THICKNESS, POSTER_HEIGHT]} />
+        <meshStandardMaterial color="#24252b" metalness={0.18} roughness={0.72} />
       </mesh>
-      <mesh position={[0, 0, 0.051]}>
+      {/* Artwork faces upward (+Y), so the top-down camera sees it. */}
+      <mesh position={[0, POSTER_THICKNESS / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[POSTER_WIDTH - 0.07, POSTER_HEIGHT - 0.07]} />
-        <meshStandardMaterial map={texture} roughness={0.78} metalness={0.02} />
+        <meshStandardMaterial map={texture} roughness={0.82} metalness={0.01} />
       </mesh>
-      <mesh position={[0, 0, -0.051]} rotation={[0, Math.PI, 0]}>
+      <mesh position={[0, -POSTER_THICKNESS / 2 - 0.001, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[POSTER_WIDTH - 0.07, POSTER_HEIGHT - 0.07]} />
         <meshStandardMaterial color="#17191f" roughness={0.9} />
       </mesh>
@@ -75,9 +78,9 @@ function PosterLine() {
       {Array.from({ length: POSTER_COUNT }, (_, index) => (
         <Poster key={index} index={index} />
       ))}
-      <mesh position={[0, -1.12, 0]} receiveShadow>
-        <boxGeometry args={[POSTER_COUNT * SPACING + 2, 0.12, 1.2]} />
-        <meshStandardMaterial color="#292a30" metalness={0.55} roughness={0.55} />
+      <mesh position={[0, -0.16, 0]} receiveShadow>
+        <boxGeometry args={[POSTER_COUNT * SPACING + 2, 0.12, POSTER_HEIGHT + 0.7]} />
+        <meshStandardMaterial color="#292a30" metalness={0.35} roughness={0.72} />
       </mesh>
     </group>
   );
@@ -88,20 +91,19 @@ export default function PosterWall() {
     <main className="poster-3d-page">
       <header className="poster-3d-header">
         <span className="eyebrow">CINE BABYLON TOWER · FOUNDATION</span>
-        <h1>100 Poster · 3D Line</h1>
-        <p>Posterler X ekseninde tek sıra halinde dizildi.</p>
+        <h1>100 Poster · Top View</h1>
+        <p>Posterler yatay düzlemde, X ekseni boyunca tek sıra halinde.</p>
       </header>
       <div className="poster-3d-stage">
         <Canvas
           shadows
           dpr={[1, 1.5]}
-          camera={{ position: [0, 3.2, 25], fov: 42, near: 0.1, far: 500 }}
+          camera={{ position: [0, 34, 0], fov: 42, near: 0.1, far: 500, up: [0, 0, -1] }}
         >
           <color attach="background" args={["#0b0d12"]} />
-          <ambientLight intensity={1.1} />
-          <directionalLight position={[-5, 9, 12]} intensity={2.4} castShadow />
-          <pointLight position={[0, 3, -8]} intensity={18} color="#8c9fc9" />
-          <Stars radius={90} depth={45} count={900} factor={2} fade speed={0.15} />
+          <ambientLight intensity={1.25} />
+          <directionalLight position={[-5, 18, 8]} intensity={2.1} castShadow />
+          <pointLight position={[0, 8, -8]} intensity={12} color="#8c9fc9" />
           <PosterLine />
           <OrbitControls
             makeDefault
@@ -109,15 +111,15 @@ export default function PosterWall() {
             enablePan
             enableZoom
             minDistance={8}
-            maxDistance={90}
+            maxDistance={180}
             target={[0, 0, 0]}
           />
         </Canvas>
       </div>
       <footer className="poster-3d-footer">
         <span>100 ADET</span>
-        <span>X EKSENİ · TEK SIRA</span>
-        <span>Yatay kaydır / yakınlaştır</span>
+        <span>X EKSENİ · YATAY DÜZLEM</span>
+        <span>Yukarıdan görünüm · Kaydır / yakınlaştır</span>
       </footer>
     </main>
   );
