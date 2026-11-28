@@ -1,5 +1,5 @@
-import PosterRow from "./components/PosterRow";
+import PosterWall from "./components/PosterWall";
 
 export default function App() {
-  return <PosterRow />;
+  return <PosterWall />;
 }
