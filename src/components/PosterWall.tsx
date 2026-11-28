@@ -76,6 +76,18 @@ const SLOT_2_POINTS: [number, number, number][] = [
   [1.4400, 0.10, 0.0133], // H
 ];
 
+
+const SLOT_3_POINTS: [number, number, number][] = [
+  [2.4311, 0.30, 1.9675], // A
+  [3.6154, 0.30, 2.2603], // B
+  [4.0522, 0.30, 0.4935], // C
+  [2.8679, 0.30, 0.2007], // D
+  [2.4311, 0.20, 1.9675], // E
+  [3.6154, 0.20, 2.2603], // F
+  [4.0522, 0.20, 0.4935], // G
+  [2.8679, 0.20, 0.2007], // H
+];
+
 function createSlot2Geometry() {
   const geometry = new THREE.BufferGeometry();
   const vertices = SLOT_2_POINTS.map(toWorldPoint);
@@ -101,12 +113,40 @@ function createSlot2Geometry() {
   return geometry;
 }
 
+
+function createSlotGeometry(points: [number, number, number][]) {
+  const geometry = new THREE.BufferGeometry();
+  const vertices = points.map(toWorldPoint);
+  const positions = vertices.flat();
+  const uvs = [
+    0, 1, 1, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 1, 0, 0, 0,
+  ];
+  const indices = [
+    0, 2, 1, 0, 3, 2,
+    4, 6, 5, 4, 7, 6,
+    0, 4, 5, 0, 5, 1,
+    1, 5, 6, 1, 6, 2,
+    2, 6, 7, 2, 7, 3,
+    3, 7, 4, 3, 4, 0,
+  ];
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.addGroup(0, 6, 1);
+  geometry.addGroup(6, 30, 0);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
   const baseX = (index - (POSTER_COUNT - 1) / 2) * SPACING;
   const baseY = index * 0.1;
   const showCornerLabels = index < 3;
   const slot2Geometry = useMemo(() => createSlot2Geometry(), []);
+  const slot3Geometry = useMemo(() => createSlotGeometry(SLOT_3_POINTS), []);
 
   if (index === 1) {
     const geometry = slot2Geometry;
@@ -124,6 +164,40 @@ function Poster({ index }: { index: number }) {
     return (
       <group>
         <mesh geometry={geometry} castShadow receiveShadow>
+          <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
+          <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
+        </mesh>
+        {labelPoints.map((point, i) => (
+          <Billboard key={i} position={[
+            point[0] + labelOffsets[i][0],
+            point[1] + labelOffsets[i][1],
+            point[2] + labelOffsets[i][2],
+          ]}>
+            <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
+              {"ABCDEFGH"[i]}
+            </Text>
+          </Billboard>
+        ))}
+      </group>
+    );
+  }
+
+
+  if (index === 2) {
+    const labelPoints = SLOT_3_POINTS.map(toWorldPoint);
+    const labelOffsets = [
+      [-0.045, 0.075, -0.045],
+      [0.045, 0.075, -0.045],
+      [0.045, 0.075, 0.045],
+      [-0.045, 0.075, 0.045],
+      [-0.045, -0.075, -0.045],
+      [0.045, -0.075, -0.045],
+      [0.045, -0.075, 0.045],
+      [-0.045, -0.075, 0.045],
+    ];
+    return (
+      <group>
+        <mesh geometry={slot3Geometry} castShadow receiveShadow>
           <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
           <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
         </mesh>
