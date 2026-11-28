@@ -47,16 +47,6 @@ function createPosterTexture(index: number) {
   return texture;
 }
 
-const CORNER_LABELS = [
-  { label: "A", x: -1, y: 1, z: -1 },
-  { label: "B", x: 1, y: 1, z: -1 },
-  { label: "C", x: 1, y: 1, z: 1 },
-  { label: "D", x: -1, y: 1, z: 1 },
-  { label: "E", x: -1, y: -1, z: -1 },
-  { label: "F", x: 1, y: -1, z: -1 },
-  { label: "G", x: 1, y: -1, z: 1 },
-  { label: "H", x: -1, y: -1, z: 1 },
-];
 
 type Point3 = [number, number, number];
 type SlotPoints = [Point3, Point3, Point3, Point3, Point3, Point3, Point3, Point3];
