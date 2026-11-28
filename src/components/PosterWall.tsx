@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Billboard, OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 
 const POSTER_COUNT = 100;
@@ -48,10 +48,22 @@ function createPosterTexture(index: number) {
   return texture;
 }
 
+const CORNER_LABELS = [
+  { label: "A", x: -1, y: 1, z: -1 },
+  { label: "B", x: 1, y: 1, z: -1 },
+  { label: "C", x: 1, y: 1, z: 1 },
+  { label: "D", x: -1, y: 1, z: 1 },
+  { label: "E", x: -1, y: -1, z: -1 },
+  { label: "F", x: 1, y: -1, z: -1 },
+  { label: "G", x: 1, y: -1, z: 1 },
+  { label: "H", x: -1, y: -1, z: 1 },
+];
+
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
   const x = (index - (POSTER_COUNT - 1) / 2) * SPACING;
   const y = index * 0.1;
+  const showCornerLabels = index < 3;
 
   return (
     <group position={[x, y, 0]}>
@@ -67,6 +79,30 @@ function Poster({ index }: { index: number }) {
         <planeGeometry args={[POSTER_WIDTH - 0.07, POSTER_HEIGHT - 0.07]} />
         <meshStandardMaterial color="#17191f" roughness={0.9} />
       </mesh>
+      {showCornerLabels &&
+        CORNER_LABELS.map(({ label, x: sx, y: sy, z: sz }) => {
+          const offset = 0.075;
+          const position: [number, number, number] = [
+            sx * (POSTER_WIDTH / 2 + offset),
+            sy * (POSTER_THICKNESS / 2 + offset),
+            sz * (POSTER_HEIGHT / 2 + offset),
+          ];
+
+          return (
+            <Billboard key={label} position={position}>
+              <Text
+                fontSize={0.12}
+                color="#ffd98a"
+                outlineColor="#17191f"
+                outlineWidth={0.012}
+                anchorX="center"
+                anchorY="middle"
+              >
+                {label}
+              </Text>
+            </Billboard>
+          );
+        })}
     </group>
   );
 }
