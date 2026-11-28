@@ -1,382 +1,254 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Billboard, Text } from "@react-three/drei";
-import * as THREE from "three";
+import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 
-const POSTER_COUNT = 100;
-const POSTER_WIDTH = 1.22;
-const POSTER_HEIGHT = 1.82;
-const POSTER_THICKNESS = 0.1;
-const POSTER_GAP = 0.22;
+const FLOOR_COUNT = 10;
+const SLOTS_PER_FLOOR = 10;
+const TOTAL_SLOTS = FLOOR_COUNT * SLOTS_PER_FLOOR;
 
-function createPosterTexture(index: number) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 384;
-  const ctx = canvas.getContext("2d")!;
-  const hue = (index * 37) % 360;
-
-  const gradient = ctx.createLinearGradient(0, 0, 220, 384);
-  gradient.addColorStop(0, `hsl(${hue}, 48%, 42%)`);
-  gradient.addColorStop(1, `hsl(${(hue + 34) % 360}, 52%, 9%)`);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 256, 384);
-
-  ctx.strokeStyle = "rgba(255,255,255,.38)";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(17, 17, 222, 350);
-
-  ctx.fillStyle = "rgba(255,255,255,.78)";
-  ctx.font = "18px Arial";
-  ctx.fillText("CINEMA COLLECTION", 28, 48);
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255,255,255,.16)";
-  ctx.beginPath();
-  ctx.arc(128, 172, 82, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#fff4e5";
-  ctx.font = "bold 27px Georgia";
-  ctx.fillText("POSTER", 128, 292);
-  ctx.font = "bold 34px Arial";
-  ctx.fillText(String(index + 1).padStart(3, "0"), 128, 335);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-
-
-type Point3 = [number, number, number];
-type SlotPoints = [Point3, Point3, Point3, Point3, Point3, Point3, Point3, Point3];
-
-const SPIRAL_ANGLE = Math.asin(POSTER_GAP / POSTER_HEIGHT);
-
-/**
- * Slot 1'in B köşesinden başlayarak 2–100 arasındaki bütün basamakları
- * formülden üretir. Koordinatlar ara adımlarda yuvarlanmaz.
- *
- * Köşe sırası: A, B, C, D (üst); E, F, G, H (alt).
- */
-function generateSpiralSlots(): SlotPoints[] {
-  const slots: SlotPoints[] = [];
-
-  // Slot 1, kullanıcının verdiği koordinat sisteminde sabit başlangıçtır.
-  const slot1: SlotPoints = [
-    [0, 0.1, 1.82], [1.22, 0.1, 1.82],
-    [1.22, 0.1, 0], [0, 0.1, 0],
-    [0, 0, 1.82], [1.22, 0, 1.82],
-    [1.22, 0, 0], [0, 0, 0],
-  ];
-  slots.push(slot1);
-
-  // E₂ = B₁. Her yeni E noktası önceki slotun hesaplanmış B noktasıdır.
-  let pivot: Point3 = [...slot1[1]];
-
-  for (let n = 2; n <= POSTER_COUNT; n += 1) {
-    const alpha = (n - 1) * SPIRAL_ANGLE;
-    const cos = Math.cos(alpha);
-    const sin = Math.sin(alpha);
-
-    const right: Point3 = [cos, 0, sin];
-    const back: Point3 = [sin, 0, -cos];
-
-    const E: Point3 = [pivot[0], (n - 1) * POSTER_THICKNESS, pivot[2]];
-    const F: Point3 = [
-      E[0] + POSTER_WIDTH * right[0],
-      E[1],
-      E[2] + POSTER_WIDTH * right[2],
-    ];
-    const H: Point3 = [
-      E[0] + POSTER_HEIGHT * back[0],
-      E[1],
-      E[2] + POSTER_HEIGHT * back[2],
-    ];
-    const G: Point3 = [
-      F[0] + POSTER_HEIGHT * back[0],
-      E[1],
-      F[2] + POSTER_HEIGHT * back[2],
-    ];
-
-    const lift = POSTER_THICKNESS;
-    const A: Point3 = [E[0], E[1] + lift, E[2]];
-    const B: Point3 = [F[0], F[1] + lift, F[2]];
-    const C: Point3 = [G[0], G[1] + lift, G[2]];
-    const D: Point3 = [H[0], H[1] + lift, H[2]];
-
-    slots.push([A, B, C, D, E, F, G, H]);
-
-    // Bir sonraki basamağın E noktası bu B ile birebir aynı değerleri alır.
-    pivot = B;
-  }
-
-  return slots;
-}
-
-const SPIRAL_SLOT_POINTS = generateSpiralSlots();
-
-// Merdivenin tüm köşelerinin X/Y/Z sınırlarından sahne merkezini hesapla.
-// Böylece başlangıç noktasına göre değil, 100 basamağın tamamına göre ortalanır.
-const SPIRAL_BOUNDS = SPIRAL_SLOT_POINTS.flatMap((slot) => slot).reduce(
-  (bounds, point) => ({
-    minX: Math.min(bounds.minX, point[0]),
-    maxX: Math.max(bounds.maxX, point[0]),
-    minY: Math.min(bounds.minY, point[1]),
-    maxY: Math.max(bounds.maxY, point[1]),
-    minZ: Math.min(bounds.minZ, point[2]),
-    maxZ: Math.max(bounds.maxZ, point[2]),
-  }),
-  {
-    minX: Infinity, maxX: -Infinity,
-    minY: Infinity, maxY: -Infinity,
-    minZ: Infinity, maxZ: -Infinity,
-  },
-);
-
-const SPIRAL_CENTER = {
-  x: (SPIRAL_BOUNDS.minX + SPIRAL_BOUNDS.maxX) / 2,
-  y: (SPIRAL_BOUNDS.minY + SPIRAL_BOUNDS.maxY) / 2,
-  z: (SPIRAL_BOUNDS.minZ + SPIRAL_BOUNDS.maxZ) / 2,
+type SlotProps = {
+  floor: number;
+  slot: number;
+  watched: boolean;
+  locked: boolean;
+  complete: boolean;
 };
 
-function toWorldPoint(point: Point3): Point3 {
-  // X/Y/Z eksenlerinde tüm 100 basamağın geometrik merkezini orijine taşı.
-  // Z ekseni, sahnenin mevcut kamera yönüyle uyumlu olması için ters çevrilir.
-  return [
-    point[0] - SPIRAL_CENTER.x,
-    point[1] - SPIRAL_CENTER.y,
-    SPIRAL_CENTER.z - point[2],
-  ];
-}
-
-
-const SPIRAL_SLOT_CENTERS = SPIRAL_SLOT_POINTS.map((slot) => {
-  const worldPoints = slot.map(toWorldPoint);
-  const center = worldPoints.reduce(
-    (sum, point) => ({
-      x: sum.x + point[0] / worldPoints.length,
-      y: sum.y + point[1] / worldPoints.length,
-      z: sum.z + point[2] / worldPoints.length,
-    }),
-    { x: 0, y: 0, z: 0 },
-  );
-  return new THREE.Vector3(center.x, center.y, center.z);
-});
-
-const STEP_TURN_RADIANS = SPIRAL_ANGLE;
-
-function SpiralClimbControls() {
-  const { camera, gl } = useThree();
-  const targetStep = useRef(0);
-  const currentStep = useRef(0);
-  const dragState = useRef({ active: false, lastX: 0 });
-  const cameraPosition = useMemo(() => new THREE.Vector3(), []);
-  const startPosition = useMemo(
-    () => SPIRAL_SLOT_CENTERS[0].clone().add(new THREE.Vector3(0, 1.35, -1.8)),
-    [],
-  );
-  const lookTarget = useMemo(() => new THREE.Vector3(), []);
-
-  useEffect(() => {
-    const element = gl.domElement;
-    const clampStep = (value: number) =>
-      THREE.MathUtils.clamp(value, 0, POSTER_COUNT - 1);
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
-      dragState.current = { active: true, lastX: event.clientX };
-      element.setPointerCapture?.(event.pointerId);
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      if (!dragState.current.active) return;
-      const deltaX = event.clientX - dragState.current.lastX;
-      dragState.current.lastX = event.clientX;
-      // Sağa sürükleme pozitif yaw ve merdivende ileri hareket üretir.
-      targetStep.current = clampStep(
-        targetStep.current + (deltaX * 0.022) / STEP_TURN_RADIANS,
-      );
-    };
-    const stopDragging = () => {
-      dragState.current.active = false;
-    };
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      // Aşağı kaydırma tırmanır, yukarı kaydırma aynı rotadan geri indirir.
-      targetStep.current = clampStep(
-        targetStep.current + (event.deltaY * 0.008) / STEP_TURN_RADIANS,
-      );
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-      event.preventDefault();
-      targetStep.current = clampStep(
-        targetStep.current + (event.key === "ArrowRight" ? 2 : -2),
-      );
-    };
-
-    element.addEventListener("pointerdown", onPointerDown);
-    element.addEventListener("pointermove", onPointerMove);
-    element.addEventListener("pointerup", stopDragging);
-    element.addEventListener("pointercancel", stopDragging);
-    element.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      element.removeEventListener("pointerdown", onPointerDown);
-      element.removeEventListener("pointermove", onPointerMove);
-      element.removeEventListener("pointerup", stopDragging);
-      element.removeEventListener("pointercancel", stopDragging);
-      element.removeEventListener("wheel", onWheel);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [gl]);
-
-  useFrame((_, delta) => {
-    // Smoothing is frame-rate independent; fractional step values follow the spiral arc.
-    const smoothing = 1 - Math.exp(-8 * delta);
-    currentStep.current += (targetStep.current - currentStep.current) * smoothing;
-
-    // Açılışta 1. slotun arka kenarının gerisinden başla; ilk yarım adımda rotaya bağlan.
-    const pathStep = currentStep.current - 0.5;
-    const pathLower = Math.max(0, Math.floor(pathStep));
-    const pathUpper = Math.min(pathLower + 1, POSTER_COUNT - 1);
-    const pathFraction = pathStep < 0 ? pathStep : pathStep - pathLower;
-    cameraPosition.lerpVectors(
-      SPIRAL_SLOT_CENTERS[pathLower],
-      SPIRAL_SLOT_CENTERS[pathUpper],
-      pathFraction,
-    );
-    cameraPosition.y += 1.55;
-    const cameraBlend = THREE.MathUtils.clamp(currentStep.current / 0.5, 0, 1);
-    cameraPosition.lerpVectors(startPosition, cameraPosition, cameraBlend);
-
-    // İlk bakış 1. ve 2. slot arasındadır; tırmanışla 2.5 basamak ileriye yükselir.
-    const lookBlend = THREE.MathUtils.clamp(currentStep.current / 2.5, 0, 1);
-    const forwardLookStep = Math.min(currentStep.current + 2.5, POSTER_COUNT - 1);
-    const lookStep = THREE.MathUtils.lerp(0.5, forwardLookStep, lookBlend);
-    const lookLower = Math.floor(lookStep);
-    const lookUpper = Math.min(lookLower + 1, POSTER_COUNT - 1);
-    const lookFraction = lookStep - lookLower;
-    lookTarget.lerpVectors(
-      SPIRAL_SLOT_CENTERS[lookLower],
-      SPIRAL_SLOT_CENTERS[lookUpper],
-      lookFraction,
-    );
-    lookTarget.y += THREE.MathUtils.lerp(0.55, 1.15, lookBlend);
-
-    camera.position.copy(cameraPosition);
-    camera.lookAt(lookTarget);
-  });
-
-  return null;
-}
-function createSlotGeometry(points: SlotPoints) {
-  const geometry = new THREE.BufferGeometry();
-  const vertices = points.map(toWorldPoint);
-  const positions = vertices.flat();
-  const uvs = [
-    0, 1, 1, 1, 1, 0, 0, 0,
-    0, 1, 1, 1, 1, 0, 0, 0,
-  ];
-  const indices = [
-    0, 2, 1, 0, 3, 2, // üst yüzey
-    4, 6, 5, 4, 7, 6, // alt yüzey
-    0, 4, 5, 0, 5, 1, // ön yüz
-    1, 5, 6, 1, 6, 2, // sağ yüz
-    2, 6, 7, 2, 7, 3, // arka yüz
-    3, 7, 4, 3, 4, 0, // sol yüz
-  ];
-
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.addGroup(0, 6, 1);
-  geometry.addGroup(6, 30, 0);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-function Poster({ index }: { index: number }) {
-  const texture = useMemo(() => createPosterTexture(index), [index]);
-  const slotPoints = SPIRAL_SLOT_POINTS[index];
-  const spiralGeometry = useMemo(
-    () => createSlotGeometry(slotPoints),
-    [slotPoints],
-  );
-
-  // İlk üç basamağın köşe etiketleri görünür; diğer basamaklar etiketsizdir.
-  const showCornerLabels = index < 3;
-
-  const labelPoints = showCornerLabels ? slotPoints.map(toWorldPoint) : [];
-  const labelOffsets = [
-    [-0.045, 0.075, -0.045],
-    [0.045, 0.075, -0.045],
-    [0.045, 0.075, 0.045],
-    [-0.045, 0.075, 0.045],
-    [-0.045, -0.075, -0.045],
-    [0.045, -0.075, -0.045],
-    [0.045, -0.075, 0.045],
-    [-0.045, -0.075, 0.045],
-  ];
+function TowerSlot({ floor, slot, watched, locked, complete }: SlotProps) {
+  const width = 820 - floor * 56;
+  const slotWidth = width / SLOTS_PER_FLOOR;
+  const x = 500 - width / 2 + slot * slotWidth;
+  const y = 760 - floor * 66;
+  const posterInset = Math.max(3, Math.min(7, slotWidth * 0.09));
+  const posterWidth = Math.max(9, slotWidth - posterInset * 2);
+  const posterHeight = 35;
+  const hue = (floor * 29 + slot * 17 + 28) % 360;
+  const id = `slot-${floor}-${slot}`;
 
   return (
-    <group>
-      <mesh geometry={spiralGeometry} castShadow receiveShadow>
-        <meshStandardMaterial attach="material-0" color="#24252b" metalness={0.18} roughness={0.72} />
-        <meshStandardMaterial attach="material-1" map={texture} roughness={0.82} metalness={0.01} />
-      </mesh>
-      {showCornerLabels && labelPoints.map((point, i) => (
-        <Billboard key={i} position={[
-          point[0] + labelOffsets[i][0],
-          point[1] + labelOffsets[i][1],
-          point[2] + labelOffsets[i][2],
-        ]}>
-          <Text fontSize={0.12} color="#ffd98a" outlineColor="#17191f" outlineWidth={0.012} anchorX="center" anchorY="middle">
-            {"ABCDEFGH"[i]}
-          </Text>
-        </Billboard>
-      ))}
-    </group>
+    <g className={`tower-slot ${watched ? "is-watched" : "is-empty"} ${locked ? "is-locked" : ""} ${complete ? "is-complete" : ""}`}>
+      {watched && (
+        <rect
+          x={x + posterInset - 4}
+          y={y + 3}
+          width={posterWidth + 8}
+          height={posterHeight + 9}
+          rx="3"
+          className="window-glow"
+        />
+      )}
+      <rect
+        id={id}
+        x={x + 1.5}
+        y={y + 1.5}
+        width={slotWidth - 3}
+        height="47"
+        rx="2"
+        className="slot-opening"
+      />
+      {watched ? (
+        <g className="poster-in-slot">
+          <rect
+            x={x + posterInset}
+            y={y + posterInset}
+            width={posterWidth}
+            height={posterHeight}
+            rx="1.5"
+            fill={`url(#poster-${hue})`}
+            stroke="#f7d9a1"
+            strokeOpacity=".78"
+            strokeWidth=".8"
+          />
+          <path
+            d={`M ${x + posterInset + 3} ${y + 12} Q ${x + slotWidth / 2} ${y + 4} ${x + slotWidth - posterInset - 3} ${y + 15} L ${x + slotWidth - posterInset - 3} ${y + 29} L ${x + posterInset + 3} ${y + 29} Z`}
+            fill="rgba(255,230,185,.38)"
+          />
+          <circle cx={x + slotWidth / 2} cy={y + 20} r={Math.max(2, Math.min(5, slotWidth * .07))} fill="#fff0c8" opacity=".88" />
+          <path
+            d={`M ${x + posterInset + 3} ${y + 37} H ${x + slotWidth - posterInset - 3}`}
+            stroke="rgba(255,239,211,.68)"
+            strokeWidth="1"
+          />
+        </g>
+      ) : (
+        <g className="empty-slot-mark">
+          <path
+            d={`M ${x + slotWidth * .25} ${y + 15} L ${x + slotWidth * .75} ${y + 15} M ${x + slotWidth * .25} ${y + 31} L ${x + slotWidth * .75} ${y + 31}`}
+            stroke={locked ? "#30313b" : "#6b5b49"}
+            strokeWidth="1"
+            strokeDasharray="3 3"
+            opacity=".75"
+          />
+        </g>
+      )}
+    </g>
   );
 }
 
-function PosterLine() {
+function TowerFloor({
+  floor,
+  watchedCount,
+}: {
+  floor: number;
+  watchedCount: number;
+}) {
+  const width = 820 - floor * 56;
+  const left = 500 - width / 2;
+  const y = 760 - floor * 66;
+  const watchedOnFloor = Math.max(0, Math.min(SLOTS_PER_FLOOR, watchedCount - floor * SLOTS_PER_FLOOR));
+  const complete = watchedOnFloor === SLOTS_PER_FLOOR;
+  const unlocked = floor <= Math.floor(watchedCount / SLOTS_PER_FLOOR);
+  const nextFloor = floor === Math.floor(watchedCount / SLOTS_PER_FLOOR) && watchedCount < TOTAL_SLOTS;
+
   return (
-    <group>
-      {Array.from({ length: POSTER_COUNT }, (_, index) => (
-        <Poster key={index} index={index} />
+    <g className={`tower-floor ${complete ? "floor-complete" : ""} ${unlocked ? "floor-unlocked" : "floor-locked"} ${nextFloor ? "floor-current" : ""}`}>
+      <path
+        className="floor-arch"
+        d={`M ${left - 8} ${y + 51} L ${left + 10} ${y - 4} L ${500 + width / 2 - 10} ${y - 4} L ${left + width + 8} ${y + 51} Z`}
+      />
+      <path
+        className="floor-ledge"
+        d={`M ${left - 13} ${y + 51} H ${left + width + 13}`}
+      />
+      {Array.from({ length: SLOTS_PER_FLOOR }, (_, slot) => (
+        <TowerSlot
+          key={slot}
+          floor={floor}
+          slot={slot}
+          watched={floor * SLOTS_PER_FLOOR + slot < watchedCount}
+          locked={!unlocked}
+          complete={complete}
+        />
       ))}
-    </group>
+      <text x={left - 20} y={y + 29} textAnchor="end" className="floor-number">
+        {String(floor + 1).padStart(2, "0")}
+      </text>
+      {complete && (
+        <text x={left + width + 20} y={y + 29} className="floor-complete-mark">✦</text>
+      )}
+    </g>
+  );
+}
+
+function TowerArtwork({ watchedCount }: { watchedCount: number }) {
+  const floors = useMemo(() => Array.from({ length: FLOOR_COUNT }, (_, i) => FLOOR_COUNT - 1 - i), []);
+  return (
+    <svg
+      className="babylon-svg"
+      viewBox="0 0 1000 900"
+      role="img"
+      aria-label={`On katlı Babil Sinema Kulesi. ${watchedCount} / 100 poster yuvası dolu.`}
+    >
+      <defs>
+        <linearGradient id="stone" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#88745c" />
+          <stop offset=".45" stopColor="#4a4036" />
+          <stop offset="1" stopColor="#211f20" />
+        </linearGradient>
+        <linearGradient id="poster-base" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#f1c17d" />
+          <stop offset="1" stopColor="#7d3f32" />
+        </linearGradient>
+        {Array.from({ length: 360 }, (_, hue) => (
+          <linearGradient key={hue} id={`poster-${hue}`} x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stopColor={`hsl(${hue}, 58%, 49%)`} />
+            <stop offset="1" stopColor={`hsl(${(hue + 35) % 360}, 62%, 13%)`} />
+          </linearGradient>
+        ))}
+        <filter id="warm-glow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
+        <filter id="gold-glow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <linearGradient id="tower-shadow" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#ad936d" stopOpacity=".13" />
+          <stop offset="1" stopColor="#08090e" stopOpacity=".86" />
+        </linearGradient>
+      </defs>
+
+      <g className="sky-stars">
+        {Array.from({ length: 42 }, (_, i) => {
+          const x = (i * 173 + 41) % 940 + 30;
+          const y = (i * 97 + 23) % 270 + 25;
+          return <circle key={i} cx={x} cy={y} r={i % 5 === 0 ? 1.8 : .9} className="sky-star" style={{ animationDelay: `${(i % 9) * .35}s` }} />;
+        })}
+      </g>
+
+      <g className="tower-clouds">
+        <path d="M0 330 Q90 285 190 325 T390 320 T590 325 T800 310 T1000 330 V410 H0Z" />
+        <path d="M0 390 Q130 350 260 385 T510 380 T760 388 T1000 370 V455 H0Z" />
+      </g>
+
+      <path className="tower-ground-shadow" d="M115 812 Q500 755 885 812 L970 900 H30Z" />
+      <path className="tower-foundation" d="M78 810 L922 810 L878 842 L122 842Z" />
+      <path className="tower-foundation-line" d="M78 810 H922" />
+
+      <g className="tower-body">
+        {floors.map((floor) => (
+          <TowerFloor key={floor} floor={floor} watchedCount={watchedCount} />
+        ))}
+      </g>
+
+      <g className="tower-crown">
+        <path d="M445 100 L500 48 L555 100 L545 120 H455Z" />
+        <path d="M474 91 L500 20 L526 91" />
+        <circle cx="500" cy="30" r="5" />
+      </g>
+      <path className="tower-center-spine" d="M500 120 V806" />
+      <path className="tower-outline" d="M78 810 L125 755 L170 690 L226 624 L282 558 L338 492 L394 426 L450 360 L506 294 L562 228 L618 162 L655 120 L500 48 L345 120 L382 162 L438 228 L494 294 L550 360 L606 426 L662 492 L718 558 L774 624 L830 690 L875 755 L922 810" />
+    </svg>
   );
 }
 
 export default function PosterWall() {
+  const [watchedCount, setWatchedCount] = useState(0);
+  const completedFloors = Math.floor(watchedCount / SLOTS_PER_FLOOR);
+  const progress = watchedCount / TOTAL_SLOTS;
+  const atmosphereStyle = {
+    "--tower-progress": progress,
+    "--sky-warmth": 1 - progress,
+  } as CSSProperties;
+
   return (
-    <main className="poster-3d-page">
-      <header className="poster-3d-header">
-        <span className="eyebrow">CINE BABYLON TOWER · FOUNDATION</span>
-        <h1>100 Poster · 3D View</h1>
-        <p>Birinci şahıs sarmal tırmanış: sağa dönerek yüksel, sola dönerek aynı rotadan in.</p>
+    <main className="babylon-page" style={atmosphereStyle}>
+      <div className="atmosphere-earth" />
+      <div className="atmosphere-clouds" />
+      <div className="atmosphere-space" />
+      <header className="babylon-header">
+        <div className="brand-block">
+          <span className="eyebrow">CINE BABYLON TOWER · YOUR FILM JOURNEY</span>
+          <h1>Babil Sinema Kulesi</h1>
+          <p>Her film bir taş. Her tamamlanan kat, zirveye bir adım daha.</p>
+        </div>
+        <div className="test-controls" aria-label="Kule test kontrolleri">
+          <span className="test-label">TEST KONTROLÜ</span>
+          <button type="button" onClick={() => setWatchedCount((count) => Math.min(TOTAL_SLOTS, count + 1))} disabled={watchedCount === TOTAL_SLOTS}>+1 İçerik İzle</button>
+          <button type="button" onClick={() => setWatchedCount((count) => Math.min(TOTAL_SLOTS, count + 10))} disabled={watchedCount === TOTAL_SLOTS}>+10 İçerik İzle</button>
+          <button type="button" className="reset-button" onClick={() => setWatchedCount(0)}>Sıfırla</button>
+        </div>
       </header>
-      <div className="poster-3d-stage">
-        <Canvas
-          shadows
-          dpr={[1, 1.5]}
-          camera={{ position: [0, 0, 0], fov: 72, near: 0.1, far: 500, up: [0, 1, 0] }}
-        >
-          <color attach="background" args={["#0b0d12"]} />
-          <ambientLight intensity={1.25} />
-          <directionalLight position={[-5, 18, 8]} intensity={2.1} castShadow />
-          <pointLight position={[0, 8, -8]} intensity={12} color="#8c9fc9" />
-          <PosterLine />
-          <SpiralClimbControls />
-        </Canvas>
-      </div>
-      <footer className="poster-3d-footer">
-        <span>100 ADET</span>
-        <span>X EKSENİ · YATAY DİZİLİM</span>
-        <span>Sağa sürükle / → / aşağı kaydır: tırman · Sola sürükle / ← / yukarı kaydır: in</span>
+
+      <section className="tower-scene">
+        <div className="tower-caption">
+          <span>YÜKSELİŞİN</span>
+          <strong>{String(watchedCount).padStart(3, "0")} <i>/ 100</i></strong>
+          <div className="progress-track"><span style={{ width: `${progress * 100}%` }} /></div>
+          <small>{completedFloors} / 10 KAT TAMAMLANDI</small>
+        </div>
+        <div className="tower-visual">
+          <TowerArtwork watchedCount={watchedCount} />
+        </div>
+        <div className="tower-legend">
+          <span><i className="legend-empty" /> BOŞ YUVA</span>
+          <span><i className="legend-poster" /> İZLENEN</span>
+          <span><i className="legend-gold" /> TAMAMLANAN KAT</span>
+        </div>
+      </section>
+
+      <footer className="babylon-footer">
+        <span>100 POSTER YUVASI · 10 KAT · TEK ZİRVE</span>
+        <span>{watchedCount === TOTAL_SLOTS ? "KULE TAMAMLANDI · ZİRVEYE ULAŞTIN" : `${TOTAL_SLOTS - watchedCount} İÇERİK DAHA · ${Math.min(10, completedFloors + 1)}. KAT AÇIK`}</span>
       </footer>
     </main>
   );
