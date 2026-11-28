@@ -34,7 +34,7 @@ button { font: inherit; }
   min-height: 600px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 78%, rgba(171, 111, 58, calc(.15 * (1 - var(--tower-progress)))) 0%, transparent 43%),
+    radial-gradient(ellipse at 50% 78%, rgba(171, 111, 58, .15) 0%, transparent 43%),
     linear-gradient(180deg,
       #080a11 0%,
       #11131c 27%,
