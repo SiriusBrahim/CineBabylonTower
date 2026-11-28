@@ -172,6 +172,10 @@ function SpiralClimbControls() {
   const currentStep = useRef(0);
   const dragState = useRef({ active: false, lastX: 0 });
   const cameraPosition = useMemo(() => new THREE.Vector3(), []);
+  const startPosition = useMemo(
+    () => SPIRAL_SLOT_CENTERS[0].clone().add(new THREE.Vector3(0, 1.35, -1.8)),
+    [],
+  );
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
@@ -190,7 +194,7 @@ function SpiralClimbControls() {
       dragState.current.lastX = event.clientX;
       // Sağa sürükleme pozitif yaw ve merdivende ileri hareket üretir.
       targetStep.current = clampStep(
-        targetStep.current + (deltaX * 0.0055) / STEP_TURN_RADIANS,
+        targetStep.current + (deltaX * 0.022) / STEP_TURN_RADIANS,
       );
     };
     const stopDragging = () => {
@@ -200,15 +204,14 @@ function SpiralClimbControls() {
       event.preventDefault();
       // Aşağı kaydırma tırmanır, yukarı kaydırma aynı rotadan geri indirir.
       targetStep.current = clampStep(
-        targetStep.current + (event.deltaY * 0.002) / STEP_TURN_RADIANS,
+        targetStep.current + (event.deltaY * 0.008) / STEP_TURN_RADIANS,
       );
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
       event.preventDefault();
-      if (event.repeat) return;
       targetStep.current = clampStep(
-        targetStep.current + (event.key === "ArrowRight" ? 1 : -1),
+        targetStep.current + (event.key === "ArrowRight" ? 2 : -2),
       );
     };
 
@@ -234,7 +237,7 @@ function SpiralClimbControls() {
     const smoothing = 1 - Math.exp(-8 * delta);
     currentStep.current += (targetStep.current - currentStep.current) * smoothing;
 
-    // Yarım basamak geriden başla; ilerledikçe aynı spiral yolu takip et.
+    // Açılışta 1. slotun arka kenarının gerisinden başla; ilk yarım adımda rotaya bağlan.
     const pathStep = currentStep.current - 0.5;
     const pathLower = Math.max(0, Math.floor(pathStep));
     const pathUpper = Math.min(pathLower + 1, POSTER_COUNT - 1);
@@ -245,9 +248,13 @@ function SpiralClimbControls() {
       pathFraction,
     );
     cameraPosition.y += 1.55;
+    const cameraBlend = THREE.MathUtils.clamp(currentStep.current / 0.5, 0, 1);
+    cameraPosition.lerpVectors(startPosition, cameraPosition, cameraBlend);
 
-    // Bakış noktası rotanın 2.5 basamak ilerisinde ve hafifçe yukarıdadır.
-    const lookStep = Math.min(currentStep.current + 2.5, POSTER_COUNT - 1);
+    // İlk bakış 1. ve 2. slot arasındadır; tırmanışla 2.5 basamak ileriye yükselir.
+    const lookBlend = THREE.MathUtils.clamp(currentStep.current / 2.5, 0, 1);
+    const forwardLookStep = Math.min(currentStep.current + 2.5, POSTER_COUNT - 1);
+    const lookStep = THREE.MathUtils.lerp(0.5, forwardLookStep, lookBlend);
     const lookLower = Math.floor(lookStep);
     const lookUpper = Math.min(lookLower + 1, POSTER_COUNT - 1);
     const lookFraction = lookStep - lookLower;
@@ -256,7 +263,7 @@ function SpiralClimbControls() {
       SPIRAL_SLOT_CENTERS[lookUpper],
       lookFraction,
     );
-    lookTarget.y += 1.35;
+    lookTarget.y += THREE.MathUtils.lerp(0.55, 1.15, lookBlend);
 
     camera.position.copy(cameraPosition);
     camera.lookAt(lookTarget);
