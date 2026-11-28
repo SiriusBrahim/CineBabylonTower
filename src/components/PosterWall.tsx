@@ -51,9 +51,10 @@ function createPosterTexture(index: number) {
 function Poster({ index }: { index: number }) {
   const texture = useMemo(() => createPosterTexture(index), [index]);
   const x = (index - (POSTER_COUNT - 1) / 2) * SPACING;
+  const y = index * 0.1;
 
   return (
-    <group position={[x, 0, 0]}>
+    <group position={[x, y, 0]}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[POSTER_WIDTH, POSTER_THICKNESS, POSTER_HEIGHT]} />
         <meshStandardMaterial color="#24252b" metalness={0.18} roughness={0.72} />
